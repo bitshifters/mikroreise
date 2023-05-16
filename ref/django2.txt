@@ -1,0 +1,253 @@
+Chipo Django 2
+~~~
+A chiptune musicdisk disc with Rabenauge.
+
+TODO
+~~~
+- Make new repo. - DONE
+- Strip out code & assets that are not required. - STARTED
+- Sort out BSS segment. - DONE
+  - And DATA segment. - DONE
+  - Need an RODATA segment?
+- Add 'toothed' columns. - DONE
+- Optimise menu plotting and font plotting code. - DONE
+  - Convert smallfont to MODE 9 at runtime? - DONE
+  - Also store in ASCII order for simplicity? - DONE
+  => TODO: Bold is a bit bodged, ripple hack/effect missing.
+- Add scrolltext. - DONE
+  => Control codes are triggered on LHS now not RHS. - DONE
+- Add 3D rendering code for cube. - DONE
+- Add 3D cube! - DONE
+- Move screen layout to be roughly that of Bodo's WIP. - DONE
+- Optimise for 8MHz machines. - DONE
+
+https://pdjstone.github.io/arculator-wasm/arculator.html?disc=https://bitshifters.github.io/content/wip/arc-django-2-wip.adf&autoboot=desktop%20filer_run%20adfs::0.$.!Django02
+
+
+WIP Features
+~~~
+- Overscan screen?
+  - Not currently - 320x256
+- Menu at top.
+  - Similar to before.
+  - Looks like the same font.
+- Spinning cube centre LHS of screen.
+  - Faces shades of blue.
+  - Rendered on top of everything.
+- Scrolltext at bottom, 16x16 or 20x20 maybe?
+  - Single colour font?
+  - Masked on top of background
+  - Single pixel scroll?
+- Vertically scrolling toothed columns (what to call these?)
+  - Five columns
+  - 'Teeth' are 16x16
+  - Columns are 3x 'teeth' wide
+  - Columns overlap by 1x 'teeth' width
+  - Columns scroll upwards are different speeds
+  - Shades of grey-blue from dark (centre) to light (rhs screen)
+
+Cube visualiser code from Bodo:
+
+    lea mt_Visualizer,a0                                                ; a0 = &mt_Visualizer
+    lea scale,a1    ; cube-scale , INC_X, INC_Y, INC_Z                  ; a1 = &cube_deltas
+    moveq #4-1,d7   ; number of voices                                  ; d7 = 3
+.l:     moveq #15,d0        ;maxvalue 15                                ; d0 = 15
+        sub.w (a0)+,d0      ;-#frames/irqs since instrument trigger     ; d0 = 15 - mt_Visualizer[i] (irqs since instrument trigger)
+        bpl.s .ok           ;below minvalue?                            ; if > 0 goto .ok
+        moveq #0,d0         ;then set to minvalue                       ; d0 = 0
+    .ok:
+        lsl #1,d0                                                       ; d0 *= 2
+        move.w d0,(a1)+     ;poke value                                 ; cube_deltas[i] = d0
+        dbf d7,.l                                                       ; if --d7 != 0 goto .1
+
+    move.w scale,d0                                                     ; d0 = cube_deltas[0] (scale)
+    mulu #10,d0                                                         ; d0 *= 10
+    add.w #START_SIZE,d0 ; add START_SIZE of scale                      ; d0 += START_SIZE
+    move.w d0,scale                                                     ; cube_deltas[0] = d0  
+
+Road to Revision
+~~~
+
+TODO:
+
+- Splash screen with fade out. - DONE
+- Hovering masked logo with pixel motion. - DONE
+  - Add mask colour support to png2arc.py. - DONE (WELL, HACKED)
+  - Expand to 8x shifts at runtime.
+  - Plot w/ x,y pos.
+  - May need to split this into 3 smaller sprites for perf?
+- Colours:
+  - Uses 32 colours (of course) so need colour split beneath logo.
+  - Logo sprite uses 13 colours (including black & white)
+  - Need 6 background colours.. :\
+  => Ask Bodo if Titus can make a 10 colour version... DONE
+
+- Menu:
+  - New layout. - DONE
+  - New menu small font has no regular/bold. - DONE
+  - New menu small font is proportional? - DONE!
+  - New menu small font plots different colours over cube... - IGNORE FOR NOW?
+  - New colours for the menu, selection & highlight etc. - DONE SOME
+- Cube:
+  - Make smaller. - DONE
+  - Remove lighting - DONE
+  - Match colours. - DONE
+  - Check visualiser pulse. - AS LONG AS IT LOOKS GOOD...
+- Sawtooth:
+  - Has rounded edges - DONE
+  - Match colours - DONE
+  - Match speeds.
+- Scrolltext:
+  - New font - DONE, new colour DONE
+  - Need text. - DONE
+  - Very slow - needs optimising... DONE
+    => 40 words across width of screen.
+    => For each word column we read 1x glyph word but write 2x.
+    => Read/mask/write 1x into previous column (shifted)
+    => Read/mask/write 1x into current column (shifted)
+    => 16x for font height.
+    => Total read/mask/write = 41*16*lots
+  - Could have scroller glyphs on a modest sine wave if we wanted? - DONE
+
+- Music playback.
+  - Ping ToBach & 4mat - DONE
+  - Master volume of each tune? - DONE
+  - Pause between tunes during autoplay? - DONE
+- Archie specific:
+  - Remove _DJANGO define. - DONE
+  - Performance on ARM2? - DONE (CAN ALWAYS DO MORE!)
+    1. Scrolltext - cyan
+      => Plot glyphs in one go and deal with edges separately. - DONE
+    2. Menu - blue
+    3. Cube - red
+      => Could combine edge determination & rasterisation. - DONE
+    4. Logo - magenta
+    5. Columns - yellow
+    6. Screen clear - green
+    => Keyboard scan is also surprisingly high...
+      - Rich says use key pressed event and store a mask... DONE!
+    => Improve update_3D_scene as well. => DONE
+  - Do we need RasterMan or get RasterMan Lite for stablised interrupts. => NO.
+  - Remove redundant code. - DONE I THINK?
+  - Shrink exe - DONE
+  - Add new !ReadMe etc. ASCII from ne7. - DONE
+  - Ask Bodo for an app icon? - DONE
+  - Write some scrolltext! - DONE
+
+Scrolltext
+~~~
+If pre-shifted glyph?
+- Load 3x words of glyph.
+- Read/mask/store to screen (potentially everything shifted by +1 word for >8 pixels)
+- Invert the shift so +7 is offset to the right rather than left.
+- Plot entire glyph, don't worry about screen edge just yet.
+- Plot slices of glyph on LHS & RHS as required.
+
+Colours
+~~~
+0 = background
+1 - 10 = logo
+11 - 15 = columns
+COLORBAR0=$122 ; main background
+COLORBAR1=$443 ;
+COLORBAR2=$654 ;
+COLORBAR3=$975 ;
+COLORBAR4=$c97 ;
+COLORBAR5=$fb8 ;
+
+<TBC>
+CUBE COLOURS
+; cube-colors	
+  dc.w color01,$2a9     ; 0x0001 ; 1
+	dc.w color02,$167     ; 0x0010 ; 2
+	dc.w color03,$234     ; 0x0011 ; 3
+
+MENU COLOURS
+; menu-colors
+    dc.w color04,$ac7  - regular menu   ; 0x100 ; 4
+    dc.w color05,$cfa  ; under the cube ; 0x101 ; 5
+    dc.w color06,$bfa  ; under the cube ; 0x110 ; 6
+    dc.w color07,$bf7  ; under the cube ; 0x111 ; 7
+
+                       - selected in this colour
+                       - playing flickers between both
+    dc.w color12,$191  ; line marker  is set via menu ; 8
+    dc.w color13,$3b3  ; line marker under the cube   ; ?
+    dc.w color14,$2b3  ; line marker under the cube   ; ?
+    dc.w color15,$2b2  ; line marker under the cube   ; ?
+
+SCROLLER COLOUR...
+    dc.w color01,$c31  ; scroller color               ; 10
+
+Final colours?
+ 
+; cube-colors   
+    dc.w color01,$0335
+    dc.w color02,$088b
+    dc.w color03,$657 
+; menu-colors
+    dc.w color04,$0dca
+
+    dc.w color12,$0fff  ; line marker 
+
+Scroller? 170, 204, 68 $0ac4
+
+Final scroller colour:  $49c    
+
+Proportional menu font
+~~~
+Spaces are 5 pixels (!) 'i' is 4 pixels.
+=> Plot menu strings into 'sprite' at init.
+- Calculate pixel width of string => word width of sprite.
+- Optionally align string to RHS of sprite.
+- Plot glyphs at pixel offset.
+
+Archie custom features...?
+- Small Y offset for scroller? - DONE
+- Reinstate logo glitch when loading tune? Or a wibble?
+  => Can have the logo following a different path.
+- Add cube lighting back?
+- Make cube blip right & left for a few frames to simulate 'load glitch'.
+- Make the scrolltext appear nicely from behind the last column?
+  => Probably a pain to do and more cycles.
+- Swap sample speed depending on CPU speed... - DONE
+- Set VU bars effect on 1/2/3 keys. - DONE
+
+Bug fixes from Steve:
+- Check monitortype and adjust T1 timing? - NOT SURE!
+- Load tracks using R0=-1 (RMA copy) for QTM_Load. - DONE
+- Use SWI QTM_SongStatus and check bit 4 of R0 for end of track. - REPLACED BY TIMER
+  (This is easier than the music interrupt method previously.)
+- When autoplay is on, you might want to try clearing bit 2 of the music options byte, - REPLACED BY TIMER
+  using SWI QTM_MusicOptions, this will ensure each track fully stops at the end,
+  and doesn't loop round and start playing a few micro seconds of the start before the next track loads.
+
+Woah! We consistently drop a frame every 0x130 = 304 frames! WTF?
+This still happens even if QTM is turned off..
+This still happens when all plotting is turned off..
+Not sure vsync counting or frame swapping is correct somehow?
+=> Turned out to be Timer 0 colliding with VSync and RO IRQ handler
+   giving T0 higher priority than vsync, causing our handler to be
+   re-entered. Fixed with a bodge flag to detect this.
+
+For multi-buffer:
+- Screen we're currently showing.
+- Screen we're currently writing to.
+- When finished writing want to schedule swap to that screen at vsync.
+- Get the next screen in the circular list.
+- Unless it is being shown, in which case block until free.
+
+Frame display queue.
+Fill up queue by rotating left until 'full' - block if full.
+0000 -> 0001 -> 0012 -> 0123 -> 1234 -> can't fill.
+
+On vsync empty the queue by popping off the top non-zero item.
+1234 -> 0234 -> 0034 -> 0004 -> 0000 -> nothing to display.
+Push the previous displayed bank onto the write queue.
+
+Popping the queue happens in IRQ handler with interrupts off.
+Probably need to add a lock / disable interrupts when adding to the queue.
+Need to store or calculate the length of the queue each time.
+
+=> Actually, this is all overkill, just implement triple buffering, using
+an round robin index for displayed, writing and pending banks...

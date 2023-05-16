@@ -1,0 +1,1008 @@
+SWI list and API information for QTM v1.49beta   © Steve Harrison, 1993-2023
+----------------------------------------------------------------------------
+
+The QTMTracker module contains a full application programming interface (API)
+for use playing music and sound effects in games and applications. This is
+through the use of software interrupts (SWIs) which can be triggered from ARM
+code, from ARM BASIC (using SYS command) and from other languages using their
+appropriate SWI call function(s).
+
+The QTMTracker module uses an Acorn allocated SWI chunk, number - &47E40
+
+Format of SWI description is:
+
+ On entry: register values when calling SWI
+
+ On exit : register values returned
+           (registers not mentioned are preserved)
+
+No QTM SWIs alter the processor mode or interrupt state, except for SWI
+QTM_RemoveChannel, which disables IRQ interrupts while it alters the QTM
+sound channel flags.
+
+Note: When running on 32-bit RISC OS 5, PSR flags are not preserved through
+SWI calls. On earlier (26 bit) RISC OS 2/3/4/6 and Arthur, PSR flags are
+still preserved through SWIs by QTM.
+
+
+SWI "QTM_Load"                                                        &47E40
+----------------------------------------------------------------------------
+
+On entry: R0 & R1 various, see table below
+
+On exit : R0, R1 preserved
+
+V flag set if there was not enough space in the RMA for the song, the file
+was not found, the music format was not understood, or an illegal memory
+address was specified.
+
+Currently three different load types are available, these are described
+below:
+
+---------------------------------+------------------------------------------
+Registers on entry to QTM_Load   |  Meaning
+---------------------------------+------------------------------------------
+R0 = pointer to filename         |  Depending on the value in R1, QTM will
+R1 = 0 to load to QTM's memory   |  either load the specified song file into
+   = >0 to load to that address  |  QTM's own memory (R1=0), or to the
+                                 |  memory address given in R1 (R1<>0).
+---------------------------------+------------------------------------------
+R0 = 0                           |  QTM will initialise the song pointed to
+R1 = Memory address of song      |  by R1, at that address.
+                                 |  This enables a program to load a song
+                                 |  into its own reserved memory (eg.
+                                 |  application memory or its own RMA block)
+                                 |  and get QTM to play it from there,
+                                 |  rather than from a QTM-controlled RMA
+                                 |  block.
+---------------------------------+------------------------------------------
+R0 = -1                          |  QTM will COPY the song from the address
+R1 = Memory address to transfer  |  given in R1, to its own memory (RMA) and
+     song from                   |  use it from there.
+                                 |  Note: If the address in R1 is the START
+                                 |  of an RMA block, QTM will take control
+                                 |  of this block, and release it after
+                                 |  transferring the song. This is done to
+                                 |  reduce possible fragmentation of the
+                                 |  RMA. The loader program MUST NOT access
+                                 |  the old RMA address of the song, after
+                                 |  this call.
+---------------------------------+------------------------------------------
+
+The address and type of the loaded song can be read by SWI QTM_Info.
+
+Note: When a song is loaded (by any method) its sample data is converted
+into 8-bit logarithmic data, from signed linear data. 15 inst. format songs
+are converted to a 31 inst. format at the same time. The sample data CAN be
+converted back to signed linear, so the song can be saved or re-loaded etc.
+by calling SWI QTM_Clear with R0=-1, although the song format will not be
+converted back, and will remain as 31 inst. (see SWI QTM_Clear for details).
+
+
+SWI "QTM_Start"                                                       &47E41
+----------------------------------------------------------------------------
+
+On entry: -
+
+On exit : -
+
+V flag set if no song is loaded
+
+This SWI will start the current song playing (and start up the sound
+system), after loading, or being paused or stopped.
+
+
+
+SWI "QTM_Stop"                                                        &47E42
+----------------------------------------------------------------------------
+
+On entry: -
+
+On exit : -
+
+V flag set if no song is loaded
+
+This SWI will stop the current song playing, switch off QTM's sound
+controllers and reset all the internal song variables, including the
+position counters - which it sets to 0.
+
+
+
+SWI "QTM_Pause"                                                       &47E43
+----------------------------------------------------------------------------
+
+On entry: -
+
+On exit : -
+
+V flag set if no song is loaded
+
+This has the same effect as SWI QTM_Stop, although it doesn't reset the
+internal variables, so when the song is re-started, it will continue from
+the same position.
+
+
+
+SWI "QTM_Clear"                                                       &47E44
+----------------------------------------------------------------------------
+
+On entry: R0 = -1 to convert samples back to signed linear format
+             = <>-1 don't convert samples
+
+On exit : R0 is preserved
+
+No error is reported if there is not a song loaded.
+
+This SWI will switch off the QTM sound system and stop the current song
+playing, releasing any memory used for the song if it was loaded into RMA.
+The song cannot be restarted after this command, unless it is reloaded (from
+user-reserved memory, disc, etc.) using the SWI QTM_Load.
+
+The CURRENT song can only be reloaded from user-reserved (not QTM's) memory
+after calling SWI QTM_Clear, if the samples have been converted back to
+signed linear format (from the logarithmic format they were converted to
+when the song was loaded). This can be done by setting R0 to -1 before
+calling SWI QTM_Clear. See SWI QTM_Load for information on (re)loading a
+song that is already stored in memory.
+
+
+
+SWI "QTM_Info"                                                        &47E45
+----------------------------------------------------------------------------
+
+On entry: -
+
+On exit : R0 = pointer to track name (0 terminated)
+          R1 = pointer to author name (0 terminated)
+               or 0 if author name could not be found
+          R2 = song origin value: 00 - Sound Tracker/compatible (15 samples)
+                                  01 - Sound Tracker/compatible (31 samples)
+                                  02 - ProTracker 'M.K.' (31 samples)
+                                  03 - Startrekker 'FLT4' or 'FLT8'
+                                  04 - FastTracker '4CHN', '6CHN' or '8CHN'
+                                  05 - Octalyser 'CD61' or 'CD81'
+          R3 = number of channels (4, 6 or 8 channels)
+          R4 = file length (in bytes)
+          R5 = garbage data size (-ve if data missing)
+          R6 = address where song is loaded
+
+V flag set if no song is loaded
+
+This SWI returns general information about the current track loaded in QTM.
+
+It also uses an 'author detector' routine, to search through the sample names
+(usually used by authors, to store their name or group) to see if it can find
+anything that resembles a name. If it succeeds, a pointer to the name is
+returned in R1, otherwise 0 is returned.
+
+On loading, any 15 sample music modules are converted to 31 sample format,
+and any 8 channel StarTrekker music modules are converted to 8 channel
+FastTracker format (this is new for QTM v1.45). There is no loss in effects
+or playback quality as a result of these conversions. The 'song origin' value
+in R2 refers to the original format of the song file, before conversion. For
+more information about supported music formats, see 'FileFormats'.
+
+
+
+SWI "QTM_Pos"                                                         &47E46
+----------------------------------------------------------------------------
+
+On entry: R0 = new sequence position (0-127), -1 to read current position
+          R1 = new event position (0-63), -1 to read
+
+On exit : R0 = previous sequence position (0-127)
+          R1 = previous event position (0-63)
+
+
+V flag set if no song is loaded or the position/event number is out of range
+
+This SWI can be used to read or alter the current sequence or event position
+in the current song.
+
+
+
+SWI "QTM_EffectControl"                                               &47E47
+----------------------------------------------------------------------------
+
+On entry: R0 = effect number (&0-&F,&E0-&EF - (for 'E' effects))
+               or -1 to read current state
+
+          If R0 <> -1 then R1 = new state of effect (0-off/1-on)
+
+On exit : R0 = previous effect state word (&0-&F) 1 bit per effect, 16 bits
+          R1 = previous effect state word (&E0-&EF)      "             "
+
+V flag set if the effect number was out of range
+
+This SWI can be used to change the state of any effect (as seen by the QTM
+effect handlers). Disabling an effect will stop QTM taking any action over
+it. For example, disabling effect &F will not allow speed/tempo changes to
+take place, and the song may sound too fast or slow.
+
+Once re-enabled, the effect(s) will be played as usual again.
+
+The contents of R0 and R1 on exit are a copy of the effect words used by QTM
+- each has 16 bits used, with each bit representing the state of that effect
+0-off, 1-on. R0 contains the flags for the normal effects (&0-&F), R1
+contains the flags for the 'E' effects (&E0-&EF).
+
+For a full list of effects supported by QTM, see the help file 'Effects'.
+
+
+
+SWI "QTM_Volume"                                                      &47E48
+----------------------------------------------------------------------------
+
+On entry: R0 = new overall volume (0-64) or -1 to read current volume
+
+On exit : R0 = previous *music* volume (0-64)
+
+V flag set if volume is out of range
+
+This SWI allows you set the overall output volume from both the music and
+sound effect output from the QTM sound handlers. The volume is in a linear
+form (0-64), as used for sample volumes in ProTracker songs. The volume level
+returned in R0 is the previous music volume.
+
+To set the music and sound effect volumes independently of each other see
+SWIs QTM_MusicVolume and QTM_SampleVolume.
+
+
+
+SWI "QTM_SetSampleSpeed"                                              &47E49
+----------------------------------------------------------------------------
+
+On entry: R0 = new sample speed (16-96µS) or -1 to read current speed
+
+On exit : R0 = previous sample speed (16-96µS)
+
+V flag set if sample speed is out of range
+
+This SWI lets you set the time between sample outputs (ie. sample quality)
+to a value between 16µS and 96µS. Smaller speed values give better sample
+quality, but also use more processor time, slowing the computer down more.
+
+The default speed (on loading) is 32µS, except for the RasterMan-specific
+version(s) of the QTM module, which run at either 48uS (4/6/8 channel) or
+24uS (4 channel only).
+	
+Note: If 8 channels are enabled, the minimum sample speed is 24µS.
+
+
+
+SWI "QTM_DMABuffer"                                                   &47E4A
+----------------------------------------------------------------------------
+
+On entry: -
+
+On exit : R0 = address of last used DMA sound buffer (208 bytes per channel)
+
+By using this SWI, it is possible to implement sound output oscilloscopes, or
+volume activated (real) VU bars. The data in the DMA buffer is stored in 8
+bit log format, with 4 or 8 channels interleaved as:
+[c0],[c1],[c2],[c3],[c0],[c1],[c2]...etc, 1 byte for each channel.
+
+The DMA buffer size returned by SWI QTM_DMABuffer will always be 208
+bytes*<no. of configured channels> long, this reflects the default buffer
+size used by RISC OS computers with 8-bit sound systems (see PRMs for more
+info).
+
+Note that later RISC OS computers such as the Raspberry Pi use 16-bit sound
+and may use different dma buffer sizes, so in these cases, QTM will maintain
+its own 8-bit 208 bytes*<no. of configured channels> buffer for return by
+this SWI, and will update the contents of this buffer upon every SWI call to
+QTM_DMABuffer. So long as your program calls this SWI just before your
+routines make use of the DMA buffer data (eg. each frame, for osciloscopes),
+you can be sure the data will be up to date, and your routine will work on
+both 8-bit and 16-bit sound computers with no modifications.
+
+The address returned in R0 will only be accurate if the QTM sound system is
+currently active. To check whether this is the case, use SWI QTM_SoundControl
+to read the sound system state (number of configured channels).
+
+
+
+SWI "QTM_RemoveChannel"                                               &47E4B
+----------------------------------------------------------------------------
+
+On entry: R0 = channel number to remove from song player (1-8)
+
+On exit : R0 = previous state of that channel: 0 = already removed
+                                               1 = QTM channel
+
+Interrupts: IRQ interrupts disabled while QTM sound flags are altered.
+
+V flag set if channel number is out of range
+
+This SWI has the effect of 'removing' the given channel from the QTM player
+routine. This means no samples from the song will be played through this
+channel, although it is still possible to play samples directly, using the
+PlaySample SWIs, or through the Transparent sound system (if active).
+
+While the channel is 'removed', the player will continue to keep up to date
+the effects and sample information, so that when the channel is restored,
+the song will continue as if nothing had happened.
+
+
+
+SWI "QTM_RestoreChannel"                                              &47E4C
+----------------------------------------------------------------------------
+
+On entry: R0 = channel number to restore (1-8)
+
+On exit : R0 = previous state of that channel: 0 = previously removed
+                                               1 = already a QTM channel
+
+V flag set if channel number is out of range
+
+This SWI is used to restore channels previously removed by SWI
+QTM_RemoveChannel.
+
+
+
+SWI "QTM_Stereo"                                                      &47E4D
+----------------------------------------------------------------------------
+
+On entry: R0 = channel number to alter, or 0 for pre-programmed settings
+
+          If R0 = 1-8 then R1 = stereo position -127 (left) to 127 (right)
+                                or -128 to read current position
+          If R0 = 0 then   R1 = 0 - default wide-stereo positions (see below)
+                              = 1 - Amiga full-stereo positions
+                              = 2 - centred (no stereo)
+                              = 3 - full left
+                              = 4 - full right
+                              = 5 - previous QTMv<1.49 medium-stereo default
+
+On exit : R0 is preserved
+
+          If R0 = 1-8 then R1 = previous stereo position
+          If R0 = 0   then R1 is corrupted
+
+This SWI allows the stereo positions for each channel to be altered
+independently, or all together. If R0=1-8 on entry, then R1 must be either a
+valid stereo position (-127 to 127) or -128 to read the previous position.
+If R0=0 on entry, then R1 must be in the range 0-4 (settings described
+above) to alter all the channels to one of these pre-programmed values.
+
+The default v1.49 stereo setting: Channels 1,5 Position: -127 (full left)
+                                  Channels 2,6 Position:  127 (full right)
+                                  Channels 3,7 Position:   79 (mid right)
+                                  Channels 4,8 Position:  -79 (mid left)
+
+Prior to v1.49 QTM defaulted to "medium stereo" (now setting 5):
+Channels 1,5: -79, Channels 2,6: 79, Channels 3,7: 47, Channels 4,8: -47
+
+
+
+SWI "QTM_ReadSongLength"                                              &47E4E
+----------------------------------------------------------------------------
+
+On entry: -
+
+On exit : R0 = number of sequences in the current song (1-128)
+          R1 = number of patterns in the current song
+
+V flag set if no song is loaded
+
+This SWI allows you to read the number of sequences and patterns in the
+current song.
+
+
+
+SWI "QTM_ReadSequenceTable"                                           &47E4F
+----------------------------------------------------------------------------
+
+On entry: R0 = sequence position to read (0-127)
+
+On exit : R0 = pattern number stored at that position
+
+V flag set if no song is loaded or if sequence number is larger than the
+song's maximum sequence position.
+
+This SWI enables you to read the pattern to be played at a given position in
+the current song's sequence table.
+
+
+
+SWI "QTM_VUBarControl"                                                &47E50
+----------------------------------------------------------------------------
+
+On entry: R0 = 0 to switch the VU bar controllers off
+             = 1 to set the VU bar controller to use 'fake' VU bars
+             = 2 to set the VU bar controller to use 'effect' VU bars
+             = 3 to set the VU bar controller to use 'real' VU bars
+             = -1 to read current setting
+          R1 = new VU gravity, or -1 to read
+
+On exit : R0 = previous VU controller state
+          R1 = previous VU bar gravity
+
+This SWI allows control of the highly accurate VU bar routine contained in
+the QTM module. The default settings for the VU bar routine are: gravity = 2
+(lines per VSync) and the VU bar controller off.
+
+
+
+SWI "QTM_ReadVULevels"                                                &47E51
+----------------------------------------------------------------------------
+
+On entry: R0 = Channel number (1-8)
+           or = 0 to read channels 1-4 (see below)
+           or = &80 to read channels 1-8 (see below)
+
+On exit : If R0 = 1-8 on entry, then R0 = VU bar height for the channel
+                                          specified in R0 (0-64)
+          If R0 = 0 on entry, then   R0 = word containing 1 byte per channel
+                                          of channels 1-4 VU bar heights
+                                          (4 bytes, 0-64 each byte)
+          If R0 = &80 on entry, then R0 = word containing 1 byte per channel
+                                          of channels 1-4 VU bar levels
+                                 and R1 = as R0, only for channels 5-8
+
+This SWI lets you read the current VU levels of the QTM VU bar handler. This
+call should only be used if the VU bar handler has been enabled using SWI
+QTM_VUBarControl.
+
+
+
+SWI "QTM_ReadSampleTable"                                             &47E52
+----------------------------------------------------------------------------
+
+On entry: R0 = sample number (1-64)
+
+On exit : R0 = pointer to 22 byte block (not terminated) containing sample
+               name (or a 0 byte, if no sample name)
+          R1 = sample length (in bytes)
+          R2 = repeat offset (bytes from start of sample)
+          R3 = repeat length (in bytes)
+          R4 = default volume (0-64)
+          R5 = fine tuning value (-8 to +7)
+          R6 = address of raw sample data (logarithmic format)
+
+V flag set if sample number is out of the range 1-64 or song not loaded
+
+This SWI allows you to read information from the QTM sample table, which
+contains up to 64 samples. Non-existent samples will return zero in R1-R6,
+and R0 will point to a 0 byte.
+
+Note: Because only samples 1-31 are used by songs, samples 32-64 can be used
+for sound effects (in games etc.) and can be registered separately, using
+SWI QTM_RegisterSample.
+
+
+
+SWI "QTM_ReadSpeed"                                                   &47E53
+----------------------------------------------------------------------------
+
+On entry: -
+
+On exit : R0 = current song speed (00-31)
+          R1 = current song CIA tempo setting (32-255)
+          R2 = speed counter value (01-speed)
+
+V flag set if no song is loaded
+
+This SWI returns information on the current speed, tempo and counter values
+of the current song. The speed value (R0) is the number of times the song
+controller has to be called, before it plays the next note, the default is 6
+times. If a speed of 0 is returned, the song is not playing.
+
+The CIA tempo setting controls how fast the song controller is called. The
+default is 50 times a second, tempo 125. (The name CIA tempo comes from
+Complex Interface Adaptor, which was used on the Amiga to control
+ProTracker's interrupt speed.)
+
+The speed counter (R2) varies from 1 to the current speed (R0). It is
+decremented once every time the song controller is called, until it reaches
+0, when the next note is played and the counter is reset to the speed.
+
+
+
+SWI "QTM_PlaySample"                                                  &47E54
+----------------------------------------------------------------------------
+
+On entry: R0 = channel number (1-8) or -1 for automatic
+          R1 = sample number  (0,1-64)
+                            - if sample is 0, then the channel is cleared
+          R2 = note and flags (note in bits 0-27, flags in bits 28-31):
+                If bits 28-31 = 0, use 3-octave notes or Amiga periods
+                   bits  0-27    = 1 to 36, 1='C-1', 2='C#1'... 36='B-3'
+                              or = 37 to 1999 use Amiga period values
+
+                If bits 28-31 = 1, use extended 6-octave note values
+                   bits  0-27 = 1 to 72, 1='C-0', 2='C#0'... 72='B-5'
+          R3 = linear volume  (0-64)
+
+          If R0=-1, R4 = 0    }_ When using R0=-1, R4 and R5 must be set as
+                    R5 = 255  }  shown here for future compatibility!
+
+On exit : If R0=-1 on entry, R0=channel used (1-8) or -1 if sample was not
+                                played due all channels currently in use.
+                   else R0 preserved
+          R1-R5 preserved
+
+V flag set if any of the registers contain illegal values.
+
+This SWI allows you to play any of the 64 samples held in the QTM sample
+table on any of the 4 or 8 available channels. A sample can be played at any
+time, including while a song is playing, although the sample may be cut
+short if the song is playing.
+
+However if R0=-1, the automatic channel finding system is used. This does not
+need a channel specified in R0, but instead searches for a free channel (with
+no music or samples playing through it) and plays the new sample through that
+channel, returning the channel number in R0. **Note** R4 and R5 should be set
+as shown above when R0=-1, this is to enable your program to work with the
+next version of QTM - which will use R4 and R5 for further information. (R4
+and R5 remain unused and unaltered if you are using R0=1-8.)
+
+Playing a non-existent sample will result in nothing being played. The
+samples above 31 can be used after they are registered, using SWI
+QTM_RegisterSample.
+
+This SWI will also start up the QTM sound system if it is called while the
+song is stopped or paused, though it will not switch the system off after
+the sample finishes, use SWI QTM_SoundControl to do this.
+
+See file 'NoteFormat' for more information on the 6-octave 72 note format.
+
+
+
+SWI "QTM_SongStatus"                                                  &47E55
+----------------------------------------------------------------------------
+
+On entry: -
+
+On exit : R0 = song status flags:  set              clear
+                                   |                |
+                           bit 0 = song loaded      no song loaded
+                               1 = loaded to RMA    user address load
+                               2 = song playing     song stopped/paused
+                               3 = using 6 octaves  using 3 octaves
+                               4 = song has looped  not yet looped (v1.49)
+
+No error is generated if there is no song loaded.
+
+This SWI allows you to read the current status of the QTM song controller.
+
+As of v1.49, you can repeatedly check bit 4 to determine if the song has
+reached the end and either looped round (bit 2 set), or stopped (bit 2
+clear). This makes implementing a play list or "Juke box" easier. Also see
+SWI QTM_MusicOptions to control whether the song stops or loops at the end.
+
+
+
+SWI "QTM_ReadPlayingTime"                                             &47E56
+----------------------------------------------------------------------------
+
+On entry: R0 = -1 to return times in centiseconds, or any other vlaue to
+                  return times in seconds
+
+On exit : R0 = total playing time so far (centiseconds or seconds)
+          R1 = time since last SWI QTM_Start (centiseconds or seconds)
+          R2 = total playing time of the whole song (centiseconds or seconds)
+
+V flag set if no song is loaded
+
+This SWI allows you to read the two QTM song timers and the total time of
+the current song. The contents of R0 and R1 on exit are calculated from the
+internal 100Hz timer, but the contents of R2 rely on a special 100%
+accurate, song length calculation routine...
+
+The QTM song-time calculator is the first song time calculation routine on
+RISC OS, and the first (only?) routine on any computer which can accurately
+work out times correctly with effects such as CIA tempos, pattern loops and
+pattern delays. The routine works by scanning through all the song's
+patterns, in the correct order, calculating the time of each event as it
+goes, and taking into account any speed, tempo, loop or delay settings that
+may be in use.
+
+When this SWI is called for the first time after loading a song, the total
+length will be worked out using the special routine. On later calls to this
+SWI (while the same song is loaded), the total length will not be
+re-calculated, but the original calculation will used, to save time.
+
+
+
+SWI "QTM_PlayRawSample"                                               &47E57
+----------------------------------------------------------------------------
+
+
+On entry: R0 = channel number (1-8) or -1 for automatic (new in QTM v1.28)
+          R1 = sample address (logarithmic sample data)
+                            - if address is 0, the channel is silenced
+          R2 = sample length  (in bytes)
+          R3 = repeat offset  (bytes from start of sample)
+          R4 = repeat length  (in bytes)
+          R5 = note and flags (note in bits 0-27, flags in bits 28-31):
+                If bits 28-31 = 0, use 3-octave notes or Amiga periods
+                   bits  0-27    = 1 to 36, 1='C-1', 2='C#1'... 36='B-3'
+                              or = 37 to 1999 use Amiga period values
+
+                If bits 28-31 = 1, use extended 6-octave note values
+                   bits  0-27 = 1 to 72, 1='C-0', 2='C#0'... 72='B-5'
+          R6 = linear volume  (0-64)
+
+          If R0=-1, R7 = 0    }_ When using R0=-1, R7 and R8 must be set as
+                    R8 = 255  }  shown here for future compatibility!
+
+On exit : If R0=-1 on entry, R0=channel used (1-8) or -1 if sample was not
+                                played due all channels currently in use.
+                   else R0 preserved
+          R1-R8 preserved
+
+V flags set if the contents of the registers contain illegal values.
+
+This SWI allows you to play a sample stored in any area of memory. The
+sample should be in 8-bit logarithmic format.
+
+If R0=-1, the automatic channel finding system is used. This does not
+need a channel specified in R0, but instead searches for a free channel (with
+no music or samples playing through it) and plays the new sample through that
+channel, returning the channel number in R0. **Note** R7 and R8 should be set
+as shown above when R0=-1, this is to enable your program to work with the
+next version of QTM - which will use R7 and R8 for further information. (R7
+and R8 remain unused and unaltered if you are using R0=1-8.)
+
+This SWI will also start up the QTM sound system if it is called while the
+song is stopped or paused, though it will not switch the system off after
+the sample finishes, use SWI QTM_SoundControl to do this.
+
+See file 'NoteFormat' for more information on the 6-octave 72 note format.
+
+
+
+SWI "QTM_SoundControl"                                                &47E58
+----------------------------------------------------------------------------
+
+On entry: R0 = number of channels to use (4, 8 or 0 to shutdown) -1 to read
+          R1 = new sound system flags (or -1 to read):
+
+              Bit  Set                                     Clear
+              0    Transparent sound system ON             TSS OFF
+              1    Play 4-channel music on channels 5-8    Channels 1-4
+              2    Retain QTM sound after Pause/Stop/Clear Disable QTM sound
+
+          R2 = reserved, must be -1
+
+On exit : R0 = previous number of channels (0 if sound system was off)
+          R1 = previous sound system flags
+          R2 = corrupted
+
+V flag set if illegal values are passed to QTM.
+
+This SWI allows control over the QTM sound DMA handler.
+
+The QTM sound system switches on automatically when a song or a sample is
+played, but can also be switched on manually using this SWI, specifying 4 or
+8 channels. Note: This sets the 'default' number of channels, so even after
+the sound system is next shut down, QTM will continue to use the number of
+channels specified whenever a song or sample causes the sound system to
+start up again.
+
+If 0 channels are specified, the QTM sound system is shut down. If a song
+was playing at that time, the music handlers and position counters will
+continue to move through the song, although no sound will be heard from QTM.
+
+Details of the Transparent Sound System can be found in the 'Technical' help
+file, but basically it allows joint control over the sound channels, by QTM
+and either the RISC OS sound handler (default) or any other RISC OS
+compatible sound channel handler. Switching the Transparent Sound System on
+(setting bit 1 in R1) will allow you to hear any RISC OS voice module sounds
+AS WELL as any QTM samples. For example, in its default state, the
+Transparent Sound System will allow you to hear the system 'beep', while a
+song or sample is being played through QTM.
+
+TSS is enabled by default on RISC OS 5 computers (otherwise switched off by
+default). Also use '*command' *QTMTransparent [On|Off] to switch on/off TSS.
+
+Bit 2 Controls what QTM does with the it's sound DMA channel handler when a
+Pause/Stop/Clear (SWI or *Command) is used. The default is for QTM to remove
+it's sound DMA handler, returning sound control to RISC OS - allowing all
+RISC OS sounds to function. However, sometimes the user will not want to do
+this, or it may be inefficient to release QTM (eg. if the user plans to
+immediately play another track or sample). By setting Bit 2 of the sound
+system flags, QTM will retain its sound DMA handler after a Pause/Stop/Clear,
+so that the user can continue to play samples or start another music track
+with QTM, without QTM having to immediately claim back the sound handler from
+RISC OS. This function could be particularly useful in timed graphics demos,
+music discs and music editors using QTM, where the time taken to release and
+reclaim sound handler may be noticable. 
+
+Note: If you set Bit 2 of sound system flags in your programme, you should
+clear the bit once your programme ends or no longer needs QTM to retain
+control of the sound handler. You should then return QTM sound handler to its
+previous state (usually released) by issuing a QTM Pause/Stop/Clear after
+clearing Bit 2 of sound system flags, or issuing a QTM_SoundControl with R0=0
+(and R1, R2 set appropriately).
+
+Change with R2 in v1.49: Previously QTM v1.22-v1.48 allowed replacement of
+the channel handler called by QTM's TSS while QTM was running - however
+function this was removed in v1.49, because it is not necessary. Advanced
+users who want a different channel handler to be used with TSS just need to
+register their channel handler with RISC OS (Sound_Configure) before enabling
+QTM's TSS. This allows, for example, QTM to be used along with a specially
+written sound effects generator for games or demos. The channel handler must
+be set up with RISC OS before QTM's sound is enabled or while it is stopped
+(eg. before playing a track, or after switching QTM off with QTM Pause/Stop
+or QTM_SoundControl, R0=0) and the RISC OS channel handler must only be
+removed/deregistered from RISC OS after QTM sound has been disabled again.
+
+
+SWI "QTM_SWITableAddress"                                             &47E59
+----------------------------------------------------------------------------
+
+On entry: -
+
+On exit : R0 = address of QTM's internal SWI jump table
+
+This SWI returns the address of QTM's SWI jump table, so that user programs
+can call directly any QTM SWI, without going through the RISC OS SWI handler.
+
+To call a QTM SWI via this address, the registers should be set up as
+required by the SWI, and the SWI number minus &47E40 should be placed in
+R11. The SWI can then be executed by branching to this SWI table address.
+
+Note: all QTM SWIs can be called this way, from any PSR mode, although if
+the QTM sound system is active, SWI QTM_RemoveChannel should be called from
+a non-User mode, to allow disabling of interrupts.
+
+
+
+SWI "QTM_RegisterSample"                                              &47E5A
+----------------------------------------------------------------------------
+
+On entry: R0 = sample number to register as (1-64) (see notes below)
+          R1 = sample address (of logarithmic sample data)
+               or 0 to blank the sample information
+          If R1 <> 0 then
+             R2 = sample length   (in bytes)
+             R3 = repeat offset   (bytes from start of sample, or 0)
+             R4 = repeat length   (or 0)
+             R5 = default volume  (0-64)
+             R6 = fine tune value (-8 to +7)
+
+On exit : R0-R6 preserved
+
+This SWI allows a program to register a sample loaded into it's own memory,
+as a QTM sample. The above information will be entered into QTM's 64 slot
+sample table and will allow the user program to play the sample using SWI
+QTM_PlaySample. If the sample number is <=31, the current song will use this
+sample rather than its default sample.
+
+It is good practice for non-desktop users of this call to blank their
+registered samples when returning to the desktop, by calling this SWI with
+R1=0.
+
+Note: All samples in the range 1-31 are re-set when a new song is loaded, to
+allow space for the new song's own samples. If you are using this range for
+sound effects etc. you must re-register all required samples after every
+song load.
+
+
+
+SWI "QTM_SetSpeed"                                                    &47E5B
+----------------------------------------------------------------------------
+
+On entry: R0 = new song speed (01-31) or œtempo (32-255)
+               (speed (beats per note), fast 01-31  v. slow, default 06)
+               (tempo (beat frequency), slow 32-255 v. fast, default 125)
+
+On exit : R0 preserved
+
+V flag set if no song loaded or the new speed/tempo is out of range.
+
+This SWI provides user control over the speed of the currently playing song.
+This command has the same effect (and takes the same parameters) as the
+speed-change 'F' effect as used in ProTracker compatible songs. The only
+difference being that a value of 0 will NOT stop the song, use SWI QTM_Stop
+to do this.
+
+After using this SWI, the song speed will remain at the new value until an
+'F' effect is played, or the song is stopped. Note: if the 'F' effect is
+disabled, using SWI QTM_EffectControl, the song will play at the new speed
+until it is stopped, or 'F' effects are enabled again.
+
+The current speed and tempo can be read using SWI QTM_ReadSpeed.
+
+œ The tempo setting is affected by bit 0 of the music options word. If this
+bit is clear the tempo value is as described above. If it is set, the value
+32-255 affects the speed (as 01-31 above), NOT the tempo of the song. See SWI
+QTM_MusicOptions for more information.
+
+
+
+SWI "QTM_MusicVolume"                                                 &47E5C
+----------------------------------------------------------------------------
+
+On entry: R0 = new music volume scaler (0-64) or -1 to read music volume
+
+On exit : R0 = previous music volume (0-64)
+
+V flag set if volume is out of range
+
+This SWI allows you set the overall music output volume from the QTM sound
+handlers. The volume is in a linear form (0-64), as used for sample volumes
+in ProTracker songs. Gradual music fades, independently from sound effects,
+can be generated using this SWI.
+
+
+
+SWI "QTM_SampleVolume"                                                &47E5D
+----------------------------------------------------------------------------
+
+On entry: R0 = new sample volume scaler (0-64) or -1 to read sample volume
+
+On exit : R0 = previous sample volume (0-64)
+
+V flag set if volume is out of range
+
+This SWI allows you set the overall output volume from samples played using
+either SWIs QTM_PlaySample or QTM_PlayRawSample. The volume is in a linear
+form (0-64), as used for sample volumes in ProTracker songs. Gradual sound
+effects fades are possible using this SWI.
+
+
+
+SWI "QTM_MusicOptions"                                                &47E5E
+----------------------------------------------------------------------------
+
+On entry: R0=bit mask of options to change
+          R1=new value of options word
+
+  Options word is: 
+
+  bit  option                         set               clear
+  |    |                              |                 |
+  0    song speed setting control     50Hz timing       use tempos
+  1    action when a song ends        stop the song     restart song
+  2    action of effect F-00          ignore            stop the song
+  3    tremelo action for M.K. mods   don't reset vol   reset vol each event
+
+  Other bits reserved and should be clear, default all bits clear.
+
+
+On exit : R0 preserved
+          R1 = R0 AND entry value of R1
+          R2 = old value of options word
+          R3 = new value of options word
+
+*Note in QTM v1.46a, bit3 controlled action on SWI QTM_Pause/Stop/Clear, this
+function has now moved to QTM sound flags bit2, see SWI QTM_SoundControl.
+
+Bit 0 controls the speed/tempo effects used in QTM. The default is to use the
+newer style 'cia' tempo effects, where a speed setting above 31 (&1F) is
+treated as a tempo value that is used in songs to 'fine-tune' the speed of
+the music. If bit 0 of the options word is set, instead of using the tempo
+method, QTM uses the much older 50Hz timing method in which all speed values
+encountered are taken to be the number of 50ths of a second between notes,
+this can occasionally be useful when replaying older soundtracker and
+noisetracker songs, although most work using the new tempo method.
+
+Bit 1 of the options word controls the action of QTM when a song ends. The
+default action is to restart the song (leaving any playing samples still
+going), but if bit 1 is set QTM will stop playing when the song ends. This
+does NOT affect songs that repeat automatically by jumping to an earlier
+sequence position, to stop these you must use a MusicInterrupt_SongEnded, see
+below, to trap auto-repeating songs.
+
+Bit 2 controls weather the effect F-00 will stop the song being played
+(default) or just be ignored.
+
+Bit 3 controls whether the play routine resets the output DMA volume for all
+channels at each new event row (even if no new note is played) for ProTracker
+"M.K." 4 channel music modules. The popular Amiga ProTracker 2.3D editor does
+reset volume like this, however the ProTracker 2.3A play routine and many
+other editors do not reset volume. So QTM v1.49 defaults to reseting volume
+like this *only when playing ProTracker 4-channel "M.K." music modules*
+(because it is likely the majority of these originated from Amiga ProTracker
+2.3D). For other music module types, QTM does not reset volume like this.
+
+
+
+SWI "QTM_MusicInterrupt"                                              &47E5F
+----------------------------------------------------------------------------
+
+On entry: R0=0
+          R1=address of music interrupt handler or 0 to cancel
+             use R1=-1 to read current value (there is only one claimant)
+          R2=value of R12 on entry to interrupt, ignored if R1=0 or R1=-1
+
+On exit : R0 preserved
+          R1=previous address (0 if none)
+          R2=previous R12 value
+
+
+This SWI sets up an address of a routine to be called by QTM when various
+events, such as the song ending and repeating, occur. For details of the
+events triggering this interrupt see the help file 'MusicInts'.
+
+The address in R1 is called in IRQ mode, with interrupts disabled.
+
+On entry to the interrupt routine:
+
+  R0=interrupt number (see help file 'MusicInts')
+  R12=value of R2 when interrupt claimed
+
+Exit from the interrupt using MOVS PC,R14 or equivalent.
+
+
+Important: There can only be one claimant of the interrupt and so the
+following rules should be used to ensure there is no problem with the
+claiming and releasing the music interrupt.
+
+
+1) Non-desktop tasks (inc. those with a desktop front that does not need to
+use the interrupt), only claim the interrupt after the program has taken over
+the computer (left the desktop) and keep a copy of the previous owner's
+address and R12 value. When returning to the desktop restore the interrupt to
+the previous owner.
+
+2) Desktop tasks, claim the interrupt when required - (the address of your
+routine must be in always paged-in memory, such as the module area) there is
+no need to keep a copy of the previous owner, as the previous owner could
+have exited before your program restores the interrupt - there is no way of
+checking this. Before releasing the interrupt read the current interrupt
+owner, if it is not your program someone else has claimed it, leave it alone
+and exit as normal, otherwise cancel the interrupt (R1=0) then exit.
+
+NEVER pass the interrupt on to the previous owner by calling the previous
+address from your routine! - If the previous owner is a desktop task it may
+have exited, which could cause the computer to crash on the next interrupt.
+
+
+
+SWI "QTM_ReadChannelData"                                             &47E60
+----------------------------------------------------------------------------
+
+On entry: R0=channel (1-8)
+
+On exit:  R0 preserved
+          R1=current Amiga period value (incl. finetune, pitch slide, etc.)
+          R2=current (unscaled) linear volume
+          R3=last played note number (0, 1-72)
+          R4=last sample number 0-64
+          R5=current effect number
+          R6=current effect data
+
+R1 and R2 both return 0 if the sample has finished playing
+
+This SWI returns information about the current active music channels.
+
+If R3=0 and R4=0, the note has finished playing and the channel is quiet.
+
+Note: this SWI now returns the currently playing note in 6-octave (72 note)
+format. The 72 note format starts one octave (12 notes) lower than the
+ProTracker 36 note format, so to convert this into 3-octave (36 note) format,
+if R3>0, subtract 12 then limit anything <1 to 1, and anythig >36 to 36.
+
+
+
+SWI "QTM_ReadNoteWord"                                                &47E61
+----------------------------------------------------------------------------
+
+On entry: R0=pattern number (0-127) [as returned from QTM_ReadSequenceTable]
+          R1=event position (0-63) [as returned from QTM_Pos]
+          R2=channel number (1-8)
+
+On exit:  R0-R2 preserved
+          R3=note number (0 if no note, or 1-72 if note present)
+          R4=sample unmber (0 if no sample, or 1-31)
+          R5=effect number (0-15)
+          R6=effect data (0-255)
+
+V set if no song loaded or if channel, pattern or event number are out of
+range for the current song.
+
+This SWI enables you to read the decoded note/sample/effect information at a
+specific point in a given pattern. Using this SWI, a simple tracker display
+can easily be implemented.
+
+
+
+SWI "QTM_DMAHandler"                                                  &47E62
+----------------------------------------------------------------------------
+
+New for v1.49 - returns QTM's DMA Handler address in R0, for use by RasterMan
+module.

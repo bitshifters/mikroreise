@@ -1,0 +1,5 @@
+compile.txt
+loader.txt
+build/
+\!Verse/
+*.pyc
