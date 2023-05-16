@@ -1,6 +1,7 @@
 ; ============================================================================
-; Plot routines
+; Plot routines (OLD)
 ; Spans, lines, polygons
+; As of 9/5/23 consider these deprecated and slow!
 ; ============================================================================
 
 .equ _UNROLL_SPAN, 1
@@ -287,67 +288,6 @@ plot_polygon_y0:
 	.long 0
 plot_polygon_colour:
 	.long 0
-
-; R0=startx, R1=starty, R2=endx, R3=endy, R4=colour, R12=screen_addr
-; Trashes r5, r6, r7, r8, r9, r10, r11
-drawline:
-	str lr, [sp, #-4]!			; push lr on stack
-
-	subs r5, r2, r0				; r5 = dx = endx - startx
-	rsblt r5, r5, #0			; r5 = abs(dx)
-
-	cmp r0,r2					; startx < endx?
-	movlt r7, #1				; r7 = sx = 1
-	movge r7, #-1				; r7 = sx = -1
-
-	subs r6, r3, r1				; r6 = dy = endy - starty
-	rsblt r6, r6, #0			; r6 = abs(dy)
-	rsb r6, r6, #0				; r6 = -abs(dy)
-
-	cmp r1, r3					; starty < endy?
-	movlt r8, #1				; r8 = sy = 1
-	movge r8, #-1				; r8 = sy = -1
-
-	add r9, r5, r6				; r9 = dx + dy = err
-
-.1:
-	cmp r0, r2					; x0 == x1?
-	cmpeq r1, r3				; y0 == y1?
-	ldreq pc, [sp], #4			; rts
-
-	; there will be faster line plot algorithms by keeping track of
-	; screen pointer then flushing a byte or word when moving to next row
-	bl plot_pixel
-
-	mov r10, r9, lsl #1			; r10 = err * 2
-	cmp r10, r6					; e2 >= dy?
-	addge r9, r9, r6			; err += dy
-	addge r0, r0, r7			; x0 += sx
-
-	cmp r10, r5					; e2 <= dx?
-	addle r9, r9, r5			; err += dx
-	addle r1, r1, r8			; y0 += sy
-
-	b .1
-
-; R0=x, R1=y, R4=colour, R12=screen_addr, trashes r10, r11
-plot_pixel:
-	; ptr = screen_addr + starty * screen_stride + startx DIV 2
-	add r10, r12, r1, lsl #7	; r10 = screen_addr + starty * 128
-	add r10, r10, r1, lsl #5	; r10 += starty * 32 = starty * 160
-	add r10, r10, r0, lsr #1	; r10 += startx DIV 2
-
-	ldrb r11, [r10]				; load screen byte
-
-	tst r0, #1					; odd or even pixel?
-	andeq r11, r11, #0xF0		; mask out left hand pixel
-	orreq r11, r11, r4			; mask in colour as left hand pixel
-
-	andne r11, r11, #0x0F		; mask out right hand pixel
-	orrne r11, r11, r4, lsl #4	; mask in colour as right hand pixel
-
-	strb r11, [r10]				; store screen byte
-	mov pc, lr
 
 ; One pixel:
 short_pixel_1:

@@ -1,3 +1,8 @@
+; ============================================================================
+; RISCOS defines.
+; TODO: Tidy this up into sections and make more comprehensive.
+; ============================================================================
+
 .equ OS_WriteC, 0
 .equ OS_WriteO, 2
 .equ OS_WriteN, 0x46

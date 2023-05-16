@@ -2,6 +2,8 @@
 ; Vector routines.
 ; ============================================================================
 
+; TODO: Add batch vector direct rotate code from arc-django-2. 
+
 .equ VECTOR3_SIZE, 3*4
 
 .macro VECTOR3 x, y, z

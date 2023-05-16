@@ -1,5 +1,6 @@
 ; ============================================================================
 ; Sine and cosine functions.
+; TODO: Add run-time sinus table generation routine from Rose.
 ; ============================================================================
 
 .equ SINUS_TABLE_BITS, 13

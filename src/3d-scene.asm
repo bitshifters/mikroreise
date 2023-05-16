@@ -405,7 +405,7 @@ draw_3d_scene:
     add r4, r9, #1              ; colour index.
     cmp r4, #4
     subge r4, r4, #3            ; [1-3]
-    bl polygon_plot_quad
+    bl polygon_plot_quad_indexed
     ldmfd sp!, {r9,r11,r12}
 
     .3:

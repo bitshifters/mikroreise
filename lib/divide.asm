@@ -30,9 +30,10 @@
 .equ Reciprocal_m, 9            ; Max value = 1<<m
 .equ Reciprocal_s, Reciprocal_t-Reciprocal_m    ; Table is (1<<16+s)/(x<<s)
 
-
+.if _USE_RECIPROCAL_TABLE
 reciprocal_table_p:
     .long reciprocal_table_no_adr
+.endif
 
 ; Divide R0 by R1
 ; Parameters:

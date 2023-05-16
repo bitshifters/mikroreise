@@ -54,6 +54,9 @@ debug_write_fp:
     swi OS_WriteC
     ldmfd sp!, {r1, r2}
     mov pc, lr
+
+debug_string:
+    .skip 16
 .endif
 
 .macro FLOAT_TO_FP value
@@ -66,11 +69,23 @@ debug_write_fp:
 .include "lib/vector.asm"
 .include "lib/matrix.asm"
 .include "lib/divide.asm"
+.if _INCLUDE_LINE
+.include "lib/line.asm"
+.endif
 .include "lib/polygon.asm"
+.if _INCLUDE_TRIANGLE
+.include "lib/triangle.asm"
+.endif
 .if _INCLUDE_SQRT
 .include "lib/sqrt.asm"
 .endif
-.if _INCLUDE_SPAN_GEN
+.if Screen_Mode==0
+.include "lib/mode0.asm"
+.endif
+.if Screen_Mode==13
+.include "lib/mode13.asm"
+.endif
+.if _INCLUDE_SPAN_GEN && Screen_Mode==9
 .include "lib/span_gen.asm"
 .endif
 

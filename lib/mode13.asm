@@ -1,7 +1,8 @@
 ; ============================================================================
-; Fast MODE 9 span plot routines.
+; Fast MODE 13 span plot routines.
 ; Code generated at runtime.
-; Kindly provided by Progen (Sarah Walker).
+; Adapted from code kindly provided by Progen (Sarah Walker).
+; TODO: Reduce duplicated code.
 ; ============================================================================
 
 gen_code_pointers_p:
@@ -24,46 +25,29 @@ gen_code_pointers_p:
 ; r13 = not used
 ; r14 = link address
 
-; screen=abcdefgh
-; colour=iiiiiiii
+;        pixel order	byte order in word
+;        v				v
+; screen=abcd			dcba
+; colour=ijkl			lkji
 
 gen_first_word_1:
 	LDR r3, [r10]
-	AND r3, r3, #0xf
-	ORR r3, r3, r9, LSL #4		; iiiiiiih
+	AND r3, r3, #0xff			; 000a
+	bic r6, r9, #0xff			; lkj0
+	ORR r3, r3, r6				; lkja => ajkl
 	STR r3, [r10], #4
 gen_first_word_2:
 	LDR r3, [r10]
-	AND r3, r3, #0xff
-	ORR r3, r3, r9, LSL #8		; iiiiiigh
+	mov r3, r3, lsl #16			; ba00
+	mov r3, r3, lsr #16			; 00ba
+	mov r6, r9, lsr #16			; 00lk
+	ORR r3, r3, r6, lsl #16		; lkba => abkl
 	STR r3, [r10], #4
 gen_first_word_3:
 	LDR r3, [r10]
-	MOV r3, r3, LSL #20
-	MOV r3, r3, LSR #20
-	ORR r3, r3, r9, LSL #12		; iiiiifgh
-	STR r3, [r10], #4
-gen_first_word_4:
-	LDR r3, [r10]
-	MOV r3, r3, LSL #16
-	MOV r3, r3, LSR #16
-	ORR r3, r3, r9, LSL #16		; iiiiefgh
-	STR r3, [r10], #4
-gen_first_word_5:
-	LDR r3, [r10]
-	MOV r3, r3, LSL #12
-	MOV r3, r3, LSR #12
-	ORR r3, r3, r9, LSL #20		; iiidefgh
-	STR r3, [r10], #4
-gen_first_word_6:
-	LDR r3, [r10]
-	BIC r3, r3, #0xff000000
-	ORR r3, r3, r9, LSL #24		; iicdefgh
-	STR r3, [r10], #4
-gen_first_word_7:
-	LDR r3, [r10]
-	BIC r3, r3, #0xf0000000
-	ORR r3, r3, r9, LSL #28		; ibcdefgh
+	bic r3, r3, #0xff000000		; 0cba
+	and r6, r9, #0xff000000		; l000
+	orr r3, r3, r6				; lcba => abcl
 	STR r3, [r10], #4
 gen_first_word_over:
 
@@ -72,121 +56,82 @@ gen_first_word_table:
 	.long gen_first_word_1
 	.long gen_first_word_2
 	.long gen_first_word_3
-	.long gen_first_word_4
-	.long gen_first_word_5
-	.long gen_first_word_6
-	.long gen_first_word_7
 	.long gen_first_word_over
 
+;        pixel order	byte order in word
+;        v				v
+; screen=abcd			dcba
+; colour=ijkl			lkji
+
+; R0=first pixel offset; R1=X end (inclusive)
 gen_same_word_0:
-        AND r1, r1, #7
-	MOV r1, r1, LSL #2
-	RSB r1, r1, #28
-	MVN r3, #0
-	MOV r1, r3, LSR r1	; r1=0 => r1=0x0000000f => treats xend as inclusive.
+	; 							  R1=0		 R1=1	 	R1=2	   R1=3
+	; 							  len1       len2    	len3	   len4
+	; 					result =  ibcd		 ijcd		ijkd	   ijkl
+
+	add r1, r1, #1
+    AND r1, r1, #3				; len=(xend+1-0)&3
+	mov r1, r1, lsl #3			; byte shift
+	mov r6, #-1					; R1=0		 R1=1		R1=2	   R1=3
+	mov r6, r6, lsl r1			; 0xffffff00 0xffff0000 0xff000000 0xffffffff
 
 	LDR r3, [r10]
-	BIC r3, r3, r1
-	AND r6, r9, r1
-	ORR r3, r3, r6
+	and r3, r3, r6				; dcb0       dc00       d000	   dcba
+	bic r6, r9, r6				; 000i		 00ji	    0kji	   0000
+	ORR r3, r3, r6				; dcbi=>ibcd dcji=>ijcd dkji=>ijkd dcba=>abcd
 	STR r3, [r10]
 
 gen_same_word_1:
-        AND r1, r1, #7
-	MOV r1, r1, LSL #2
-	RSB r1, r1, #28
-	MVN r3, #0
-	MOV r1, r3, LSR r1
+	; 							  R1=4		 R1=1		R1=2	   R1=3
+	; 	  * doesn't make sense	  len4*    	 len1		len2	   len3
+	; 					result =  ijkl		 ajcd		ajkd	   ajkl
+
+    AND r1, r1, #3				; len=(xend+1-1)&3
+	mov r1, r1, lsl #3			; byte shift
+	mov r6, #-1					; R1=0		 R1=1		R1=2	   R1=3
+	mov r6, r6, lsl r1			; 0xffffffff 0xffffff00 0xffff0000 0xff000000
+	mov r6, r6, ror #24			; 0xffffffff 0xffff00ff 0xff0000ff 0x000000ff ; rol #8
 
 	LDR r3, [r10]
-	BIC r1, r1, #0xf
-	BIC r3, r3, r1
-	AND r6, r9, r1
-	ORR r3, r3, r6
+	and r3, r3, r6				; dcba       dc0a       d00a	   000a
+	bic r6, r9, r6				; 0000       00j0       0kj0	   lkj0
+	orr r3, r3, r6				; dcba=>abcd dcja=>ajcd dkja=>ajkb lkja=>ajkl
 	STR r3, [r10]
 
 gen_same_word_2:
-        AND r1, r1, #7
-	MOV r1, r1, LSL #2
-	RSB r1, r1, #28
-	MVN r3, #0
-	MOV r1, r3, LSR r1
+	; 							  R1=4		 R1=5		R1=2	   R1=3
+	; 	  * doesn't make sense	  len3*    	 len4*    	len1	   len2
+	; 					result =  ibkl		 ijkl		abkd	   abkl
+
+	sub r1, r1, #1
+    AND r1, r1, #3				; len=(xend+1-2)&3
+	mov r1, r1, lsl #3			; byte shift
+	mov r6, #-1					; R1=0		 R1=1		R1=2	   R1=3
+	mov r6, r6, lsl r1			; 0xff000000 0xffffffff 0xffffff00 0xffff0000 
+	mov r6, r6, ror #16			; 0x0000ff00 0xffffffff 0xff00ffff 0x0000ffff ; rol #16
 
 	LDR r3, [r10]
-	BIC r1, r1, #0xff
-	BIC r3, r3, r1
-	AND r6, r9, r1
-	ORR r3, r3, r6
+	and r3, r3, r6				; 00b0       dcba       d0ba	   00ba
+	bic r6, r9, r6				; lk0i       0000       0k00	   lk00
+	orr r3, r3, r6				; lkbi=>ibkl dcba=>abcd dkba=>abkd lkba=>abkl
 	STR r3, [r10]
 
 gen_same_word_3:
-        AND r1, r1, #7
-	MOV r1, r1, LSL #2
-	RSB r1, r1, #28
-	MVN r3, #0
-	MOV r1, r3, LSR r1
+	; 							  R1=4		 R1=5		R1=6	   R1=3
+	; 	  * doesn't make sense	  len2*    	 len3*    	len4*	   len1
+	; 					result =  ibcl		 ijcl		ijkl	   abcl
+
+	sub r1, r1, #2
+    AND r1, r1, #3				; len=(xend+1-3)&3
+	mov r1, r1, lsl #3			; byte shift
+	mov r6, #-1					; R1=0		 R1=1		R1=2	   R1=3
+	mov r6, r6, lsl r1			; 0xffff0000 0xff000000 0xffffffff 0xffffff00 
+	mov r6, r6, ror #8			; 0x00ffff00 0x00ff0000 0xffffffff 0x00ffffff ; rol #24
 
 	LDR r3, [r10]
-	MOV r1, r1, LSR #12
-	BIC r3, r3, r1, LSL #12
-	AND r6, r9, r1, LSL #12
-	ORR r3, r3, r6
-	STR r3, [r10]
-
-gen_same_word_4:
-        AND r1, r1, #7
-	MOV r1, r1, LSL #2
-	RSB r1, r1, #28
-	MVN r3, #0
-	MOV r1, r3, LSR r1
-
-	LDR r3, [r10]
-	MOV r1, r1, LSR #16
-	BIC r3, r3, r1, LSL #16
-	AND r6, r9, r1, LSL #16
-	ORR r3, r3, r6
-	STR r3, [r10]
-
-gen_same_word_5:
-        AND r1, r1, #7
-	MOV r1, r1, LSL #2
-	RSB r1, r1, #28
-	MVN r3, #0
-	MOV r1, r3, LSR r1
-
-	LDR r3, [r10]
-	MOV r1, r1, LSR #20
-	BIC r3, r3, r1, LSL #20
-	AND r6, r9, r1, LSL #20
-	ORR r3, r3, r6
-	STR r3, [r10]
-
-gen_same_word_6:
-        AND r1, r1, #7
-	MOV r1, r1, LSL #2
-	RSB r1, r1, #28
-	MVN r3, #0
-	MOV r1, r3, LSR r1
-
-	LDR r3, [r10]
-	MOV r1, r1, LSR #24
-	BIC r3, r3, r1, LSL #24
-	AND r6, r9, r1, LSL #24
-	ORR r3, r3, r6
-	STR r3, [r10]
-
-gen_same_word_7:
-        AND r1, r1, #7
-	MOV r1, r1, LSL #2
-	RSB r1, r1, #28
-	MVN r3, #0
-	MOV r1, r3, LSR r1
-
-	LDR r3, [r10]
-	MOV r1, r1, LSR #28
-	BIC r3, r3, r1, LSL #28
-	AND r6, r9, r1, LSL #28
-	ORR r3, r3, r6
+	and r3, r3, r6				; 0cb0       0c00       dbca	   0cba
+	bic r6, r9, r6				; l00i       l0ji       0000	   l000
+	orr r3, r3, r6				; lcbi=>ibcl lcji=>ijcl dcba=>abcd lcba=>abcl
 	STR r3, [r10]
 gen_same_word_over:
 
@@ -195,10 +140,6 @@ gen_same_word_table:
 	.long gen_same_word_1
 	.long gen_same_word_2
 	.long gen_same_word_3
-	.long gen_same_word_4
-	.long gen_same_word_5
-	.long gen_same_word_6
-	.long gen_same_word_7
 	.long gen_same_word_over
 
 gen_one_word:
@@ -217,45 +158,27 @@ gen_four_words:
 gen_four_words_end:
 .endif
 
-; screen=abcdefgh
-; colour=iiiiiiii
+;        pixel order	byte order in word
+;        v				v
+; screen=abcd			dcba
+; colour=ijkl			lkji
 
 gen_last_word_0:
 	MOV r0, r0
 gen_last_word_1:
-	LDRB r3, [r10]
-	BIC r3, r3, #0x0f
-	ORR r3, r3, r9, LSR #28		; ih
-	STRB r3, [r10]
+	strb r9, [r10]				; ibcd
 gen_last_word_2:
-	STRB r9, [r10]
+	LDR r3, [r10]
+	MOV r3, r3, LSR #16			; 00dc
+	MOV r3, r3, LSL #16			; dc00
+	mov r6, r9, lsl #16			; ji00
+	ORR r3, r3, r6, LSR #16		; dcji => ijcd
+	STR r3, [r10]
 gen_last_word_3:
 	LDR r3, [r10]
-	MOV r3, r3, LSR #12
-	MOV r3, r3, LSL #12
-	ORR r3, r3, r9, LSR #20		; abcdeiii
-	STR r3, [r10]
-gen_last_word_4:
-	LDR r3, [r10]
-	MOV r3, r3, LSR #16
-	MOV r3, r3, LSL #16
-	ORR r3, r3, r9, LSR #16		; abcdiiii
-	STR r3, [r10]
-gen_last_word_5:
-	LDR r3, [r10]
-	MOV r3, r3, LSR #20
-	MOV r3, r3, LSL #20
-	ORR r3, r3, r9, LSR #12		; abciiiii
-	STR r3, [r10]
-gen_last_word_6:
-	LDR r3, [r10]
-	AND r3, r3, #0xff000000
-	ORR r3, r3, r9, LSR #8		; abiiiiii
-	STR r3, [r10]
-gen_last_word_7:
-	LDR r3, [r10]
-	AND r3, r3, #0xf0000000
-	ORR r3, r3, r9, LSR #4		; aiiiiiii
+	and r3, r3, #0xff000000		; d000
+	bic r6, r9, #0xff000000		; 0kji
+	ORR r3, r3, R6				; dkji => ijkd
 	STR r3, [r10]
 gen_last_word_over:
 
@@ -264,10 +187,6 @@ gen_last_word_table:
 	.long gen_last_word_1
 	.long gen_last_word_2
 	.long gen_last_word_3
-	.long gen_last_word_4
-	.long gen_last_word_5
-	.long gen_last_word_6
-	.long gen_last_word_7
 	.long gen_last_word_over
 
 gen_end_code:
@@ -290,12 +209,12 @@ gen_code:
 
 	LDR r11, gen_code_pointers_p
 	LDR r12, gen_code_start_p
-        MOV r0, #0 ;first pixel offset - 0-7
+        MOV r0, #0 ;first pixel offset - 0-3
 	MOV r1, #1 ;length - 1-320
 
 gen_code_main_loop:
 	CMP r0, #0
-	BNE gen_code_dont_print 		; TODO: Wut?
+	BNE gen_code_dont_print		; TODO: Wut?
 
 gen_code_dont_print:
 	ADD r12, r12, #0xc ;Align to 16 byte boundary
@@ -305,10 +224,10 @@ gen_code_dont_print:
 	MOV r5, #0     ;current pixel
 
 	ADD r2, r0, r1
-	CMP r2, #8     ;Start and end lie in same word?
+	CMP r2, #4     ;Start and end lie in same word?
 	BCC gen_code_same_word
 
-	TST r0, #7
+	TST r0, #3
 	BEQ gen_code_no_offset
 
 	;Copy code to generate first word
@@ -321,34 +240,34 @@ gen_code_first_word_copy:
 	CMP r2, r3
 	BNE gen_code_first_word_copy
 
-	RSB r5, r0, #8
+	RSB r5, r0, #4
 
 gen_code_no_offset:
 
 gen_code_no_offset_loop:
 	SUB r2, r1, r5  ;If less than 8 pixels remaining then jump to last word
-	CMP r2, #8
+	CMP r2, #4
 	BCC gen_code_last_word
 
 .if _SPAN_GEN_MULTI_WORD > 2
-	cmp r2, #32
+	cmp r2, #16
 	blt .1
-	; four words = 32 pixels
+	; four words = 16 pixels
 	adr r3, gen_four_words
 	ldr r4, [r3]
 	str r4, [r12], #4
-	add r5, r5, #32
+	add r5, r5, #16
 	B gen_code_no_offset_loop
 .1:
 .endif
 .if _SPAN_GEN_MULTI_WORD > 1
-	cmp r2, #16
+	cmp r2, #8
 	blt .2
 	; two words = 16 pixels
 	adr r3, gen_two_words
 	ldr r4, [r3]
 	str r4, [r12], #4
-	add r5, r5, #16
+	add r5, r5, #8
 	B gen_code_no_offset_loop
 .2:
 .endif
@@ -360,7 +279,7 @@ gen_code_main_loop_copy:
 	STR r4, [r12], #4
 	CMP r2, r3
 	BNE gen_code_main_loop_copy
-	ADD r5, r5, #8
+	ADD r5, r5, #4
 
 	B gen_code_no_offset_loop
 
@@ -409,7 +328,7 @@ gen_code_end_copy:
 .endif
 
 	ADD r0, r0, #1
-	ANDS r0, r0, #7
+	ANDS r0, r0, #3
 	BNE gen_code_main_loop
 	ADD r1, r1, #1
 	CMP r1, #MAXSPAN
@@ -430,5 +349,48 @@ gen_code_same_word_copy:
 	BNE gen_code_same_word_copy
 
 	B gen_code_complete
+
+; ============================================================================
+
+; R0=colour word.
+; R1=screen base addr.
+; R2=x start
+; R3=x end
+; R4=y line
+mode13_plot_span:
+	mov r9, r0
+	mov r5, r0
+	mov r11, r1
+	mov r6, r2
+	mov r1, r3
+
+	sub r1, r1, #1				; omit last pixel.
+    subs r3, r1, r6             ; width.
+	movmi pc, lr
+
+    str lr, [sp, #-4]!
+
+    ldr r12, gen_code_pointers_p
+
+	add r11, r11, r4, lsl #8
+	add r11, r11, r4, lsl #6
+
+    add r10, r11, r6
+    bic r10, r10, #3
+
+    and r6, r6, #3				; x start offset [0-3] pixel
+    add r6, r6, r3, lsl #2      ; + span length * 4
+
+    adr lr, .2                  ; link address.
+    ; MULTI_WORD uses R2, R4, R5 as well as R9.
+	.if _SPAN_GEN_MULTI_WORD>2
+	mov r2, r9
+	mov r4, r9
+	.endif
+    ldr pc, [r12, r6, lsl #2]   ; jump to plot function.
+    ; Uses R1 (Xend in pixels), R3, R6, R9, R10, R11, R12
+
+    .2:
+    ldr pc, [sp], #4
 
 ; ============================================================================

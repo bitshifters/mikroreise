@@ -1,5 +1,7 @@
 ; ============================================================================
-; Palette Utils
+; Palette Utils (OLD)
+; As of 9/5/23 consider these a bit crusty and slow.
+; Perhaps look at direct VIDC register poking in arc-django-2.
 ; ============================================================================
 
 ; R3 = index
