@@ -205,13 +205,13 @@ gen_one_word:
 	STR r9, [r10], #4
 gen_one_word_end:
 
-.if _SPAN_GEN_MULTI_WORD > 1
+.if LibSpanGen_MultiWord > 1
 gen_two_words:
 	stmia r10!, {r5, r9}
 gen_two_words_end:
 .endif
 
-.if _SPAN_GEN_MULTI_WORD > 2
+.if LibSpanGen_MultiWord > 2
 gen_four_words:
 	stmia r10!, {r2, r4, r5, r9}
 gen_four_words_end:
@@ -330,7 +330,7 @@ gen_code_no_offset_loop:
 	CMP r2, #8
 	BCC gen_code_last_word
 
-.if _SPAN_GEN_MULTI_WORD > 2
+.if LibSpanGen_MultiWord > 2
 	cmp r2, #32
 	blt .1
 	; four words = 32 pixels
@@ -341,7 +341,7 @@ gen_code_no_offset_loop:
 	B gen_code_no_offset_loop
 .1:
 .endif
-.if _SPAN_GEN_MULTI_WORD > 1
+.if LibSpanGen_MultiWord > 1
 	cmp r2, #16
 	blt .2
 	; two words = 16 pixels
@@ -412,7 +412,7 @@ gen_code_end_copy:
 	ANDS r0, r0, #7
 	BNE gen_code_main_loop
 	ADD r1, r1, #1
-	CMP r1, #MAXSPAN
+	CMP r1, #LibSpanGen_MaxSpan
 	BLE gen_code_main_loop
 	LDR pc, [sp], #4
 	; Return R12=RAM top.

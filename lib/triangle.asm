@@ -124,7 +124,7 @@ triangle_plot_bottom_flat:
 
     ; Max Y=v2y.
     ; TODO: Check whether these extra cycles are worth it!
-    .if _SPAN_GEN_MULTI_WORD>1
+    .if LibSpanGen_MultiWord>1
     strb r6, .1             ; SELF-MOD MAX Y!
     .else
     mov r5, r6
@@ -135,7 +135,7 @@ triangle_plot_bottom_flat:
     .if Screen_Mode!=0
     ldr r12, gen_code_pointers_p
     .endif
-    .if _SPAN_GEN_MULTI_WORD>1
+    .if LibSpanGen_MultiWord>1
     mov r5, r9
     .endif
 
@@ -156,7 +156,7 @@ triangle_plot_bottom_flat:
 
     ; Loop from v1y to v2y.
 .1:
-    .if _SPAN_GEN_MULTI_WORD>1
+    .if LibSpanGen_MultiWord>1
     cmp r4, #0                  ; SELF-MOD!
     .else
     cmp r4, r5
@@ -248,7 +248,7 @@ triangle_plot_top_flat:
     movle r7, r8
     movle r8, r3
 
-    .if _SPAN_GEN_MULTI_WORD>1
+    .if LibSpanGen_MultiWord>1
     strb r1, .1                 ; SELF-MOD MAX Y!
     .else
     mov r5, r1
@@ -263,10 +263,10 @@ triangle_plot_top_flat:
     .if Screen_Mode!=0
     ldr r12, gen_code_pointers_p
     .endif
-    .if _SPAN_GEN_MULTI_WORD>1
+    .if LibSpanGen_MultiWord>1
     mov r5, r9
-    .if _SPAN_GEN_MULTI_WORD>2
-    .err "Expected _SPAN_GEN_MULTI_WORD<=2!"    ; and above.
+    .if LibSpanGen_MultiWord>2
+    .err "Expected LibSpanGen_MultiWord<=2!"    ; and above.
     .endif
     .endif
 
@@ -286,7 +286,7 @@ triangle_plot_top_flat:
     ; 2x temp - R3, R6
 
 .1:
-    .if _SPAN_GEN_MULTI_WORD>1
+    .if LibSpanGen_MultiWord>1
     cmp r4, #0                  ; SELF-MOD!
     .else
     cmp r4, r5

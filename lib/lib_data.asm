@@ -6,12 +6,14 @@
 
 ; ============================================================================
 
+.if LibConfig_IncludeSine
 sinus_table_no_adr:
 	.incbin "data/sine_8192.bin"
+.endif
 
 ; ============================================================================
 
-.if _INCLUDE_SQRT
+.if LibConfig_IncludeSqrt
 sqrt_table_no_adr:
 	.incbin "data/sqrt_1024.bin"
 

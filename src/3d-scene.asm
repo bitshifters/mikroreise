@@ -86,9 +86,6 @@ temp_vector_2:
 init_3d_scene:
     str lr, [sp, #-4]!
 
-    adr r2, object_transform
-    bl matrix_make_identity
-
     ldr pc, [sp], #4
 
 ; ============================================================================

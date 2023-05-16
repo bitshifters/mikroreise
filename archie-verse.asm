@@ -29,7 +29,7 @@
 .equ Mode_Bytes, Screen_Stride*Mode_Height
 
 .include "lib/swis.h.asm"
-.include "lib/config.h.asm"
+.include "lib/lib_config.h.asm"
 
 ; ============================================================================
 ; Macros.
@@ -141,7 +141,7 @@ main:
 	bl install_irq_handler
 
 	; EARLY INIT / LOAD STUFF HERE!
-	bl maths_init
+	bl lib_init
 	; R12=top of RAM used.
 	bl init_3d_scene
 	bl scroller_init
@@ -770,12 +770,12 @@ rnd_seed:
 screen_addr:
 	.long 0					; ptr to the current VIDC screen bank being written to.
 
-.include "lib/mode9-palette.asm"
+.include "lib/palette.asm"
 .include "src/scroller.asm"
 .include "src/columns.asm"
 .include "src/logo.asm"
 .include "lib/lz4-decode.asm"
-.include "lib/maths.asm"
+.include "lib/lib_code.asm"
 .include "src/3d-scene.asm"
 
 ; ============================================================================

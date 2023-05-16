@@ -3,8 +3,8 @@
 ; Uses a span buffer.
 ; ============================================================================
 
-.equ _POLYGON_INCLUDE_TRI_PLOT, 0
-.equ _POLYGON_INCLUDE_BATCH_PLOT, 0
+.equ LibPolygon_IncludeTriPlot, 0
+.equ LibPolygon_IncludeBatchPlot, 0
 
 polygon_span_table_p:
     .long polygon_span_table_no_adr
@@ -234,7 +234,7 @@ polygon_rasterise_quad:
     .8:
     ldr pc, [sp], #4
 
-.if _POLYGON_INCLUDE_TRI_PLOT
+.if LibPolygon_IncludeTriPlot
 ; Compute edge list from a quad specified as indices into a projected vertex array.
 ; Parameters:
 ;  R2=ptr to projected vertex array (x,y)
@@ -369,7 +369,7 @@ polygon_rasterise_tri:
 polygon_clip_right_side:
     FLOAT_TO_FP Screen_Width    ; clamp X to this value.
 
-.if _POLYGON_INCLUDE_BATCH_PLOT
+.if LibPolygon_IncludeBatchPlot
 ; Plot a batch of quads.
 ; Parameters:
 ;  R0=number of quads
@@ -434,7 +434,7 @@ polygon_plot_quad_indexed:
     ldr pc, [sp], #4
 
 
-.if _POLYGON_INCLUDE_TRI_PLOT
+.if LibPolygon_IncludeTriPlot
 ; Plot a batch of tris.
 ; Parameters:
 ;  R0=number of quads

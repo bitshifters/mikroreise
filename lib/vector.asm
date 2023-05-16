@@ -2,23 +2,12 @@
 ; Vector routines.
 ; ============================================================================
 
+.equ LibVector_IncludeAddSub, 0
+
 ; TODO: Add batch vector direct rotate code from arc-django-2. 
-
-.equ VECTOR3_SIZE, 3*4
-
-.macro VECTOR3 x, y, z
-    FLOAT_TO_FP \x
-    FLOAT_TO_FP \y
-    FLOAT_TO_FP \z
-.endm
-
-.macro VECTOR3_ZERO
-    VECTOR3 0.0, 0.0, 0.0
-.endm
-
 ; TODO: make_vector?
 
-.if 0   ; UNUSED
+.if LibVector_IncludeAddSub
 ; Vector add.
 ; Parameters:
 ;  R0=ptr to vector C.
@@ -143,7 +132,7 @@ vector_lerp:
     mov pc, lr
 
 
-.if _INCLUDE_SQRT           ; these functions rely on SQRT.
+.if LibConfig_IncludeSqrt           ; these functions rely on SQRT.
 ; Length of vector.
 ; Parameters:
 ;  R1=ptr to vector A.

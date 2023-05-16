@@ -26,11 +26,13 @@
 ; Table is (1<<p+s) / x<<s = 1<<14 / x>>2
 
 
-.equ Reciprocal_t, 16           ; Table entries = 1<<t
-.equ Reciprocal_m, 9            ; Max value = 1<<m
-.equ Reciprocal_s, Reciprocal_t-Reciprocal_m    ; Table is (1<<16+s)/(x<<s)
+.equ LibDivide_Reciprocal_t, 16           ; Table entries = 1<<t
+.equ LibDivide_Reciprocal_m, 9            ; Max value = 1<<m
+.equ LibDivide_Reciprocal_s, LibDivide_Reciprocal_t-LibDivide_Reciprocal_m    ; Table is (1<<16+s)/(x<<s)
 
-.if _USE_RECIPROCAL_TABLE
+.equ LibDivide_ReciprocalTableSize, 1<<LibDivide_Reciprocal_t
+
+.if LibDivide_UseReciprocalTable
 reciprocal_table_p:
     .long reciprocal_table_no_adr
 .endif
@@ -49,8 +51,8 @@ divide:
     cmp r1, #0
     rsbmi r1, r1, #0            ; make positive  
 
-    .if _USE_RECIPROCAL_TABLE
-    mov r1, r1, asr #16-Reciprocal_s    ; [16.6]    (b<<s)
+    .if LibDivide_UseReciprocalTable
+    mov r1, r1, asr #16-LibDivide_Reciprocal_s    ; [16.6]    (b<<s)
 
     .if _DEBUG
     cmp r1,#0                   ; Test for division by zero
@@ -65,7 +67,7 @@ divide:
 
     .if _DEBUG
     ; Limited precision.
-    cmp r1, #1<<Reciprocal_t    ; Test for numerator too large
+    cmp r1, #1<<LibDivide_Reciprocal_t    ; Test for numerator too large
     adrge R0,divrange           ; and flag an error
     swige OS_GenerateError      ; when necessary
     .endif
@@ -74,9 +76,9 @@ divide:
 ;   bic r1, r1, #0xff0000       ; [10.6]    (b<<6)
     ldr r1, [r9, r1, lsl #2]    ; [0.16]    (1<<16+s)/(b<<s) = (1<<16)/b
 
-    mov r0, r0, asr #16-Reciprocal_s    ; [16.6]    (a<<s)
+    mov r0, r0, asr #16-LibDivide_Reciprocal_s    ; [16.6]    (a<<s)
     mul r9, r0, r1                      ; [10.22]   (a<<s)*(1<<16)/b = (a<<16+s)/b
-    mov r9, r9, asr #Reciprocal_s       ; [10.16]   (a<<16)/b = (a/b)<<16
+    mov r9, r9, asr #LibDivide_Reciprocal_s       ; [10.16]   (a<<16)/b = (a/b)<<16
     .else
 
     ; Limited precision.
@@ -132,7 +134,7 @@ divide:
 	.align 4
 	.long 0
 
-.if _USE_RECIPROCAL_TABLE
+.if LibDivide_UseReciprocalTable
 ; Trashes: r0-r2, r8-r9, r12
 MakeReciprocal:
     ldr r12, reciprocal_table_p
@@ -141,7 +143,7 @@ MakeReciprocal:
  
     mov r2, #1
 .4:
-    mov r0, #1<<(16+Reciprocal_s)       ; assumes PRECISION_BITS==16
+    mov r0, #1<<(16+LibDivide_Reciprocal_s)       ; assumes PRECISION_BITS==16
     mov r1, r2
 
     ; Taken from Archimedes Operating System, page 28.
@@ -166,7 +168,7 @@ MakeReciprocal:
 
     str r9, [r12], #4
     add r2, r2, #1
-    cmp r2, #1<<Reciprocal_t
+    cmp r2, #1<<LibDivide_Reciprocal_t
     blt .4
 
     mov pc, lr

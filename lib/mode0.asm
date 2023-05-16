@@ -2,7 +2,6 @@
 ; MODE 0 plot routines (!)
 ; ============================================================================
 
-.if Screen_Mode==0
 ; For compatibility try to map against span_gen.asm registers.
 ; r0 = not used
 ; r1 = X end (in pixels)
@@ -115,6 +114,5 @@ mode0_plot_span:
 
 .4:
     mov pc, lr
-.endif
 
 ; TODO: Maybe generated code for unroll somehow?
