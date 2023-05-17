@@ -17,7 +17,7 @@
 
 .equ VIEWPORT_SCALE,    (Screen_Width /2) * PRECISION_MULTIPLIER
 .equ VIEWPORT_CENTRE_X, 160 * PRECISION_MULTIPLIER
-.equ VIEWPORT_CENTRE_Y, 112 * PRECISION_MULTIPLIER
+.equ VIEWPORT_CENTRE_Y, 90 * PRECISION_MULTIPLIER
 
 ; ============================================================================
 ; Scene data.
@@ -314,7 +314,7 @@ update_3d_scene:
     ; TODO: Finalise mapping of vu levels to scale & rotation deltas.
     and r10, r0, #0xff              ; channel 1 = scale
     mov r1, #MATHS_CONST_1
-    add r1, r1, r10, asl #9         ; scale maps [1, 1.25]
+    add r1, r1, r10, asl #11         ; scale maps [1, 2]
     str r1, object_scale
 
     ; TODO: Make this code more compact?

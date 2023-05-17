@@ -56,10 +56,8 @@
 ; App defines
 ; ============================================================================
 
-.equ MAX_SONGS, 15
-
 .equ VU_Bars_Effect, 1					; 'fake' bars
-.equ VU_Bars_Gravity, 5					; lines per vsync
+.equ VU_Bars_Gravity, 1					; lines per vsync
 
 .equ AutoPlay_Default, 1
 .equ Stereo_Positions, 1		; Amiga (full) stereo positions.
