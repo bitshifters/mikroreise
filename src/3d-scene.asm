@@ -16,8 +16,8 @@
 ; in order to map the viewport onto the entire screen.
 
 .equ VIEWPORT_SCALE,    (Screen_Width /2) * PRECISION_MULTIPLIER
-.equ VIEWPORT_CENTRE_X, 184 * PRECISION_MULTIPLIER
-.equ VIEWPORT_CENTRE_Y, 146 * PRECISION_MULTIPLIER
+.equ VIEWPORT_CENTRE_X, 160 * PRECISION_MULTIPLIER
+.equ VIEWPORT_CENTRE_Y, 112 * PRECISION_MULTIPLIER
 
 ; ============================================================================
 ; Scene data.
@@ -314,7 +314,7 @@ update_3d_scene:
     ; TODO: Finalise mapping of vu levels to scale & rotation deltas.
     and r10, r0, #0xff              ; channel 1 = scale
     mov r1, #MATHS_CONST_1
-    add r1, r1, r10, asl #8         ; scale maps [1, 1.25]
+    add r1, r1, r10, asl #9         ; scale maps [1, 1.25]
     str r1, object_scale
 
     ; TODO: Make this code more compact?
@@ -415,6 +415,9 @@ draw_3d_scene:
 
 
 ; Project world position to screen coordinates.
+; TODO: Try weak perspective model, i.e. a single distance for all vertices in the objects.
+;       Means that we can calculate the reciprocal once (1/z) and use the same value in
+;       all perspective calculations. Suspect this is what most Amiga & ST demos do...
 ;
 ; R2=ptr to camera relative transformed position
 ; Returns:
@@ -516,11 +519,7 @@ transformed_normals:
 
 ; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
 
-; TODO: Decide on how to store these, maybe packed or separate array?
 projected_verts:
     .skip OBJ_MAX_VERTS * 2 * 4
-
-polygon_buffer:
-    .skip OBJ_VERTS_PER_FACE * 2 * 4
 
 ; ============================================================================

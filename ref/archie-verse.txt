@@ -31,10 +31,10 @@ Open questions:
 
 TODO:
 ~~~
-- New repo based on arc-django-2 and perf-test code.
-- Setup 320x180 screen mode - have this from Rose repo.
-	- (what about equivalent to MODE 13?)
-- Add temporary music to set the tone/tempo.
+- New repo based on arc-django-2 and perf-test code. - DONE
+- Setup 320x180 screen mode - have this from Rose repo. - DONE
+	- (what about equivalent to MODE 13?) - DONE
+- Add temporary music to set the tone/tempo. - DONE
 - Create temporary scenes & sequence:
 	1. Group/demo/party.
 	2. 2D effect 1

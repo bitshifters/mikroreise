@@ -66,6 +66,9 @@ lib_init:
 
 ; ============================================================================
 
+; TODO: Proper debug library with fast plot to screen.
+; TODO: Extend Arculator to do fast debug logging to host file.
+
 .if _DEBUG
 ; R0=fp value.
 debug_write_fp:
@@ -80,8 +83,10 @@ debug_write_fp:
     ldmfd sp!, {r1, r2}
     mov pc, lr
 
+.ifndef debug_string
 debug_string:
     .skip 16
+.endif
 .endif
 
 ; ============================================================================

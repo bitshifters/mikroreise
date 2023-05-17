@@ -130,7 +130,7 @@ plot_rounded_column:
     add pc, r1, r10, lsl #3     ; Y*8 = Y * (2 instructions)
 
 .1:
-.rept Screen_Height/32
+.rept (Screen_Height+31)/32
     ; Each 'tooth' is 16 pixels.
     ; Assuming we're starting at parity 0 on line 0:
     stmia r11!, {r2-r3,r8-r9}   ; line 0 = bg + corner + colour + colour

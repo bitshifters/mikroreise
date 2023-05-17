@@ -2,7 +2,7 @@
 ; Scroller
 ; ============================================================================
 
-.equ Scroller_Y_Pos, 230
+.equ Scroller_Y_Pos, 163
 .equ Scroller_Max_Glyphs, 60
 
 .equ Scroller_Glyph_Width, 16
@@ -46,7 +46,7 @@ scroller_font_data_shifted_p:
 	.long scroller_font_data_shifted_no_adr
 
 scroller_font_colour:
-	.long 0xaaaaaaaa
+	.long 0x88888888
 
 scroller_font_shift_table:
 	.skip 8*4

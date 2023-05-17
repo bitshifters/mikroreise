@@ -10,7 +10,7 @@
 ;	8. Ending
 ; ============================================================================
 
-.equ _DEBUG, 0
+.equ _DEBUG, 1
 .equ _DEBUG_RASTERS, (_DEBUG && 1)
 .equ _DEBUG_SHOW, (_DEBUG && 1)
 .equ _CHECK_FRAME_DROP, (!_DEBUG && 1)
@@ -19,10 +19,12 @@
 .equ Sample_Speed_FastCPU, 16		; ideally 16us for ARM250+
 
 .equ Screen_Banks, 3
+.equ Vdu_Mode, 97					; MODE 9 widescreen (320x180)
+									; or 96 for MODE 13 widescreen (320x180)
 .equ Screen_Mode, 9
 .equ Screen_Width, 320
-.equ Screen_Height, 256
-.equ Mode_Height, 256
+.equ Screen_Height, 180
+.equ Mode_Height, 180
 .equ Screen_PixelsPerByte, 2
 .equ Screen_Stride, Screen_Width/Screen_PixelsPerByte
 .equ Screen_Bytes, Screen_Stride*Screen_Height
@@ -115,7 +117,7 @@ main:
 	SWI OS_ChangeDynamicArea
 	MOV r0, #DynArea_Screen
 	SWI OS_ReadDynamicArea
-	CMP r1, #Mode_Bytes * Screen_Banks
+	CMP r1, r2
 	ADRCC r0, error_noscreenmem
 	SWICC OS_GenerateError
 
@@ -251,6 +253,10 @@ main_loop:
 	ldr r12, screen_addr	
 	bl plot_columns
 
+	SET_BORDER 0x0000ff		; red = plot cube
+	ldr r12, screen_addr
+	bl draw_3d_scene
+
 	SET_BORDER 0xff00ff		; magenta = masked logo
 	ldr r12, screen_addr
 	bl plot_logo
@@ -258,10 +264,6 @@ main_loop:
 	SET_BORDER 0xffff00		; cyan = masked scroller
 	ldr r12, screen_addr
 	bl scroller_draw_new
-
-	SET_BORDER 0x0000ff		; red = plot cube
-	ldr r12, screen_addr
-	bl draw_3d_scene
 
 	SET_BORDER 0x000000
 
@@ -405,7 +407,7 @@ debug_write_vsync_count:
 	ldr pc, [sp], #4
 
 debug_string:
-	.skip 10
+	.skip 16
 .endif
 
 ; ============================================================================
@@ -783,7 +785,7 @@ screen_addr:
 ; ============================================================================
 
 vdu_screen_disable_cursor:
-.byte 22, Screen_Mode, 23,1,0,0,0,0,0,0,0,0
+.byte 22, Vdu_Mode, 23,1,0,0,0,0,0,0,0,0
 .p2align 2
 
 music_table:
