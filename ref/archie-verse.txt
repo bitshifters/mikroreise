@@ -44,7 +44,55 @@ TODO:
 	6. 3D effect 2
 	7. Credits
 	8. Ending
+- Need to be able to set tick calls and order.
+    - E.g. bg fx to logo, different logo motion.
+- Need to be able to set draw calls and order.
+    - Slots or list? => Layers up to 8 FX - Django uses 5 (columns, logo, cube, scroller, menu)
+    - Script sets callback in layer.
+    - Then transitions can be a top layer and/or interact with other layers.
+    - Need to be able to send events to fx and/or set values for vars. => Rocket?
+      Alternative is a bytecode script with waits etc.
+      Previous learnings:
+        - Using WAITs is pain.
+        - Scripts get long and difficult to edit.
+        - Making scripts out of MACROs gets tedious.
+        - Having too many Rocket tracks for every possible var also becomes unwieldy.
+        - Ability to preview / scrub / rewind is powerful.
+        - Hot reloading of scripts or event tracks is powerful.
+      Combine best of both?
+        - Keep script snippets short.
+        - Avoid WAITs in scripts for now (until we need it).
+        - Avoid multiple concurrent scripts for now (until we need it).
+        - Bake scripts into exe for now but could be stored as a separate file for hot reload.
+        - Trigger scripts from events, e.g. Event_RunScript <script no>
+        - Triggers could just be keypress for now. Play script <1> to <9> or <space> to move to next script.
+        - Later on think about balance of vars vs events vs scripts.
+      More pondering:
+        - It's not really a script if you can't use logic, loops etc.
+        - If you want actual scripting logic then use a higher level language, cf. Rose.
+        - At the moment all of the above boils down to: on frame <n> call function <f> with params <a> <b> <c> etc.
+        - Power comes from hot reload and real-time controls.
+        - Rocket gives us continuous (interpolated) variables, but don't want to have one var per FX layer.
+        - Works well for PC where cost of everything being driven by a var is zero (e.g. interp colours all the time)
+        - Rocket works poorly for triggers (as these can't be reversed).
+        - Rocket works poorly for frame-synced interpolation (inc by 1 per frame)
+      Ideal?
+        - Write events in text editor.
+        - Have a file watcher to 'compile' events (with error checking etc.) on file change.
+        - Place compiled file in emulator folder.
+        - Editor build of the demo to pause/play, reload events and restart. (This was NOVA Invite).
+        - Controls to jump forward a pattern at a time.
+      For complex motion, e.g. nice trajectories of 3D objects better off scripting externally and exporting motion data.
+      Probably overthinking this for now.
+        - Bake into build until need hot reload.
+        - Wait <frames>
+        - Call <fn>
+        - Editor controls to restart, pause/play and jump fwd.
+        - Perhaps have ability to run many scripts?
+        (Or just go all in with default Rocket.)
+
 - Could even just have a key press to switch between the scenes at this point?
+    - Bookmarks? Key to move to next? tbd.
 	- Integrate Rocket later => need to decide which version/finish integration.
 	- Perhaps this depends if Rhino is onboard with doing the editing?
 - Need placeholder gfx.

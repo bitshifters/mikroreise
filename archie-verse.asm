@@ -10,7 +10,7 @@
 ;	8. Ending
 ; ============================================================================
 
-.equ _DEBUG, 1
+.equ _DEBUG, 0
 .equ _DEBUG_RASTERS, (_DEBUG && 1)
 .equ _DEBUG_SHOW, (_DEBUG && 1)
 .equ _CHECK_FRAME_DROP, (!_DEBUG && 1)
@@ -79,9 +79,8 @@
 .equ KeyBit_S, 14
 .equ KeyBit_RightClick, 16
 
-; TODO: Final location for ARM2 and maybe increase gap to menu..?
-.equ RasterSplitLine, 56+88			; 56 lines from vsync to screen start
-; Check MENU_TOP_YPOS definition.
+; TODO: Remove Timer1 split if not necessary.
+.equ RasterSplitLine, 56+90			; 56 lines from vsync to screen start
 
 ; ============================================================================
 ; Code Start
@@ -177,6 +176,10 @@ main:
 	adrl r2, logo_pal_block
 	bl palette_set_block
 
+	; Bootstrap the main sequence.
+	adr r0, seq_main_program
+	bl script_add_program
+
 	; Claim the Event vector.
 	MOV r0, #EventV
 	ADR r1, event_handler
@@ -203,13 +206,8 @@ main_loop:
 	; TICK
 	; ========================================================================
 
-	SET_BORDER 0xffffff		; white = tick
-
-	; tick modules
-	bl update_columns
-	bl scroller_update_new
-	bl update_3d_scene
-	SET_BORDER 0x000000
+	bl script_tick_all
+	bl fx_tick_layers
 
 	; ========================================================================
 	; VSYNC
@@ -243,27 +241,7 @@ main_loop:
 	; DRAW
 	; ========================================================================
 
-	SET_BORDER 0x00ff00		; green = screen clear
-	ldr r12, screen_addr
-	bl clear_left_screen
-
-	SET_BORDER 0x00ffff		; yellow = columns
-	ldr r12, screen_addr	
-	bl plot_columns
-
-	SET_BORDER 0x0000ff		; red = plot cube
-	ldr r12, screen_addr
-	bl draw_3d_scene
-
-	SET_BORDER 0xff00ff		; magenta = masked logo
-	ldr r12, screen_addr
-	bl plot_logo
-
-	SET_BORDER 0xffff00		; cyan = masked scroller
-	ldr r12, screen_addr
-	bl scroller_draw_new
-
-	SET_BORDER 0x000000
+	bl fx_draw_layers
 
 	; show debug
 	.if _DEBUG_SHOW
@@ -320,17 +298,6 @@ exit:
 	swi OS_Byte
 
 	SWI OS_Exit
-
-; ============================================================================
-; Sequence helpers.
-; ============================================================================
-
-wait_frames:
-	mov r0, #19
-	swi OS_Byte
-	subs r4, r4, #1
-	bne wait_frames
-	mov pc, lr
 
 ; ============================================================================
 ; Debug helpers.
@@ -770,6 +737,9 @@ rnd_seed:
 screen_addr:
 	.long 0					; ptr to the current VIDC screen bank being written to.
 
+.include "src/fx.asm"
+.include "src/script.asm"
+
 .include "lib/palette.asm"
 .include "src/scroller.asm"
 .include "src/columns.asm"
@@ -781,6 +751,9 @@ screen_addr:
 ; ============================================================================
 ; Data Segment
 ; ============================================================================
+
+; TODO: Hot-reload this one day?
+.include "src/sequence.asm"
 
 vdu_screen_disable_cursor:
 .byte 22, Vdu_Mode, 23,1,0,0,0,0,0,0,0,0
