@@ -10,7 +10,7 @@
 ;	8. Ending
 ; ============================================================================
 
-.equ _DEBUG, 0
+.equ _DEBUG, 1
 .equ _DEBUG_RASTERS, (_DEBUG && 1)
 .equ _DEBUG_SHOW, (_DEBUG && 1)
 .equ _CHECK_FRAME_DROP, (!_DEBUG && 1)
@@ -18,20 +18,30 @@
 .equ Sample_Speed_SlowCPU, 48		; ideally get this down for ARM2
 .equ Sample_Speed_FastCPU, 16		; ideally 16us for ARM250+
 
+.equ _WIDESCREEN, 0
+
 .equ Screen_Banks, 3
+
+.equ Screen_Mode, 13
+.equ Screen_Width, 320
+.if _WIDESCREEN
 .equ Vdu_Mode, 97					; MODE 9 widescreen (320x180)
 									; or 96 for MODE 13 widescreen (320x180)
-.equ Screen_Mode, 9
-.equ Screen_Width, 320
 .equ Screen_Height, 180
 .equ Mode_Height, 180
-.equ Screen_PixelsPerByte, 2
+.else
+.equ Vdu_Mode, 13
+.equ Screen_Height, 256
+.equ Mode_Height, 256
+.endif
+.equ Screen_PixelsPerByte, 1
 .equ Screen_Stride, Screen_Width/Screen_PixelsPerByte
 .equ Screen_Bytes, Screen_Stride*Screen_Height
 .equ Mode_Bytes, Screen_Stride*Mode_Height
 
 .include "lib/swis.h.asm"
 .include "lib/lib_config.h.asm"
+.include "lib/maths.h.asm"
 
 ; ============================================================================
 ; Macros.
@@ -139,13 +149,18 @@ main:
 	; Install our own IRQ handler - thanks Steve! :)
 	bl install_irq_handler
 
-	; EARLY INIT / LOAD STUFF HERE!
+	; EARLY INIT / LOAD STUFF HERE! 
 	bl lib_init
 	; R12=top of RAM used.
-	bl init_3d_scene
-	bl scroller_init
-	bl logo_init
 
+	; Bootstrap the main sequence.
+	adr r0, seq_main_program
+	bl script_add_program
+
+    ; Tick script once for module init.
+    bl script_tick_all
+
+.if 0
 	; Count how long the init takes as a very rough estimate of CPU speed.
 	ldr r1, vsync_count
 	cmp r1, #80		; ARM3~=20, ARM250~=70, ARM2~=108
@@ -158,6 +173,7 @@ main:
 	mov r0, #VU_Bars_Effect
 	mov r1, #VU_Bars_Gravity
 	swi QTM_VUBarControl
+.endif
 
 	mov r0, #0
 	mov r1, #Stereo_Positions
@@ -175,10 +191,6 @@ main:
 	; Set palette (shows screen).
 	adrl r2, logo_pal_block
 	bl palette_set_block
-
-	; Bootstrap the main sequence.
-	adr r0, seq_main_program
-	bl script_add_program
 
 	; Claim the Event vector.
 	MOV r0, #EventV
@@ -369,6 +381,15 @@ debug_write_vsync_count:
 	adr r0, debug_string
 	swi OS_WriteO
 .endif
+
+	swi OS_WriteI+32
+	ldr r0, particles_alive_count
+	adr r1, debug_string
+	mov r2, #8
+	swi OS_ConvertHex4
+	adr r0, debug_string
+	swi OS_WriteO
+
 	ldr pc, [sp], #4
 
 debug_string:
@@ -739,14 +760,11 @@ screen_addr:
 
 .include "src/fx.asm"
 .include "src/script.asm"
+.include "src/particles.asm"
 
 .include "lib/palette.asm"
-.include "src/scroller.asm"
-.include "src/columns.asm"
-.include "src/logo.asm"
-.include "lib/lz4-decode.asm"
+.include "lib/mode9-screen.asm"
 .include "lib/lib_code.asm"
-.include "src/3d-scene.asm"
 
 ; ============================================================================
 ; Data Segment
