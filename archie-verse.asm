@@ -12,7 +12,7 @@
 
 .equ _DEBUG, 1
 .equ _DEBUG_RASTERS, (_DEBUG && 1)
-.equ _DEBUG_SHOW, (_DEBUG && 1)
+.equ _DEBUG_SHOW, (_DEBUG && 0)     ; TODO: Fast debug text on screen.
 .equ _CHECK_FRAME_DROP, (!_DEBUG && 1)
 
 .equ Sample_Speed_SlowCPU, 48		; ideally get this down for ARM2
@@ -20,7 +20,7 @@
 
 .equ _WIDESCREEN, 0
 
-.equ Screen_Banks, 3
+.equ Screen_Banks, 2
 
 .equ Screen_Mode, 13
 .equ Screen_Width, 320
@@ -173,6 +173,9 @@ main:
 	mov r0, #VU_Bars_Effect
 	mov r1, #VU_Bars_Gravity
 	swi QTM_VUBarControl
+.else
+    mov r0, #Sample_Speed_SlowCPU
+    swi QTM_SetSampleSpeed
 .endif
 
 	mov r0, #0
@@ -761,6 +764,7 @@ screen_addr:
 .include "src/fx.asm"
 .include "src/script.asm"
 .include "src/particles.asm"
+.include "src/dots.asm"
 
 .include "lib/palette.asm"
 .include "lib/mode9-screen.asm"

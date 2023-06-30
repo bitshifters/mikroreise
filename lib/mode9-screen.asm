@@ -14,12 +14,18 @@ screen_cls:
 	mov r5, #0
 	mov r6, #0
 	mov r7, #0
+.if 0
 .1:
 	.rept Screen_Stride / 32
 	stmia r12!, {r0-r7}
     .endr
 	cmp r12, r9
 	blt .1
+.else
+    .rept Screen_Bytes / 32
+	stmia r12!, {r0-r7}
+    .endr
+.endif
 	mov pc, lr
 
 .if 0

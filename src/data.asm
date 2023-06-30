@@ -49,3 +49,16 @@ scroller_text_string_end_no_adr:
 .endif
 
 ; ============================================================================
+
+.p2align 6
+dots_y_table_1_no_adr:
+.incbin "data/dots_y_table_1.bin"
+dots_y_table_1_end_no_adr:
+.incbin "data/dots_y_table_1.bin"
+
+dots_y_table_2_no_adr:
+.incbin "data/dots_y_table_2.bin"
+dots_y_table_2_end_no_adr:
+.incbin "data/dots_y_table_2.bin"
+
+; ============================================================================
