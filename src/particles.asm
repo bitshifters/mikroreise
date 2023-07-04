@@ -24,7 +24,7 @@
 .equ Emitter_SIZE,      28
 
 .equ Emitters_Max,      5       ; start with 1.
-.equ Particles_Max,     1024    ; seems OK on ARM250. For ARM2 we're looking more like 512.
+.equ Particles_Max,     680     ; ARM2 ~= 680. ARM250 ~= 1024.
 
 .equ Particle_Default_Lifetime, 255     ; ?
 
@@ -32,6 +32,8 @@
 
 .equ Centre_X,          (160.0 * PRECISION_MULTIPLIER)
 .equ Centre_Y,          (255.0 * PRECISION_MULTIPLIER)
+
+.equ _PARTICLES_PLOT_CHUNKY, 0
 
 ; Forward linked list of free particles.
 ; First word of particle context points to the next free particle.
@@ -175,10 +177,10 @@ particles_draw_all:
     mov r2, r2, lsr #16
     cmp r2, #0
     blt .3                              ; clip top - TODO: destroy particle?
-    cmp r2, #Screen_Height
+    cmp r2, #Screen_Height-1
     bge .3                              ; clip bottom - TODO: destroy particle?
 
-    ; TODO: If eroniously replace R2 with R1 above then Arcualtor exists without warning!
+    ; TODO: If eroniously replace R2 with R1 above then Arculator exists without warning!
     ;       Debug this for Sarah and test on Arculator v2.2.
 
     add r10, r12, r2, lsl #8
@@ -186,11 +188,11 @@ particles_draw_all:
     mov r7, r7, lsr #16                 ; colour is upper 16 bits.
     strb r7, [r10, r1]!                  ; screen_y[screen_x]=colour index.
 
-    strb r7, [r10, #1]                  ; screen_y[screen_x]=colour index.
-    strb r7, [r10, #Screen_Stride]                  ; screen_y[screen_x]=colour index.
-    strb r7, [r10, #Screen_Stride+1]                  ; screen_y[screen_x]=colour index.
-
-    ; TODO: Chunkier pixels.
+    .if _PARTICLES_PLOT_CHUNKY
+    strb r7, [r10, #1]                  ; screen_y[screen_x+1]=colour index.
+    strb r7, [r10, #Screen_Stride]      ; (screen_y+1)[screen_x]=colour index.
+    strb r7, [r10, #Screen_Stride+1]    ; (screen_y+1)[screen_x+1]=colour index.
+    .endif
 
 .3:
     b .1

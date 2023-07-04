@@ -42,8 +42,7 @@ palette_set_border:
     mov r0, #24
     strb r0, [r1, #0]       ; logical colour
     strb r0, [r1, #1]       ; mode
-    and r0, r4, #0xff
-    strb r0, [r1, #2]       ; red
+    strb r4, [r1, #2]       ; red
     mov r0, r4, lsr #8
     strb r0, [r1, #3]       ; green
     mov r0, r4, lsr #16

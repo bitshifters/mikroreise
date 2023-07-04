@@ -12,8 +12,12 @@
 
 .equ _DEBUG, 1
 .equ _DEBUG_RASTERS, (_DEBUG && 1)
-.equ _DEBUG_SHOW, (_DEBUG && 0)     ; TODO: Fast debug text on screen.
+.equ _DEBUG_SHOW, (_DEBUG && 1)     ; TODO: Fast debug text on screen.
 .equ _CHECK_FRAME_DROP, (!_DEBUG && 1)
+
+.equ _DEBUG_DEFAULT_PLAY_PAUSE, 1		; play
+.equ _DEBUG_DEFAULT_SHOW_RASTERS, 1
+.equ _DEBUG_DEFAULT_SHOW_INFO, 0		; slow so off by default.
 
 .equ Sample_Speed_SlowCPU, 48		; ideally get this down for ARM2
 .equ Sample_Speed_FastCPU, 16		; ideally 16us for ARM250+
@@ -58,7 +62,9 @@
 .macro SET_BORDER rgb
 	.if _DEBUG_RASTERS
 	mov r4, #\rgb
-	bl palette_set_border
+	ldrb r0, debug_show_rasters
+	cmp r0, #0
+	blne palette_set_border
 	.endif
 .endm
 
@@ -73,21 +79,11 @@
 .equ Stereo_Positions, 1		; Amiga (full) stereo positions.
 
 .equ KeyBit_Space, 0
-.equ KeyBit_Return, 1
-.equ KeyBit_ArrowUp, 2
-.equ KeyBit_ArrowDown, 3
-.equ KeyBit_A, 4
-.equ KeyBit_LeftClick, 5
-.equ KeyBit_1, 6
-.equ KeyBit_2, 7
-.equ KeyBit_3, 8
-.equ KeyBit_4, 9
-.equ KeyBit_5, 10
-.equ KeyBit_E, 11
-.equ KeyBit_F, 12
-.equ KeyBit_R, 13
-.equ KeyBit_S, 14
-.equ KeyBit_RightClick, 16
+.equ KeyBit_A, 1
+.equ KeyBit_S, 2
+.equ KeyBit_D, 3
+.equ KeyBit_R, 4
+.equ KeyBit_ArrowRight, 5
 
 ; TODO: Remove Timer1 split if not necessary.
 .equ RasterSplitLine, 56+90			; 56 lines from vsync to screen start
@@ -218,11 +214,38 @@ main:
 main_loop:
 
 	; ========================================================================
+	; PREPARE
+	; ========================================================================
+
+    .if _DEBUG
+    bl debug_tick
+    .endif
+
+	; exit if Escape is pressed
+	swi OS_ReadEscapeState
+	bcs exit
+
+	.if _DEBUG
+	ldrb r0, debug_play_pause
+	cmp r0, #0
+	bne .3
+
+	ldrb r0, debug_play_step
+	cmp r0, #0
+	beq main_loop_skip_tick
+	.3:
+	.endif
+
+	; ========================================================================
 	; TICK
 	; ========================================================================
 
 	bl script_tick_all
 	bl fx_tick_layers
+
+    ; TODO: Update frame counter.
+
+main_loop_skip_tick:
 
 	; ========================================================================
 	; VSYNC
@@ -259,16 +282,12 @@ main_loop:
 	bl fx_draw_layers
 
 	; show debug
-	.if _DEBUG_SHOW
-	bl debug_write_vsync_count
+	.if _DEBUG
+	bl debug_write_info
 	.endif
 
 	; Swap screens!
 	bl mark_write_bank_as_pending_display
-
-	; exit if Escape is pressed
-	swi OS_ReadEscapeState
-	bcs exit
 
 	; repeat!
 	b main_loop
@@ -319,6 +338,89 @@ exit:
 ; ============================================================================
 
 .if _DEBUG
+keyboard_prev_mask:
+    .long 0
+
+debug_tick:
+    ldr r0, keyboard_pressed_mask
+	ldr r2, keyboard_prev_mask
+	mvn r2, r2				; ~old
+	and r2, r0, r2			; new & ~old		; diff bits
+	str r0, keyboard_prev_mask
+	and r4, r2, r0			; diff bits & key down bits	
+
+    tst r4, #1<<KeyBit_Space
+    beq .1
+
+	; Toggle play/pause.
+	ldrb r0, debug_play_pause
+	eor r0, r0, #1
+	strb r0, debug_play_pause
+
+    cmp r0, #0
+    swieq QTM_Pause			    ; pause
+    swine QTM_Start             ; play
+
+
+    ; TODO: Stop/start script.
+
+.1:
+	mov r0, #0
+	strb r0, debug_play_step
+
+    tst r4, #1<<KeyBit_S
+    beq .2
+
+	; Step frame (without repeat).
+    strb r4, debug_play_step
+
+.2:
+    tst r4, #1<<KeyBit_D
+    beq .3
+
+	; Toggle debug info.
+	ldrb r0, debug_show_info
+	eor r0, r0, #1
+	strb r0, debug_show_info
+
+.3:
+    tst r4, #1<<KeyBit_R
+    beq .4
+
+	; Toggle rasters
+	ldrb r0, debug_show_rasters
+	eor r0, r0, #1
+	strb r0, debug_show_rasters
+
+.4:
+    tst r4, #1<<KeyBit_A
+    beq .5
+
+    ; Start sequence again.
+    mov r1, #0
+	swi QTM_Pos
+
+    ; TODO: Start script again.
+
+.5:
+    tst r4, #1<<KeyBit_ArrowRight
+    beq .6
+
+    ; Skip to next pattern.
+    mov r0, #-1
+    mov r1, #-1
+    swi QTM_Pos         ; read position.
+
+    add r0, r0, #1
+
+    ; TODO: Update frame counter to match.
+
+    mov r1, #0
+    swi QTM_Pos         ; set position.
+
+.6:
+    mov pc, lr
+
 debug_print_r0:
 	stmfd sp!, {r0-r2}
 	adr r1, debug_string
@@ -329,8 +431,15 @@ debug_print_r0:
 	ldmfd sp!, {r0-r2}
 	mov pc, lr
 
-debug_write_vsync_count:
+debug_write_info:
+	ldrb r0, debug_show_info
+	cmp r0, #0
+	moveq pc, lr
+
 	str lr, [sp, #-4]!
+
+	SET_BORDER 0xffffff		; white = debug
+
 	mov r0, #30	; home cursor
 	swi OS_WriteC
 	mov r0, #17	; set text colour
@@ -393,10 +502,26 @@ debug_write_vsync_count:
 	adr r0, debug_string
 	swi OS_WriteO
 
+	SET_BORDER 0x000000
+
 	ldr pc, [sp], #4
 
 debug_string:
 	.skip 16
+
+debug_play_pause:
+	.byte _DEBUG_DEFAULT_PLAY_PAUSE
+
+debug_play_step:
+	.byte 0
+
+debug_show_info:
+	.byte _DEBUG_DEFAULT_SHOW_INFO
+
+debug_show_rasters:
+	.byte _DEBUG_DEFAULT_SHOW_RASTERS
+
+	.p2align 2
 .endif
 
 ; ============================================================================
@@ -467,72 +592,32 @@ event_handler:
 	; Key down
 	cmp r2, #RMKey_Space
 	orreq r0, r0, #1<<KeyBit_Space
-	cmp r2, #RMKey_Return
-	orreq r0, r0, #1<<KeyBit_Return
-	cmp r2, #RMKey_ArrowUp
-	orreq r0, r0, #1<<KeyBit_ArrowUp
-	cmp r2, #RMKey_ArrowDown
-	orreq r0, r0, #1<<KeyBit_ArrowDown
 	cmp r2, #RMKey_A
 	orreq r0, r0, #1<<KeyBit_A
-	cmp r2, #RMKey_LeftClick
-	orreq r0, r0, #1<<KeyBit_LeftClick
-	cmp r2, #RMKey_1
-	orreq r0, r0, #1<<KeyBit_1
-	cmp r2, #RMKey_2
-	orreq r0, r0, #1<<KeyBit_2
-	cmp r2, #RMKey_3
-	orreq r0, r0, #1<<KeyBit_3
-	cmp r2, #RMKey_4
-	orreq r0, r0, #1<<KeyBit_4
-	cmp r2, #RMKey_5
-	orreq r0, r0, #1<<KeyBit_5
-	cmp r2, #RMKey_E
-	orreq r0, r0, #1<<KeyBit_E
-	cmp r2, #RMKey_F
-	orreq r0, r0, #1<<KeyBit_F
-	cmp r2, #RMKey_R
-	orreq r0, r0, #1<<KeyBit_R
 	cmp r2, #RMKey_S
 	orreq r0, r0, #1<<KeyBit_S
-	cmp r2, #RMKey_RightClick
-	orreq r0, r0, #1<<KeyBit_RightClick
+	cmp r2, #RMKey_D
+	orreq r0, r0, #1<<KeyBit_D
+	cmp r2, #RMKey_R
+	orreq r0, r0, #1<<KeyBit_R
+	cmp r2, #RMKey_ArrowRight
+	orreq r0, r0, #1<<KeyBit_ArrowRight
 	b .3
 
 .2:
 	; Key up
 	cmp r2, #RMKey_Space
 	biceq r0, r0, #1<<KeyBit_Space
-	cmp r2, #RMKey_Return
-	biceq r0, r0, #1<<KeyBit_Return
-	cmp r2, #RMKey_ArrowUp
-	biceq r0, r0, #1<<KeyBit_ArrowUp
-	cmp r2, #RMKey_ArrowDown
-	biceq r0, r0, #1<<KeyBit_ArrowDown
 	cmp r2, #RMKey_A
 	biceq r0, r0, #1<<KeyBit_A
-	cmp r2, #RMKey_LeftClick
-	biceq r0, r0, #1<<KeyBit_LeftClick
-	cmp r2, #RMKey_1
-	biceq r0, r0, #1<<KeyBit_1
-	cmp r2, #RMKey_2
-	biceq r0, r0, #1<<KeyBit_2
-	cmp r2, #RMKey_3
-	biceq r0, r0, #1<<KeyBit_3
-	cmp r2, #RMKey_4
-	biceq r0, r0, #1<<KeyBit_4
-	cmp r2, #RMKey_5
-	biceq r0, r0, #1<<KeyBit_5
-	cmp r2, #RMKey_E
-	biceq r0, r0, #1<<KeyBit_E
-	cmp r2, #RMKey_F
-	biceq r0, r0, #1<<KeyBit_F
-	cmp r2, #RMKey_R
-	biceq r0, r0, #1<<KeyBit_R
 	cmp r2, #RMKey_S
 	biceq r0, r0, #1<<KeyBit_S
-	cmp r2, #RMKey_RightClick
-	biceq r0, r0, #1<<KeyBit_RightClick
+	cmp r2, #RMKey_D
+	biceq r0, r0, #1<<KeyBit_D
+	cmp r2, #RMKey_R
+	biceq r0, r0, #1<<KeyBit_R
+	cmp r2, #RMKey_ArrowRight
+	biceq r0, r0, #1<<KeyBit_ArrowRight
 
 .3:
 	str r0, keyboard_pressed_mask

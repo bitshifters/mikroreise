@@ -68,11 +68,13 @@
 ; Used by RasterMan and OS_Event Event_KeyPressed (11)
 .equ RMKey_ArrowUp, 0x59
 .equ RMKey_ArrowDown, 0x63
+.equ RMKey_ArrowRight, 0x64
 .equ RMKey_Return, 0x47
 .equ RMKey_Space, 0x5f
 .equ RMKey_LeftClick, 0x70
 .equ RMKey_RightClick, 0x72
 .equ RMKey_A, 0x3c
+.equ RMKey_D, 0x3e
 .equ RMKey_E, 0x29
 .equ RMKey_F, 0x3f
 .equ RMKey_R, 0x2a
