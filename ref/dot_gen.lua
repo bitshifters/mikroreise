@@ -31,26 +31,77 @@ x_values={}
 scr_base1=0x01fd8000
 scr_base2=0x01fec000
 
+function map(value, in_low, in_high, out_low, out_high)
+    if (value <= in_low) then
+        return out_low
+    end
+
+    if (value >= in_high) then
+        return out_high
+    end
+
+    local delta = (value-in_low) / (in_high-in_low)
+    return out_low + delta * (out_high-out_low)
+end
+
+function radians(degrees)
+    return degrees * 2 * pi / 360.0
+end
+
+screen_width=320
+screen_height=256
+width=256
+height=240
+stride=320
+left_edge=(screen_width-width)/2
+top_edge=(screen_height-height)/2
+
 for i=1,tot do
-    a=3.1*pi/500
-    b=2.8*pi/500
-    c=1
-    xt=a*i
-    yt=b*(i+t)
-    -- x=100*cos(xt)*cos(xt*cos(xt))
-    x=152*cos(xt)*cos(xt*2)
-    -- y=32*sin(yt*2)*cos(yt*sin(yt*3))
-    y=120*sin(yt)*sin(yt*2)
-    writeLong(file1,math.modf(cx+x))
-    writeLong(file2,scr_base1+math.modf(cy+y)*320)    -- mode stride.
-    writeLong(file3,scr_base2+math.modf(cy+y)*320)    -- mode stride.
+    a = i*0.001
+
+    -- Attempt 1.
+    -- x = map(sin(a)*sin(a*0.8)*sin(a*-1.2), -1, 1, 0, width);
+    -- y = map(sin(a*1.1+1.5)*sin(a*3.1)*sin(a*-2.5), -1, 1, 0, height);
+  
+    -- Attempt 2.
+    -- x = map(sin(1.1*a)*100+10*cos(2.1*a), -110, 110, 0, width)
+    -- y = map(cos(a)*100+10*sin(4.2*a), -110, 110, 0, height)
+
+    angle = map(i, 0, tot, 0, pi);
+ 
+    freqX = 13
+    freqY = 11
+    phi = 97
+
+    modFreqX = 1
+    modFreqY = 3
+
+    modFreq2X = 11
+    modFreq2Y = 17
+    modFreq2Strength = 0.0
+
+    -- an additional modulation of the osscillations
+    fmx = sin(angle*modFreq2X) * modFreq2Strength + 1
+    fmy = sin(angle*modFreq2Y) * modFreq2Strength + 1
+
+    x = sin(angle * freqX * fmx + radians(phi)) * cos(angle * modFreqX)
+    y = sin(angle * freqY * fmy) * cos(angle * modFreqY)
+
+    x = map(x, -1, 1, 0, width)
+    y = map(y, -1, 1, 0, height)
+
+    xi = left_edge + math.modf(x)
+    yi = top_edge + math.modf(y)
+
+    writeLong(file1,xi)
+    writeLong(file2,scr_base1+yi*stride)
+    writeLong(file3,scr_base2+yi*stride)
 
     if (register==0) then
         file4:write("ldmia r9!, {r0-r7}\n")
     end
 
-    x_values[register+1]=math.modf(cx+x)
-
+    x_values[register+1]=xi
     register=register + 1
 
     if (register==8) then
@@ -61,8 +112,8 @@ for i=1,tot do
 
         for i=1,8 do
             -- file4:write(string.format("sub r14, r11, r%d\n", i-1))
-            file4:write(string.format("sub r14, r11, r%d\n", i-1))
-            file4:write(string.format("strb r8, [r14, #%d]\n", x_values[i]))
+            file4:write(string.format("sub r12, r11, r%d\n", i-1))
+            file4:write(string.format("strb r8, [r12, #%d]\n", x_values[i]))
         end
         
         register=0

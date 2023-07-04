@@ -106,3 +106,11 @@ TODO:
     - Step pattern
     - Restart
 - Move set_layer_fns to Lua script when needed (as tracks)
+
+
+Lines / dot inspos
+~~~
+Norton Star: https://natali-pp.github.io/blog/post/curvas-norton-starr/norton/
+Processing examples: https://processing.org/examples/tree.html
+Art from Code: https://www.artfromcode.com/
+Processing intro: https://funprogramming.org/

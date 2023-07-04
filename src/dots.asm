@@ -2,7 +2,8 @@
 ; Dots.
 ; ============================================================================
 
-.equ Dots_Total, 6504                       ; ARM2=4900 max, ARM250=6400 easily
+.equ _DOTS_ENABLE_REVEAL, 1
+.equ Dots_Total, 6504                   ; needs to match dot_gen.lua
 
 dots_y_table_1_p:
     .long dots_y_table_1_no_adr
@@ -19,9 +20,36 @@ dots_total:
 dots_screen_1_addr:
     .long 0x01fd8000
 
+.if _DOTS_ENABLE_REVEAL
+dots_visible:
+    .long 0
+
+dots_return_code:
+    mov pc, lr
+
+dots_load_code:
+    ldmia r9!, {r0-r7}
+.endif
+
 ; R12=screen addr
 dots_draw_all:
     str lr, [sp, #-4]!
+
+.if _DOTS_ENABLE_REVEAL
+    ldr r0, dots_visible
+    ldr r1, dots_total
+    mov r1, r1, lsr #3
+    add r0, r0, #1
+    cmp r0, r1
+    strlt r0, dots_visible
+
+    adr r1, dots_gen_code
+    add r1, r1, r0, lsl #6              ;  n*64
+    add r1, r1, r0, lsl #5              ; +n*32
+    add r1, r1, r0, lsl #2              ; +n*4
+    ldr r0, dots_return_code
+    str r0, [r1]
+.endif
 
     ; values are scr_base+y*320
     ; want scr_base+255*320-y*320
@@ -52,36 +80,27 @@ dots_draw_all:
     mov r10, #0xff           ; colour
     mov r8, #0xaf
 
-    ; Generated code with X values and Y mirroring baked in.
-    .include "src/dot_plot_generated.asm"
-    ; TODO: Generate code at init time.
+    bl dots_gen_code
+
+.if _DOTS_ENABLE_REVEAL
+    ldr r0, dots_visible
+    ldr r1, dots_total
+    mov r1, r1, lsr #3
+    cmp r0, r1
+    ldrge pc, [sp], #4
+
+    adr r1, dots_gen_code
+    add r1, r1, r0, lsl #6              ;  n*64
+    add r1, r1, r0, lsl #5              ; +n*32
+    add r1, r1, r0, lsl #2              ; +n*4
+    ldr r0, dots_load_code
+    str r0, [r1]
+.endif
 
     ldr pc, [sp], #4
 
-
-
-.if 0
-.rept Dots_Total/4
-    ldmia r8!, {r0-r3}
-    ldmia r9!, {r4-r7}
-
-    add r14, r12, r4                    ; y already *320 in table.
-    strb r10, [r14, r0]                 ; screen_y[screen_x]=colour index.
-    add r14, r12, r5                    ; y already *320 in table.
-    strb r10, [r14, r1]                 ; screen_y[screen_x]=colour index.
-    add r14, r12, r6                    ; y already *320 in table.
-    strb r10, [r14, r2]                 ; screen_y[screen_x]=colour index.
-    add r14, r12, r7                    ; y already *320 in table.
-    strb r10, [r14, r3]                 ; screen_y[screen_x]=colour index.
-
-    sub r14, r11, r4                    ; mirror
-    mov r4, r10, lsr #8
-    strb r4, [r14, r0]
-    sub r14, r11, r5                    ; mirror
-    strb r4, [r14, r1]
-    sub r14, r11, r6                    ; mirror
-    strb r4, [r14, r2]
-    sub r14, r11, r7                    ; mirror
-    strb r4, [r14, r3]
-.endr
-.endif
+; Generated code with X values and Y mirroring baked in.
+dots_gen_code:
+    .include "src/dot_plot_generated.asm"
+    ; TODO: Generate code at init time from X table.
+    mov pc, lr
