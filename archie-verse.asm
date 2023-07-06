@@ -850,6 +850,7 @@ screen_addr:
 .include "src/script.asm"
 .include "src/particles.asm"
 .include "src/dots.asm"
+.include "src/dot-tunnel.asm"
 
 .include "lib/palette.asm"
 .include "lib/mode9-screen.asm"

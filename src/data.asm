@@ -62,3 +62,16 @@ dots_y_table_2_end_no_adr:
 .incbin "data/dots_y_table_2.bin"
 
 ; ============================================================================
+
+.p2align 6
+dot_tunnel_offset_x_no_adr:
+    .incbin "data\dot_tunnel_x_offset.bin"
+
+dot_tunnel_offset_y_no_adr:
+    .incbin "data\dot_tunnel_y_offset.bin"
+
+dot_tunnel_x_no_adr:
+    .incbin "data\dot_tunnel_x.bin"
+
+dot_tunnel_y_no_adr:
+    .incbin "data\dot_tunnel_y.bin"

@@ -100,17 +100,9 @@ TODO:
 - Need placeholder gfx.
 	- RISCOS font plot?
 - Improve build using Tom's Python scripts and makefile-foo.
-- Add debug keys:
+- Add debug keys: - DONE
     - Play/pause
     - Step frame
     - Step pattern
     - Restart
 - Move set_layer_fns to Lua script when needed (as tracks)
-
-
-Lines / dot inspos
-~~~
-Norton Star: https://natali-pp.github.io/blog/post/curvas-norton-starr/norton/
-Processing examples: https://processing.org/examples/tree.html
-Art from Code: https://www.artfromcode.com/
-Processing intro: https://funprogramming.org/

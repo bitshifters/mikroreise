@@ -1,0 +1,68 @@
+function writeShort(handle, short)
+    local low_byte = short & 0xff
+    local high_byte = (short >> 8) & 0xff
+    handle:write(string.format("%c%c",low_byte,high_byte))
+end
+
+function writeLong(handle, long)
+    local byte0 = long & 0xff
+    local byte1 = (long >> 8) & 0xff
+    local byte2 = (long >> 16) & 0xff
+    local byte3 = (long >> 24) & 0xff
+    handle:write(string.format("%c%c%c%c",byte0,byte1,byte2,byte3))
+end
+
+function writeFixedPoint(handle, fp)
+    writeLong(handle,math.modf(fp*65536))
+end
+
+file1 = io.open("data/dot_tunnel_x.bin", "wb")
+file2 = io.open("data/dot_tunnel_y.bin", "wb")
+file3 = io.open("data/dot_tunnel_x_offset.bin", "wb")
+file4 = io.open("data/dot_tunnel_y_offset.bin", "wb")
+
+sin=math.sin
+cos=math.cos
+pi=math.pi
+steps=1024
+
+function map(value, in_low, in_high, out_low, out_high)
+    if (value <= in_low) then
+        return out_low
+    end
+
+    if (value >= in_high) then
+        return out_high
+    end
+
+    local delta = (value-in_low) / (in_high-in_low)
+    return out_low + delta * (out_high-out_low)
+end
+
+r=120 -- radius of tunnel
+amp=40 -- offset amplitude
+
+cx=160
+cy=128
+
+for i=1,steps do
+
+    angle = map(i, 1, steps, 0, 20*2*pi)
+    x=math.sin(angle)*r
+    y=math.cos(angle)*r
+
+    oa=map(i, 1, steps, 0, 4*pi)
+    ox=(math.sin(oa)*amp)
+    oy=(math.cos(oa/2)*amp)
+    
+    writeFixedPoint(file1, x)
+    writeFixedPoint(file2, y)
+    writeFixedPoint(file3, ox)
+    writeFixedPoint(file4, oy)
+
+end
+
+file1:close()
+file2:close()
+file3:close()
+file4:close()
