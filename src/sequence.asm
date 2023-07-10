@@ -13,7 +13,7 @@ seq_main_program:
 	; Setup layers of FX.
     call_3 fx_set_layer_fns, 0, 0,      screen_cls
     ; call_3 fx_set_layer_fns, 1, particles_tick_all,     particles_draw_all
-    call_3 fx_set_layer_fns, 1, 0,     dot_tunnel_draw
+    call_3 fx_set_layer_fns, 1, 0,     dot_tunnel_draw_circles
 
     ; THE END.
     end_script

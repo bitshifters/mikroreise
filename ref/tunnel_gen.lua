@@ -20,6 +20,8 @@ file1 = io.open("data/dot_tunnel_x.bin", "wb")
 file2 = io.open("data/dot_tunnel_y.bin", "wb")
 file3 = io.open("data/dot_tunnel_x_offset.bin", "wb")
 file4 = io.open("data/dot_tunnel_y_offset.bin", "wb")
+file5 = io.open("data/dot_tunnel_x_octant.bin", "wb")
+file6 = io.open("data/dot_tunnel_y_octant.bin", "wb")
 
 sin=math.sin
 cos=math.cos
@@ -62,7 +64,23 @@ for i=1,steps do
 
 end
 
+octant_points=8
+
+for i=1,octant_points do
+
+    angle = map(i, 1, octant_points, 0, 2*pi/8)
+
+    x=math.cos(angle)*r
+    y=math.sin(angle)*r
+
+    writeFixedPoint(file5, x)
+    writeFixedPoint(file6, y)
+
+end
+
 file1:close()
 file2:close()
 file3:close()
 file4:close()
+file5:close()
+file6:close()
