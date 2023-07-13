@@ -121,6 +121,8 @@ dot_tunnel_draw_spiral:
 
     ; Screen position.
     ; Clip.
+    
+    ; TODO: Somehow include r7(ox), r8(oy) here!
 
     \op_x r5, \reg_x, #160
     blt \clip_label
@@ -139,7 +141,8 @@ dot_tunnel_draw_spiral:
     \clip_label:
 .endm
 
-.macro DOT_CIRCLE_PLOT_4a angle
+.macro DOT_CIRCLE_GET_XY angle
+    .if 0
     ldr r3, [r9, #\angle]                ; r*cos(a0) [s8.16]
     ldr r4, [r10, #\angle]               ; r*sin(a0) [s8.16]
 
@@ -151,6 +154,22 @@ dot_tunnel_draw_spiral:
 
     mov r0, r0, asr #16             ; [s15.0]
     mov r1, r1, asr #16             ; [s15.0]
+    .else
+    ldr r3, [r9, #\angle]           ; x:y packed
+    mov r4, r3, lsr #16             ; y unpacked
+    mov r3, r3, lsl #16
+    mov r3, r3, lsr #16             ; x unpacked
+
+    mul r0, r3, r2                  ; x/z   [s15.16]
+    mul r1, r4, r2                  ; y/z   [s15.16]
+
+    mov r0, r0, asr #16             ; [s15.0]
+    mov r1, r1, asr #16             ; [s15.0]
+    .endif
+.endm
+
+.macro DOT_CIRCLE_PLOT_4a angle
+    DOT_CIRCLE_GET_XY \angle
 
     mov r4, #0xff
 
@@ -161,17 +180,7 @@ dot_tunnel_draw_spiral:
 .endm
 
 .macro DOT_CIRCLE_PLOT_4b angle
-    ldr r3, [r9, #\angle]                ; r*cos(a0) [s8.16]
-    ldr r4, [r10, #\angle]               ; r*sin(a0) [s8.16]
-
-    mov r3, r3, asr #8              ; [s8.8]
-    mov r4, r4, asr #8              ; [s8.8]
-
-    mul r0, r3, r2                  ; x/z   [s15.16]
-    mul r1, r4, r2                  ; y/z   [s15.16]
-
-    mov r0, r0, asr #16             ; [s15.0]
-    mov r1, r1, asr #16             ; [s15.0]
+    DOT_CIRCLE_GET_XY \angle
 
     mov r4, #0xff
 
@@ -182,17 +191,7 @@ dot_tunnel_draw_spiral:
 .endm
 
 .macro DOT_CIRCLE_PLOT_8 angle
-    ldr r3, [r9, #\angle]                ; r*cos(a0) [s8.16]
-    ldr r4, [r10, #\angle]               ; r*sin(a0) [s8.16]
-
-    mov r3, r3, asr #8              ; [s8.8]
-    mov r4, r4, asr #8              ; [s8.8]
-
-    mul r0, r3, r2                  ; x/z   [s15.16]
-    mul r1, r4, r2                  ; y/z   [s15.16]
-
-    mov r0, r0, asr #16             ; [s15.0]
-    mov r1, r1, asr #16             ; [s15.0]
+    DOT_CIRCLE_GET_XY \angle
 
     mov r4, #0xff
 
@@ -216,17 +215,19 @@ dot_tunnel_draw_circles:
     and r11, r11, #Dot_Circle_Gap-1
     rsb r11, r11, #Dot_Circle_Gap
 
-    adr r9, dot_tunnel_x_octant
-    adr r10, dot_tunnel_y_octant
-
-    ldr r7, dot_tunnel_offset_x
-    ldr r8, dot_tunnel_offset_y
+    adr r9, dot_tunnel_x_octant     ; actually packed x:y
+    adr r10, dot_tunnel_y_octant    ; actually packed ox:oy
 
     adr r14, dot_tunnel_recip_z
 
     ; for i=1,circles do
 dot_tunnel_draw_circles_loop:
     ; TODO: get (ox,oy) for z
+
+    ldr r7, [r10], #4      ; packed ox:oy [z]
+    mov r8, r7, asr #16
+    mov r7, r7, lsl #16
+    mov r7, r7, asr #16
 
     ldr r2, [r14, r11, lsl #2]      ; 80/z [7.16]
     mov r2, r2, asr #8              ; [7.8]

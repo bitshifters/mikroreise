@@ -16,6 +16,10 @@ function writeFixedPoint(handle, fp)
     writeLong(handle,math.modf(fp*65536))
 end
 
+function writeShortPoint(handle, fp)
+    writeShort(handle,math.modf(fp*256))
+end
+
 file1 = io.open("data/dot_tunnel_x.bin", "wb")
 file2 = io.open("data/dot_tunnel_y.bin", "wb")
 file3 = io.open("data/dot_tunnel_x_offset.bin", "wb")
@@ -62,6 +66,9 @@ for i=1,steps do
     writeFixedPoint(file3, ox)
     writeFixedPoint(file4, oy)
 
+    writeShortPoint(file6, ox)
+    writeShortPoint(file6, oy)
+
 end
 
 octant_points=8
@@ -73,8 +80,10 @@ for i=1,octant_points do
     x=math.cos(angle)*r
     y=math.sin(angle)*r
 
-    writeFixedPoint(file5, x)
-    writeFixedPoint(file6, y)
+    -- writeFixedPoint(file5, x)
+    -- writeFixedPoint(file6, y)
+    writeShortPoint(file5, x)
+    writeShortPoint(file5, y)
 
 end
 
