@@ -60,6 +60,18 @@ mode9_drawline:
 	cmpeq r1, r3				; y0 == y1?
 	ldreq pc, [sp], #4			; rts
 
+    ; Clip to screen. Expensive. :(
+    .if 0
+    cmp r0, #0
+    blt .2
+    cmp r0, #Screen_Width
+    bge .2
+    cmp r1, #0
+    blt .2
+    cmp r2, #Screen_Height
+    bge .2
+    .endif
+
 	; there will be faster line plot algorithms by keeping track of
 	; screen pointer then flushing a byte or word when moving to next row
 	; ptr = screen_addr + starty * screen_stride + startx DIV 2
@@ -77,6 +89,7 @@ mode9_drawline:
 
 	strb r11, [r10, r0, lsr #1]	; store screen byte
 
+.2:
 	mov r10, r9, lsl #1			; r10 = err * 2
 	cmp r10, r6					; e2 >= dy?
 	addge r9, r9, r6			; err += dy

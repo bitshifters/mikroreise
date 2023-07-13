@@ -26,7 +26,7 @@
 
 .equ Screen_Banks, 2
 
-.equ Screen_Mode, 13
+.equ Screen_Mode, 9
 .equ Screen_Width, 320
 .if _WIDESCREEN
 .equ Vdu_Mode, 97					; MODE 9 widescreen (320x180)
@@ -34,11 +34,11 @@
 .equ Screen_Height, 180
 .equ Mode_Height, 180
 .else
-.equ Vdu_Mode, 13
+.equ Vdu_Mode, 9
 .equ Screen_Height, 256
 .equ Mode_Height, 256
 .endif
-.equ Screen_PixelsPerByte, 1
+.equ Screen_PixelsPerByte, 2
 .equ Screen_Stride, Screen_Width/Screen_PixelsPerByte
 .equ Screen_Bytes, Screen_Stride*Screen_Height
 .equ Mode_Bytes, Screen_Stride*Mode_Height
@@ -494,6 +494,8 @@ debug_write_info:
 	swi OS_WriteO
 .endif
 
+; TODO: Register variables for debug info rather than hardcoding them...
+.if 0
 	swi OS_WriteI+32
 	ldr r0, particles_alive_count
 	adr r1, debug_string
@@ -501,6 +503,7 @@ debug_write_info:
 	swi OS_ConvertHex4
 	adr r0, debug_string
 	swi OS_WriteO
+.endif
 
 	SET_BORDER 0x000000
 
@@ -848,12 +851,11 @@ screen_addr:
 
 .include "src/fx.asm"
 .include "src/script.asm"
-.include "src/particles.asm"
-.include "src/dots.asm"
-.include "src/dot-tunnel.asm"
+.include "src/3d-scene.asm"
 
 .include "lib/palette.asm"
 .include "lib/mode9-screen.asm"
+.include "lib/line.asm"
 .include "lib/lib_code.asm"
 
 ; ============================================================================
@@ -871,7 +873,24 @@ music_table:
 	.long changing_waves_mod_no_adr		; 14
 
 logo_pal_block:
-.incbin "data/logo-palette-hacked.bin"
+; .incbin "data/logo-palette-hacked.bin"
+; For anaglpyh want CRcr
+    .long 0x00000000                    ; 00 = 0000 = black
+    .long 0x00000077                    ; 01 = 0001 = red 1
+    .long 0x00777700                    ; 02 = 0010 = cyan 1
+    .long 0x00777777                    ; 03 = 0011 = white 1
+    .long 0x00000099                    ; 04 = 0100 = red 2
+    .long 0x000000bb                    ; 05 = 0101 = red 3
+    .long 0x000000dd                    ; 06 = 0110 = red 4
+    .long 0x000000ff                    ; 07 = 0111 = red 5
+    .long 0x00999900                    ; 08 = 1000 = cyan 2
+    .long 0x00bbbb00                    ; 09 = 1001 = cyan 3
+    .long 0x00dddd00                    ; 10 = 1010 = cyan 4
+    .long 0x00ffff00                    ; 11 = 1011 = cyan 5
+    .long 0x00999999                    ; 12 = 1100 = white 2
+    .long 0x00bbbbbb                    ; 13 = 1101 = white 3
+    .long 0x00dddddd                    ; 14 = 1110 = white 4
+    .long 0x00ffffff                    ; 15 = 1111 = white 5
 
 ; ============================================================================
 ; DATA Segment

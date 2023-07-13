@@ -17,7 +17,10 @@
 
 .equ VIEWPORT_SCALE,    (Screen_Width /2) * PRECISION_MULTIPLIER
 .equ VIEWPORT_CENTRE_X, 160 * PRECISION_MULTIPLIER
-.equ VIEWPORT_CENTRE_Y, 90 * PRECISION_MULTIPLIER
+.equ VIEWPORT_CENTRE_Y, 128 * PRECISION_MULTIPLIER
+
+.equ LeftEye_X_Pos,  -2.0 * PRECISION_MULTIPLIER
+.equ RightEye_X_Pos, +2.0 * PRECISION_MULTIPLIER
 
 ; ============================================================================
 ; Scene data.
@@ -51,7 +54,7 @@ camera_pos:
 ; TODO: Camera rotation/direction/look at?
 
 object_pos:
-    VECTOR3 0.0, 0.0, 32.0
+    VECTOR3 0.0, 0.0, 16.0
 
 object_pos_camera_relative:
     VECTOR3 0.0, 0.0, 0.0
@@ -80,6 +83,9 @@ temp_vector_1:
 temp_vector_2:
     VECTOR3_ZERO
 
+object_dir_z:
+    FLOAT_TO_FP 1.0
+
 ; ============================================================================
 ; ============================================================================
 
@@ -91,7 +97,7 @@ init_3d_scene:
 ; ============================================================================
 ; ============================================================================
 
-update_3d_scene:
+transform_3d_scene:
     str lr, [sp, #-4]!
 
     ; TODO: Optimise creation of rotation matrix.
@@ -288,8 +294,13 @@ update_3d_scene:
     bne .2
     .endif
 
+    ldr pc, [sp], #4
+
+update_3d_scene:
+    str lr, [sp, #-4]!
+
     ; Update any scene vars, camera, object position etc. (Rocket?)
-    .if 0
+    .if 1
     mov r1, #MATHS_CONST_HALF    ; ROTATION_X
     ldr r0, object_rot+0
     add r0, r0, r1
@@ -307,6 +318,18 @@ update_3d_scene:
     add r0, r0, r1
     bic r0, r0, #0xff000000         ; brads
     str r0, object_rot+8
+
+
+    ldr r0, object_pos+8            ; POSTION_Z
+    ldr r1, object_dir_z
+    add r0, r0, r1
+    cmp r0, #64.0*PRECISION_MULTIPLIER
+    mvnge r1, r1                    ; invert dir
+    cmp r0, #-24.0*PRECISION_MULTIPLIER
+    mvnle r1, r1                    ; invert dir
+    str r0, object_pos+8
+    str r1, object_dir_z
+
     .else
 	mov r0, #0
 	swi QTM_ReadVULevels
@@ -346,11 +369,47 @@ update_3d_scene:
 ; ============================================================================
 
 ; R12=screen addr
+anaglyph_draw_3d_scene:
+    str lr, [sp, #-4]!
+
+    ; Left eye.
+    mov r0, #LeftEye_X_Pos
+    str r0, camera_pos+0        ; camera_pos_x
+
+    stmfd sp!, {r12}
+    bl transform_3d_scene
+    ldmfd sp!, {r12}
+
+    ; Subtract blue & green.
+    mov r4, #7                  ; brightest red
+    bl draw_3d_scene
+
+    ; Right eye.
+    mov r0, #RightEye_X_Pos
+    str r0, camera_pos+0        ; camera_pos_x
+
+    stmfd sp!, {r12}
+    bl transform_3d_scene
+    ldmfd sp!, {r12}
+
+    ; Subtract red.
+    mov r4, #11                 ; brightest cyan
+    bl draw_3d_scene
+
+    ldr pc, [sp], #4
+
+draw_3d_scene_in_colour:
+    .long 0
+
+; R4=colour index
+; R12=screen addr
 draw_3d_scene:
     str lr, [sp, #-4]!
 
     ; Stash screen addr for now.
     str r12, [sp, #-4]!
+
+    str r4, draw_3d_scene_in_colour
 
     ; Project vertices to screen.
     adr r2, transformed_verts
@@ -399,10 +458,11 @@ draw_3d_scene:
     adr r2, projected_verts     ; projected vertex array.
     ldr r3, [r11]               ; quad indices.
     stmfd sp!, {r9,r11,r12}
-    add r4, r9, #1              ; colour index.
-    cmp r4, #4
-    subge r4, r4, #3            ; [1-3]
-    bl polygon_plot_quad_indexed
+    ;add r4, r9, #9              ; colour index.
+    ;cmp r4, #4
+    ;subge r4, r4, #3            ; [1-3]
+    ldr r4, draw_3d_scene_in_colour
+    bl line_plot_quad_indexed
     ldmfd sp!, {r9,r11,r12}
 
     .3:
@@ -410,6 +470,66 @@ draw_3d_scene:
     add r9, r9, #1
     cmp r9, #object_num_faces
     bne .2
+
+    ldr pc, [sp], #4
+
+; Plot a quad, but lines.
+; Parameters:
+;  R12=screen addr
+;  R2=ptr to projected vertex array (x,y) in screen coords [16.0]
+;  R3=4x vertex indices for quad
+;  R4=colour index
+line_plot_quad_indexed:
+	str lr, [sp, #-4]!			; push lr on stack
+
+    mov r8, r2
+    mov r9, r3
+
+    and r6, r9, #0xff           ; index 0
+    add r5, r8, r6, lsl #3      ; projected_verts + index*8
+    ldmia r5, {r0, r1}          ; x_start, y_start
+
+    mov r6, r9, lsr #8          ; 
+    and r6, r6, #0xff           ; index 1
+    add r5, r8, r6, lsl #3      ; projected_verts + index*8
+    ldmia r5, {r2, r3}          ; x_end, y_end
+
+    stmfd sp!, {r8,r9}
+    bl mode9_drawline
+    ldmfd sp!, {r8,r9}
+
+    mov r0, r2                  ; x_start = x_end
+    mov r1, r3                  ; y_start = y_end
+
+    mov r6, r9, lsr #16         ; 
+    and r6, r6, #0xff           ; index 2
+    add r5, r8, r6, lsl #3      ; projected_verts + index*8
+    ldmia r5, {r2, r3}          ; x_end, y_end
+
+    stmfd sp!, {r8,r9}
+    bl mode9_drawline
+    ldmfd sp!, {r8,r9}
+
+    mov r0, r2                  ; x_start = x_end
+    mov r1, r3                  ; y_start = y_end
+
+    mov r6, r9, lsr #24         ; 
+    and r6, r6, #0xff           ; index 3
+    add r5, r8, r6, lsl #3      ; projected_verts + index*8
+    ldmia r5, {r2, r3}          ; x_end, y_end
+
+    stmfd sp!, {r8,r9}
+    bl mode9_drawline
+    ldmfd sp!, {r8,r9}
+
+    mov r0, r2                  ; x_start = x_end
+    mov r1, r3                  ; y_start = y_end
+
+    and r6, r9, #0xff           ; index 0
+    add r5, r8, r6, lsl #3      ; projected_verts + index*8
+    ldmia r5, {r2, r3}          ; x_end, y_end
+
+    bl mode9_drawline
 
     ldr pc, [sp], #4
 
