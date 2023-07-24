@@ -8,7 +8,7 @@ seq_main_program:
     ; TODO: Setup music etc. here also?
 
     ; Init FX modules.
-    ;call_0 particles_init
+    call_0 init_3d_scene
 
 	; Setup layers of FX.
     call_3 fx_set_layer_fns, 0, 0,     screen_cls

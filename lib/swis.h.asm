@@ -88,7 +88,7 @@
 .equ RMKey_7, 0x17
 .equ RMKey_8, 0x18
 .equ RMKey_9, 0x19
-.equ RMKey_0, 0x10
+.equ RMKey_0, 0x1a
 
 .equ DynArea_Screen, 2
 

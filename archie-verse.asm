@@ -84,6 +84,16 @@
 .equ KeyBit_D, 3
 .equ KeyBit_R, 4
 .equ KeyBit_ArrowRight, 5
+.equ KeyBit_0, 10
+.equ KeyBit_1, 11
+.equ KeyBit_2, 12
+.equ KeyBit_3, 13
+.equ KeyBit_4, 14
+.equ KeyBit_5, 15
+.equ KeyBit_6, 16
+.equ KeyBit_7, 17
+.equ KeyBit_8, 18
+.equ KeyBit_9, 19
 
 ; TODO: Remove Timer1 split if not necessary.
 .equ RasterSplitLine, 56+90			; 56 lines from vsync to screen start
@@ -342,6 +352,8 @@ keyboard_prev_mask:
     .long 0
 
 debug_tick:
+	str lr, [sp, #-4]!
+
     ldr r0, keyboard_pressed_mask
 	ldr r2, keyboard_prev_mask
 	mvn r2, r2				; ~old
@@ -419,7 +431,34 @@ debug_tick:
     swi QTM_Pos         ; set position.
 
 .6:
-    mov pc, lr
+    mov r0, #-1
+
+    tst r4, #1<<KeyBit_0
+    movne r0, #0
+    tst r4, #1<<KeyBit_1
+    movne r0, #1
+    tst r4, #1<<KeyBit_2
+    movne r0, #2
+    tst r4, #1<<KeyBit_3
+    movne r0, #3
+    tst r4, #1<<KeyBit_4
+    movne r0, #4
+    tst r4, #1<<KeyBit_5
+    movne r0, #5
+    tst r4, #1<<KeyBit_6
+    movne r0, #6
+    tst r4, #1<<KeyBit_7
+    movne r0, #7
+    tst r4, #1<<KeyBit_8
+    movne r0, #8
+    tst r4, #1<<KeyBit_9
+    movne r0, #9
+
+    cmp r0, #-1
+    blne set_eye_distance
+
+.7:
+    ldr pc, [sp], #4
 
 debug_print_r0:
 	stmfd sp!, {r0-r2}
@@ -605,6 +644,26 @@ event_handler:
 	orreq r0, r0, #1<<KeyBit_R
 	cmp r2, #RMKey_ArrowRight
 	orreq r0, r0, #1<<KeyBit_ArrowRight
+	cmp r2, #RMKey_0
+	orreq r0, r0, #1<<KeyBit_0
+	cmp r2, #RMKey_1
+	orreq r0, r0, #1<<KeyBit_1
+	cmp r2, #RMKey_2
+	orreq r0, r0, #1<<KeyBit_2
+	cmp r2, #RMKey_3
+	orreq r0, r0, #1<<KeyBit_3
+	cmp r2, #RMKey_4
+	orreq r0, r0, #1<<KeyBit_4
+	cmp r2, #RMKey_5
+	orreq r0, r0, #1<<KeyBit_5
+	cmp r2, #RMKey_6
+	orreq r0, r0, #1<<KeyBit_6
+	cmp r2, #RMKey_7
+	orreq r0, r0, #1<<KeyBit_7
+	cmp r2, #RMKey_8
+	orreq r0, r0, #1<<KeyBit_8
+	cmp r2, #RMKey_9
+	orreq r0, r0, #1<<KeyBit_9
 	b .3
 
 .2:
@@ -621,6 +680,26 @@ event_handler:
 	biceq r0, r0, #1<<KeyBit_R
 	cmp r2, #RMKey_ArrowRight
 	biceq r0, r0, #1<<KeyBit_ArrowRight
+	cmp r2, #RMKey_0
+	biceq r0, r0, #1<<KeyBit_0
+	cmp r2, #RMKey_1
+	biceq r0, r0, #1<<KeyBit_1
+	cmp r2, #RMKey_2
+	biceq r0, r0, #1<<KeyBit_2
+	cmp r2, #RMKey_3
+	biceq r0, r0, #1<<KeyBit_3
+	cmp r2, #RMKey_4
+	biceq r0, r0, #1<<KeyBit_4
+	cmp r2, #RMKey_5
+	biceq r0, r0, #1<<KeyBit_5
+	cmp r2, #RMKey_6
+	biceq r0, r0, #1<<KeyBit_6
+	cmp r2, #RMKey_7
+	biceq r0, r0, #1<<KeyBit_7
+	cmp r2, #RMKey_8
+	biceq r0, r0, #1<<KeyBit_8
+	cmp r2, #RMKey_9
+	biceq r0, r0, #1<<KeyBit_9
 
 .3:
 	str r0, keyboard_pressed_mask

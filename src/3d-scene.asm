@@ -19,12 +19,17 @@
 .equ VIEWPORT_CENTRE_X, 160 * PRECISION_MULTIPLIER
 .equ VIEWPORT_CENTRE_Y, 128 * PRECISION_MULTIPLIER
 
-.equ LeftEye_X_Pos,  -2.0 * PRECISION_MULTIPLIER
-.equ RightEye_X_Pos, +2.0 * PRECISION_MULTIPLIER
+.equ EyeDistance_Default_Setting,   5
 
 ; ============================================================================
 ; Scene data.
 ; ============================================================================
+
+LeftEye_X_Pos:
+    FLOAT_TO_FP 0.0
+
+RightEye_X_Pos:
+    FLOAT_TO_FP 0.0
 
 ; For simplicity, we assume that the camera has a FOV of 90 degrees, so the
 ; distance to the view plane is 'd' is the same as the viewport scale. All
@@ -89,8 +94,36 @@ object_dir_z:
 ; ============================================================================
 ; ============================================================================
 
+eye_distance_table:
+    FLOAT_TO_FP 0.0         ; 0
+    FLOAT_TO_FP 0.4         ; 1
+    FLOAT_TO_FP 0.8         ; 2
+    FLOAT_TO_FP 1.2         ; 3
+    FLOAT_TO_FP 1.6         ; 4
+    FLOAT_TO_FP 2.0         ; 5
+    FLOAT_TO_FP 2.4         ; 6
+    FLOAT_TO_FP 2.8         ; 7
+    FLOAT_TO_FP 3.2         ; 8
+    FLOAT_TO_FP 3.6         ; 9
+
+; R0=distance index.
+set_eye_distance:
+
+    adr r1, eye_distance_table
+    ldr r0, [r1, r0, lsl #2]
+
+    ; For now assume camera is fixed at X=0.
+    str r0, RightEye_X_Pos
+    mvn r0, r0
+    str r0, LeftEye_X_Pos
+    mov pc, lr
+
+
 init_3d_scene:
     str lr, [sp, #-4]!
+
+    mov r0, #EyeDistance_Default_Setting
+    bl set_eye_distance
 
     ldr pc, [sp], #4
 
@@ -373,7 +406,7 @@ anaglyph_draw_3d_scene:
     str lr, [sp, #-4]!
 
     ; Left eye.
-    mov r0, #LeftEye_X_Pos
+    ldr r0, LeftEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
 
     stmfd sp!, {r12}
@@ -385,7 +418,7 @@ anaglyph_draw_3d_scene:
     bl draw_3d_scene
 
     ; Right eye.
-    mov r0, #RightEye_X_Pos
+    ldr r0, RightEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
 
     stmfd sp!, {r12}
