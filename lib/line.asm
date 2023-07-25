@@ -32,72 +32,51 @@ mode12_drawline_batch:
     ldr pc, [sp], #4
 
 ; R0=startx, R1=starty, R2=endx, R3=endy, R4=colour, R12=screen_addr
-; Trashes r5-r11
+; Trashes r5-r10
 mode9_drawline_orr:
-	str lr, [sp, #-4]!			; push lr on stack
-
 	subs r5, r2, r0				; r5 = dx = endx - startx
-	rsblt r5, r5, #0			; r5 = abs(dx)
+	orrs r7, r5, #1<<30			; int sx = dx > 0 ? 1 : -1;
+	rsbmi r5, r5, #0			; r5 = abs(dx)
 
-	cmp r0,r2					; startx < endx?
-	movlt r7, #1				; r7 = sx = 1
-	movge r7, #-1				; r7 = sx = -1
-
+	mov r8, #160                ; r8 = sy = +stride
 	subs r6, r3, r1				; r6 = dy = endy - starty
-	rsblt r6, r6, #0			; r6 = abs(dy)
-	rsb r6, r6, #0				; r6 = -abs(dy)
-
-	cmp r1, r3					; starty < endy?
-	movlt r8, #1				; r8 = sy = 1
-	movge r8, #-1				; r8 = sy = -1
+	rsbpl r6, r6, #0			; r6 = -abs(dy)
+	rsbmi r8, r8, #0            ; r8 = sy = -stride
 
 	add r9, r5, r6				; r9 = dx + dy = err
 
-    ; TODO: Replace y and sy with ptr_y and stride_y.
+	add r10, r12, r1, lsl #7	; 
+	add r1, r10, r1, lsl #5	    ; replace current_y with current_y_ptr
+
+	add r10, r12, r3, lsl #7	; 
+	add r3, r10, r3, lsl #5	    ; replace endy with end_y_ptr
 
 .1:
 	cmp r0, r2					; x0 == x1?
 	cmpeq r1, r3				; y0 == y1?
-	ldreq pc, [sp], #4			; rts
+    moveq pc, lr                ; rts
 
-    ; Clip to screen. Expensive. :(
-    .if 0
-    cmp r0, #0
-    blt .2
-    cmp r0, #Screen_Width
-    bge .2
-    cmp r1, #0
-    blt .2
-    cmp r2, #Screen_Height
-    bge .2
-    .endif
+    ; NB. No screen clipping.
 
-	; there will be faster line plot algorithms by keeping track of
-	; screen pointer then flushing a byte or word when moving to next row
-	; ptr = screen_addr + starty * screen_stride + startx DIV 2
-	add r10, r12, r1, lsl #7	; r10 = screen_addr + starty * 128
-	add r10, r10, r1, lsl #5	; r10 += starty * 32 = starty * 160
-
-	ldrb r11, [r10, r0, lsr #1]	; load screen byte
+	ldrb r10, [r1, r0, lsr #1]	; load screen byte
 
 	tst r0, #1					; odd or even pixel?
-	;andeq r11, r11, #0xF0		; mask out left hand pixel
-	orreq r11, r11, r4			; mask in colour as left hand pixel
+	;andeq r10, r10, #0xF0		; mask out left hand pixel
+	orreq r10, r10, r4			; mask in colour as left hand pixel
 
-	;andne r11, r11, #0x0F		; mask out right hand pixel
-	orrne r11, r11, r4, lsl #4	; mask in colour as right hand pixel
+	;andne r10, r10, #0x0F		; mask out right hand pixel
+	orrne r10, r10, r4, lsl #4	; mask in colour as right hand pixel
 
-	strb r11, [r10, r0, lsr #1]	; store screen byte
+	strb r10, [r1, r0, lsr #1]	; store screen byte
 
-.2:
 	mov r10, r9, lsl #1			; r10 = err * 2
 	cmp r10, r6					; e2 >= dy?
 	addge r9, r9, r6			; err += dy
-	addge r0, r0, r7			; x0 += sx
+	addge r0, r0, r7, asr #30   ; x0 += sx
 
 	cmp r10, r5					; e2 <= dx?
 	addle r9, r9, r5			; err += dx
-	addle r1, r1, r8			; y0 += sy
+	addle r1, r1, r8			; y0 += stride_y
 
 	b .1
 

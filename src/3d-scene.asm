@@ -535,14 +535,14 @@ edge_plot_cache:
 plot_face_edge_list:
 	str lr, [sp, #-4]!			; push lr on stack
 
-    ldr r10, edge_plot_cache
+    ldr r11, edge_plot_cache
     mov r8, #0                  ; edge no.
 .1:
     ; Convert edge no. to bit no.
     mov r9, #1
 
     ; Test edge list cache.
-    tst r10, r9, lsl r8         ; already plotted?
+    tst r11, r9, lsl r8         ; already plotted?
     bne .2
 
     ; Test if this edge is in the face.
@@ -550,7 +550,7 @@ plot_face_edge_list:
     beq .2
 
     ; Look up vertex indices for edge.
-    ldr  r0, [r5, r8, lsl #1]   ; misaligned read!
+    ldr r0, [r5, r8, lsl #1]    ; misaligned read!
     mov r2, r0, lsr #8          ; end index
     and r0, r0, #0xff           ; start index
     and r2, r2, #0xff
@@ -563,13 +563,13 @@ plot_face_edge_list:
     add r9, r6, r2, lsl #3      ; projected_verts[start_index]
     ldmia r9, {r2,r3}           ; end_x, end_y
 
-    stmfd sp!, {r5-r8,r10}
-    bl mode9_drawline_orr       ; trashes r5-r11
-    ldmfd sp!, {r5-r8,r10}
+    stmfd sp!, {r5-r8}
+    bl mode9_drawline_orr       ; trashes r5-r10
+    ldmfd sp!, {r5-r8}
 
     ; Mark edge as plotted in cache.
     mov r9, #1
-    orr r10, r10, r9, lsl r8
+    orr r11, r11, r9, lsl r8
 
 .2:
     ; Early out when edge list word is zero.
@@ -582,7 +582,7 @@ plot_face_edge_list:
     blt .1
 
 .3:
-    str r10, edge_plot_cache
+    str r11, edge_plot_cache
     ldr pc, [sp], #4
 
 
@@ -608,7 +608,7 @@ line_plot_quad_indexed:
     ldmia r5, {r2, r3}          ; x_end, y_end
 
     stmfd sp!, {r8,r9}
-    bl mode9_drawline_orr       ; trashes r5-r11
+    bl mode9_drawline_orr       ; trashes r5-r10
     ldmfd sp!, {r8,r9}
 
     mov r0, r2                  ; x_start = x_end
@@ -620,7 +620,7 @@ line_plot_quad_indexed:
     ldmia r5, {r2, r3}          ; x_end, y_end
 
     stmfd sp!, {r8,r9}
-    bl mode9_drawline_orr       ; trashes r5-r11
+    bl mode9_drawline_orr       ; trashes r5-r10
     ldmfd sp!, {r8,r9}
 
     mov r0, r2                  ; x_start = x_end
@@ -632,7 +632,7 @@ line_plot_quad_indexed:
     ldmia r5, {r2, r3}          ; x_end, y_end
 
     stmfd sp!, {r8,r9}
-    bl mode9_drawline_orr       ; trashes r5-r11
+    bl mode9_drawline_orr       ; trashes r5-r10
     ldmfd sp!, {r8,r9}
 
     mov r0, r2                  ; x_start = x_end
@@ -642,7 +642,7 @@ line_plot_quad_indexed:
     add r5, r8, r6, lsl #3      ; projected_verts + index*8
     ldmia r5, {r2, r3}          ; x_end, y_end
 
-    bl mode9_drawline_orr       ; trashes r5-r11
+    bl mode9_drawline_orr       ; trashes r5-r10
 
     ldr pc, [sp], #4
 
