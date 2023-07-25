@@ -10,6 +10,7 @@
 
 .equ object_num_verts, 8
 .equ object_num_faces, 6
+.equ object_num_edges, 12
 
 ; The camera viewport is assumed to be [-1,+1] across its widest axis.
 ; Therefore we multiply all projected coordinates by the screen width/2
@@ -69,7 +70,8 @@ object_rot:
 
 object_scale:
     FLOAT_TO_FP 1.0
-    
+
+.if 0                       ; Only needed for full-fat matrix transform.
 object_transform:
     MATRIX33_IDENTITY
 
@@ -87,6 +89,7 @@ temp_vector_1:
 
 temp_vector_2:
     VECTOR3_ZERO
+.endif
 
 object_dir_z:
     FLOAT_TO_FP 1.0
@@ -133,10 +136,10 @@ init_3d_scene:
 transform_3d_scene:
     str lr, [sp, #-4]!
 
+    .if 0
     ; TODO: Optimise creation of rotation matrix.
     ;       Can compute this directly w/out multiplying matrices.
 
-    .if 0
     ; Create rotation matrix as object transform.
     adr r2, temp_matrix_1
     ldr r0, object_rot + 0
@@ -464,6 +467,8 @@ draw_3d_scene:
     ; Plot faces as polys.
     adr r11, object_face_indices
     mov r9, #0                  ; face count
+    str r9, edge_plot_cache
+
     .2:
     ldrb r5, [r11, #0]          ; vertex0 of polygon.
     
@@ -488,15 +493,26 @@ draw_3d_scene:
     cmp r0, #0                  
     bpl .3                      ; normal facing away from the view direction.
 
+    .if 0
     adr r2, projected_verts     ; projected vertex array.
     ldr r3, [r11]               ; quad indices.
+
     stmfd sp!, {r9,r11,r12}
-    ;add r4, r9, #9              ; colour index.
-    ;cmp r4, #4
-    ;subge r4, r4, #3            ; [1-3]
     ldr r4, draw_3d_scene_in_colour
     bl line_plot_quad_indexed
     ldmfd sp!, {r9,r11,r12}
+    .else
+
+    ldr r4, draw_3d_scene_in_colour
+    adr r5, object_edge_indices
+    adr r6, projected_verts     ; projected vertex array.
+    adr r7, object_edge_list_per_face
+    ldr r7, [r7, r9, lsl #2]    ; edge list word.
+
+    stmfd sp!, {r9,r11}         ; TODO: Don't store r11?
+    bl plot_face_edge_list
+    ldmfd sp!, {r9,r11}
+    .endif
 
     .3:
     add r11, r11, #4
@@ -505,6 +521,70 @@ draw_3d_scene:
     bne .2
 
     ldr pc, [sp], #4
+
+edge_plot_cache:
+    .long 0
+
+; Plot all edges in a list.
+; Parameters:
+;  R12=screen addr
+;  R4=colour index
+;  R5=ptr to array of edge indices.
+;  R6=ptr to projected vertex array (x,y) in screen coords [16.0]
+;  R7=edge list word (one bit per edge to be plotted)
+plot_face_edge_list:
+	str lr, [sp, #-4]!			; push lr on stack
+
+    ldr r10, edge_plot_cache
+    mov r8, #0                  ; edge no.
+.1:
+    ; Convert edge no. to bit no.
+    mov r9, #1
+
+    ; Test edge list cache.
+    tst r10, r9, lsl r8         ; already plotted?
+    bne .2
+
+    ; Test if this edge is in the face.
+    tst r7, r9, lsl r8
+    beq .2
+
+    ; Look up vertex indices for edge.
+    ldr  r0, [r5, r8, lsl #1]   ; misaligned read!
+    mov r2, r0, lsr #8          ; end index
+    and r0, r0, #0xff           ; start index
+    and r2, r2, #0xff
+
+    ; Load (x,y) for start vertex
+    add r9, r6, r0, lsl #3      ; projected_verts[start_index]
+    ldmia r9, {r0,r1}           ; start_x, start_y
+
+    ; Load (x,y) for end vertex
+    add r9, r6, r2, lsl #3      ; projected_verts[start_index]
+    ldmia r9, {r2,r3}           ; end_x, end_y
+
+    stmfd sp!, {r5-r8,r10}
+    bl mode9_drawline_orr       ; trashes r5-r11
+    ldmfd sp!, {r5-r8,r10}
+
+    ; Mark edge as plotted in cache.
+    mov r9, #1
+    orr r10, r10, r9, lsl r8
+
+.2:
+    ; Early out when edge list word is zero.
+    bics r7, r7, r9, lsl r8
+    beq .3
+
+    ; Next edge no.
+    add r8, r8, #1
+    cmp r8, #32
+    blt .1
+
+.3:
+    str r10, edge_plot_cache
+    ldr pc, [sp], #4
+
 
 ; Plot a quad, but lines.
 ; Parameters:
@@ -528,7 +608,7 @@ line_plot_quad_indexed:
     ldmia r5, {r2, r3}          ; x_end, y_end
 
     stmfd sp!, {r8,r9}
-    bl mode9_drawline
+    bl mode9_drawline_orr       ; trashes r5-r11
     ldmfd sp!, {r8,r9}
 
     mov r0, r2                  ; x_start = x_end
@@ -540,7 +620,7 @@ line_plot_quad_indexed:
     ldmia r5, {r2, r3}          ; x_end, y_end
 
     stmfd sp!, {r8,r9}
-    bl mode9_drawline
+    bl mode9_drawline_orr       ; trashes r5-r11
     ldmfd sp!, {r8,r9}
 
     mov r0, r2                  ; x_start = x_end
@@ -552,7 +632,7 @@ line_plot_quad_indexed:
     ldmia r5, {r2, r3}          ; x_end, y_end
 
     stmfd sp!, {r8,r9}
-    bl mode9_drawline
+    bl mode9_drawline_orr       ; trashes r5-r11
     ldmfd sp!, {r8,r9}
 
     mov r0, r2                  ; x_start = x_end
@@ -562,7 +642,7 @@ line_plot_quad_indexed:
     add r5, r8, r6, lsl #3      ; projected_verts + index*8
     ldmia r5, {r2, r3}          ; x_end, y_end
 
-    bl mode9_drawline
+    bl mode9_drawline_orr       ; trashes r5-r11
 
     ldr pc, [sp], #4
 
@@ -655,6 +735,34 @@ object_face_indices:
     .byte 5, 4, 7, 6
     .byte 4, 0, 3, 7
     .byte 2, 3, 7, 6
+
+; TODO: Determine this from object_face_indices.
+; TODO: Handle more than 32 total edges.
+object_edge_list_per_face:
+;            3         2         1         
+;           10987654321098765432109876543210
+    .long 0b00000000000000000000000000001111
+    .long 0b00000000000000000000011000100010
+    .long 0b00000000000000000000001100010001
+    .long 0b00000000000000000000000011110000
+    .long 0b00000000000000000000100110001000
+    .long 0b00000000000000000000110001000100
+
+; TODO: Determine this from object_face_indices.
+object_edge_indices:
+    .byte 0, 1              ; 0
+    .byte 1, 2              ; 1
+    .byte 2, 3              ; 2
+    .byte 3, 0              ; 3
+    .byte 4, 5              ; 4
+    .byte 5, 6              ; 5
+    .byte 6, 7              ; 6
+    .byte 7, 4              ; 7
+    .byte 0, 4              ; 8
+    .byte 1, 5              ; 9
+    .byte 2, 6              ; 10
+    .byte 3, 7              ; 11
+.p2align 2
 
  ;TODO: Object face colours or vertex colours etc.
 

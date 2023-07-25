@@ -33,7 +33,7 @@ mode12_drawline_batch:
 
 ; R0=startx, R1=starty, R2=endx, R3=endy, R4=colour, R12=screen_addr
 ; Trashes r5-r11
-mode9_drawline:
+mode9_drawline_orr:
 	str lr, [sp, #-4]!			; push lr on stack
 
 	subs r5, r2, r0				; r5 = dx = endx - startx
@@ -81,10 +81,10 @@ mode9_drawline:
 	ldrb r11, [r10, r0, lsr #1]	; load screen byte
 
 	tst r0, #1					; odd or even pixel?
-	andeq r11, r11, #0xF0		; mask out left hand pixel
+	;andeq r11, r11, #0xF0		; mask out left hand pixel
 	orreq r11, r11, r4			; mask in colour as left hand pixel
 
-	andne r11, r11, #0x0F		; mask out right hand pixel
+	;andne r11, r11, #0x0F		; mask out right hand pixel
 	orrne r11, r11, r4, lsl #4	; mask in colour as right hand pixel
 
 	strb r11, [r10, r0, lsr #1]	; store screen byte
