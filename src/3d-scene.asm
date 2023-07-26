@@ -8,9 +8,8 @@
 .equ OBJ_VERTS_PER_FACE, 4
 .equ OBJ_MAX_EDGES_PER_FACE, OBJ_VERTS_PER_FACE
 
-.equ object_num_verts, 8
-.equ object_num_faces, 6
-.equ object_num_edges, 12
+.equ Model_Cube_Num_Verts, 8
+.equ Model_Cube_Num_Faces, 6
 
 ; The camera viewport is assumed to be [-1,+1] across its widest axis.
 ; Therefore we multiply all projected coordinates by the screen width/2
@@ -71,28 +70,28 @@ object_rot:
 object_scale:
     FLOAT_TO_FP 1.0
 
-.if 0                       ; Only needed for full-fat matrix transform.
-object_transform:
-    MATRIX33_IDENTITY
-
-normal_transform:           ; Rotation only.
-    MATRIX33_IDENTITY
-
-temp_matrix_1:
-    MATRIX33_IDENTITY
-
-temp_matrix_2:
-    MATRIX33_IDENTITY
-
-temp_vector_1:
-    VECTOR3_ZERO
-
-temp_vector_2:
-    VECTOR3_ZERO
-.endif
-
 object_dir_z:
     FLOAT_TO_FP 1.0
+
+; ============================================================================
+
+object_num_verts:
+    .long Model_Cube_Num_Verts
+
+object_num_faces:
+    .long Model_Cube_Num_Faces
+
+object_verts_p:
+    .long model_cube_verts
+
+object_face_indices_p:
+    .long model_cube_face_indices
+
+object_edge_list_per_face_p:
+    .long model_cube_edges_per_face
+
+object_edge_indices_p:
+    .long model_cube_edge_indices
 
 ; ============================================================================
 ; ============================================================================
@@ -136,93 +135,6 @@ init_3d_scene:
 transform_3d_scene:
     str lr, [sp, #-4]!
 
-    .if 0
-    ; TODO: Optimise creation of rotation matrix.
-    ;       Can compute this directly w/out multiplying matrices.
-
-    ; Create rotation matrix as object transform.
-    adr r2, temp_matrix_1
-    ldr r0, object_rot + 0
-    bl matrix_make_rotate_x     ; T1=rot_x
-
-    adr r2, object_transform
-    ldr r0, object_rot + 4
-    bl matrix_make_rotate_y     ; OT=rot_y
-
-    adr r0, temp_matrix_1
-    adr r1, object_transform
-    adr r2, temp_matrix_2
-    bl matrix_multiply          ; T2=T1.OT
-
-    adr r2, temp_matrix_1
-    ldr r0, object_rot + 8
-    bl matrix_make_rotate_z     ; T1=rot_z
-
-    adr r0, temp_matrix_2
-    adr r1, temp_matrix_1
-    adr r2, normal_transform    ; NT=T2.T1  <== rotation only.
-    bl matrix_multiply
-
-    ldr r0, object_scale
-    adr r2, temp_matrix_2
-    bl matrix_make_scale        ; T2=scale
-
-    adr r0, temp_matrix_2
-    adr r1, normal_transform
-    adr r2, object_transform    ; OT=T2.NT
-    bl matrix_multiply
-
-    ; Subtract camera position from object position.
-    adr r12, camera_pos
-    ldmia r12, {r3-r5}
-
-    adr r11, object_pos
-    ldmia r11, {r6-r8}
-
-    sub r6, r6, r3
-    sub r7, r7, r4
-    sub r8, r8, r5
-
-    ; Camera relative object position.
-    adr r11, object_pos_camera_relative
-    stmia r11, {r6-r8}
-
-    ; Transform vertices in scene.
-    adr r0, object_transform
-    adr r1, object_verts
-    adr r2, transformed_verts
-    mov r10, #object_num_verts
-    .1:
-    ; R0=ptr to matrix, R1=vector A, R2=vector B
-    bl matrix_multiply_vector
-    ; TODO: Array version of this function.
-
-    ldmia r2, {r3-r5}
-    ; Add camera relative object position to transform vertex.
-    ldmia r11, {r6-r8}
-    add r3, r3, r6
-    add r4, r4, r7
-    add r5, r5, r8
-    stmia r2!, {r3-r5}
-    
-    add r1, r1, #VECTOR3_SIZE
-    subs r10, r10, #1
-    bne .1
-
-    ; Transform normals.
-    adr r0, normal_transform
-    adr r1, object_face_normals
-    adr r2, transformed_normals
-    mov r10, #object_num_faces
-    .2:
-    ; R0=ptr to matrix, R1=vector A, R2=vector B
-    bl matrix_multiply_vector
-    ; TODO: Array version of this function.
-    add r1, r1, #VECTOR3_SIZE
-    add r2, r2, #VECTOR3_SIZE
-    subs r10, r10, #1
-    bne .2
-    .else
     ; Skip matrix multiplication altogether.
     ; Transform (x,y,z) into (x'',y'',z'') directly.
     ; Uses 12 muls / rotation.
@@ -242,9 +154,11 @@ transform_3d_scene:
     mov r8, r0, asr #MULTIPLICATION_SHIFT  ; r8 = sin(B)
     mov r9, r1, asr #MULTIPLICATION_SHIFT  ; r9 = cos(B)
 
-    adr r1, object_verts
+    ldr r1, object_verts_p
     adr r2, transformed_verts
-    mov r12, #object_num_verts + object_num_faces
+    ldr r12, object_num_verts
+    ldr r3, object_num_faces
+    add r12, r12, r3                      ; object_num_verts + object_num_faces
     ; ASSUMES THAT VERTEX AND NORMAL ARRAYS ARE CONSECUTIVE!
     .1:
     ldmia r1!, {r3-r5}                    ; x,y,z
@@ -306,7 +220,7 @@ transform_3d_scene:
     mov r0, r0, asr #MULTIPLICATION_SHIFT
 
     adr r2, transformed_verts
-    mov r12, #object_num_verts
+    ldr r12, object_num_verts
     .2:
     ldmia r2, {r3-r5}
 
@@ -328,7 +242,6 @@ transform_3d_scene:
     stmia r2!, {r3-r5}
     subs r12, r12, #1
     bne .2
-    .endif
 
     ldr pc, [sp], #4
 
@@ -449,7 +362,7 @@ draw_3d_scene:
 
     ; Project vertices to screen.
     adr r2, transformed_verts
-    mov r11, #object_num_verts
+    ldr r11, object_num_verts
     adr r12, projected_verts
     .1:
     ; R2=ptr to world pos vector
@@ -465,12 +378,15 @@ draw_3d_scene:
     ldr r12, [sp], #4           ; pop screen addr
 
     ; Plot faces as polys.
-    adr r11, object_face_indices
+    ldr r11, object_face_indices_p
     mov r9, #0                  ; face count
     str r9, edge_plot_cache
 
+    ldr r9, object_num_faces
+    sub r9, r9, #1
+
     .2:
-    ldrb r5, [r11, #0]          ; vertex0 of polygon.
+    ldrb r5, [r11, r9, lsl #2]  ; vertex0 of polygon N.
     
     adr r1, transformed_verts
     add r1, r1, r5, lsl #3
@@ -495,7 +411,7 @@ draw_3d_scene:
 
     .if 0
     adr r2, projected_verts     ; projected vertex array.
-    ldr r3, [r11]               ; quad indices.
+    ldr r3, [r11, r9, lsl #2]   ; quad indices.
 
     stmfd sp!, {r9,r11,r12}
     ldr r4, draw_3d_scene_in_colour
@@ -504,9 +420,9 @@ draw_3d_scene:
     .else
 
     ldr r4, draw_3d_scene_in_colour
-    adr r5, object_edge_indices
+    ldr r5, object_edge_indices_p
     adr r6, projected_verts     ; projected vertex array.
-    adr r7, object_edge_list_per_face
+    ldr r7, object_edge_list_per_face_p
     ldr r7, [r7, r9, lsl #2]    ; edge list word.
 
     stmfd sp!, {r9,r11}         ; TODO: Don't store r11?
@@ -515,10 +431,8 @@ draw_3d_scene:
     .endif
 
     .3:
-    add r11, r11, #4
-    add r9, r9, #1
-    cmp r9, #object_num_faces
-    bne .2
+    subs r9, r9, #1
+    bpl .2
 
     ldr pc, [sp], #4
 
@@ -705,7 +619,7 @@ project_to_screen:
 ;      3        2
 ; ============================================================================
 
-object_verts:
+model_cube_verts:
     VECTOR3 -16.0,  16.0, -16.0
     VECTOR3  16.0,  16.0, -16.0
     VECTOR3  16.0, -16.0, -16.0
@@ -717,7 +631,7 @@ object_verts:
 
 ; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
 
-object_face_normals:
+model_cube_face_normals:
     VECTOR3  0.0,  0.0, -1.0
     VECTOR3  1.0,  0.0,  0.0
     VECTOR3  0.0,  1.0,  0.0
@@ -728,7 +642,7 @@ object_face_normals:
 ; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
 
 ; Winding order is clockwise (from outside)
-object_face_indices:
+model_cube_face_indices:
     .byte 0, 1, 2, 3
     .byte 1, 5, 6, 2
     .byte 0, 4, 5, 1
@@ -736,9 +650,9 @@ object_face_indices:
     .byte 4, 0, 3, 7
     .byte 2, 3, 7, 6
 
-; TODO: Determine this from object_face_indices.
+; TODO: Determine this from model_cube_face_indices.
 ; TODO: Handle more than 32 total edges.
-object_edge_list_per_face:
+model_cube_edges_per_face:
 ;            3         2         1         
 ;           10987654321098765432109876543210
     .long 0b00000000000000000000000000001111
@@ -748,8 +662,8 @@ object_edge_list_per_face:
     .long 0b00000000000000000000100110001000
     .long 0b00000000000000000000110001000100
 
-; TODO: Determine this from object_face_indices.
-object_edge_indices:
+; TODO: Determine this from model_cube_face_indices.
+model_cube_edge_indices:
     .byte 0, 1              ; 0
     .byte 1, 2              ; 1
     .byte 2, 3              ; 2
