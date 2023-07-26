@@ -4,9 +4,10 @@
 
 .equ OBJ_MAX_VERTS, 8
 .equ OBJ_MAX_FACES, 6
-.equ OBJ_MAX_VISIBLE_FACES, 3       ; True for cube.
-.equ OBJ_VERTS_PER_FACE, 4
-.equ OBJ_MAX_EDGES_PER_FACE, OBJ_VERTS_PER_FACE
+
+;.equ OBJ_MAX_VISIBLE_FACES, 3       ; True for cube.
+;.equ OBJ_VERTS_PER_FACE, 4
+;.equ OBJ_MAX_EDGES_PER_FACE, OBJ_VERTS_PER_FACE
 
 .equ Model_Cube_Num_Verts, 8
 .equ Model_Cube_Num_Faces, 6
@@ -347,18 +348,17 @@ anaglyph_draw_3d_scene:
 
     ldr pc, [sp], #4
 
-draw_3d_scene_in_colour:
+object_colour_index:
     .long 0
 
 ; R4=colour index
 ; R12=screen addr
 draw_3d_scene:
     str lr, [sp, #-4]!
+    str r4, object_colour_index
 
     ; Stash screen addr for now.
     str r12, [sp, #-4]!
-
-    str r4, draw_3d_scene_in_colour
 
     ; Project vertices to screen.
     adr r2, transformed_verts
@@ -378,22 +378,22 @@ draw_3d_scene:
     ldr r12, [sp], #4           ; pop screen addr
 
     ; Plot faces as polys.
-    ldr r11, object_face_indices_p
     mov r9, #0                  ; face count
     str r9, edge_plot_cache
 
-    ldr r9, object_num_faces
-    sub r9, r9, #1
+    ldr r11, object_num_faces
+    sub r11, r11, #1
 
     .2:
-    ldrb r5, [r11, r9, lsl #2]  ; vertex0 of polygon N.
+    ldr r9, object_face_indices_p
+    ldrb r5, [r9, r11, lsl #2]  ; vertex0 of polygon N.
     
     adr r1, transformed_verts
     add r1, r1, r5, lsl #3
     add r1, r1, r5, lsl #2      ; transformed_verts + index*12
     adr r2, transformed_normals
-    add r2, r2, r9, lsl #3      ; face_normal
-    add r2, r2, r9, lsl #2      ; face_normal
+    add r2, r2, r11, lsl #3      ; face_normal for polygon N.
+    add r2, r2, r11, lsl #2      ; face_normal for polygon N.
 
     ; Backfacing culling test (vertex - camera_pos).face_normal
     ; Parameters:
@@ -404,34 +404,37 @@ draw_3d_scene:
     ; Trashes: r3-r8
     ; vector A = (v0 - camera_pos)
     ; vector B = face_normal
-    bl vector_dot_product
+    bl vector_dot_product       ; trashes r3-r8
 
     cmp r0, #0                  
     bpl .3                      ; normal facing away from the view direction.
 
-    .if 0
+    .if 1
+    ; SOLID
     adr r2, projected_verts     ; projected vertex array.
-    ldr r3, [r11, r9, lsl #2]   ; quad indices.
+    ldr r3, [r9, r11, lsl #2]   ; quad indices.
 
-    stmfd sp!, {r9,r11,r12}
-    ldr r4, draw_3d_scene_in_colour
-    bl line_plot_quad_indexed
-    ldmfd sp!, {r9,r11,r12}
+    stmfd sp!, {r11,r12}
+    ldr r4, object_colour_index
+    and r0, r11, #3
+    sub r4, r4, r0                  ; quick hack to make faces different shades.
+    bl polygon_plot_quad_indexed    ; TODO: Use fast poly plot if we're going to do this.
+    ldmfd sp!, {r11,r12}
     .else
-
-    ldr r4, draw_3d_scene_in_colour
+    ; WIREFRAME
+    ldr r4, object_colour_index
     ldr r5, object_edge_indices_p
     adr r6, projected_verts     ; projected vertex array.
     ldr r7, object_edge_list_per_face_p
-    ldr r7, [r7, r9, lsl #2]    ; edge list word.
+    ldr r7, [r7, r11, lsl #2]   ; edge list word for polygon N.
 
-    stmfd sp!, {r9,r11}         ; TODO: Don't store r11?
-    bl plot_face_edge_list
-    ldmfd sp!, {r9,r11}
+    stmfd sp!, {r11}
+    bl plot_face_edge_list      ; trashes r0-r11
+    ldmfd sp!, {r11}
     .endif
 
     .3:
-    subs r9, r9, #1
+    subs r11, r11, #1
     bpl .2
 
     ldr pc, [sp], #4
@@ -500,67 +503,6 @@ plot_face_edge_list:
     ldr pc, [sp], #4
 
 
-; Plot a quad, but lines.
-; Parameters:
-;  R12=screen addr
-;  R2=ptr to projected vertex array (x,y) in screen coords [16.0]
-;  R3=4x vertex indices for quad
-;  R4=colour index
-line_plot_quad_indexed:
-	str lr, [sp, #-4]!			; push lr on stack
-
-    mov r8, r2
-    mov r9, r3
-
-    and r6, r9, #0xff           ; index 0
-    add r5, r8, r6, lsl #3      ; projected_verts + index*8
-    ldmia r5, {r0, r1}          ; x_start, y_start
-
-    mov r6, r9, lsr #8          ; 
-    and r6, r6, #0xff           ; index 1
-    add r5, r8, r6, lsl #3      ; projected_verts + index*8
-    ldmia r5, {r2, r3}          ; x_end, y_end
-
-    stmfd sp!, {r8,r9}
-    bl mode9_drawline_orr       ; trashes r5-r10
-    ldmfd sp!, {r8,r9}
-
-    mov r0, r2                  ; x_start = x_end
-    mov r1, r3                  ; y_start = y_end
-
-    mov r6, r9, lsr #16         ; 
-    and r6, r6, #0xff           ; index 2
-    add r5, r8, r6, lsl #3      ; projected_verts + index*8
-    ldmia r5, {r2, r3}          ; x_end, y_end
-
-    stmfd sp!, {r8,r9}
-    bl mode9_drawline_orr       ; trashes r5-r10
-    ldmfd sp!, {r8,r9}
-
-    mov r0, r2                  ; x_start = x_end
-    mov r1, r3                  ; y_start = y_end
-
-    mov r6, r9, lsr #24         ; 
-    and r6, r6, #0xff           ; index 3
-    add r5, r8, r6, lsl #3      ; projected_verts + index*8
-    ldmia r5, {r2, r3}          ; x_end, y_end
-
-    stmfd sp!, {r8,r9}
-    bl mode9_drawline_orr       ; trashes r5-r10
-    ldmfd sp!, {r8,r9}
-
-    mov r0, r2                  ; x_start = x_end
-    mov r1, r3                  ; y_start = y_end
-
-    and r6, r9, #0xff           ; index 0
-    add r5, r8, r6, lsl #3      ; projected_verts + index*8
-    ldmia r5, {r2, r3}          ; x_end, y_end
-
-    bl mode9_drawline_orr       ; trashes r5-r10
-
-    ldr pc, [sp], #4
-
-
 ; Project world position to screen coordinates.
 ; TODO: Try weak perspective model, i.e. a single distance for all vertices in the objects.
 ;       Means that we can calculate the reciprocal once (1/z) and use the same value in
@@ -605,7 +547,7 @@ project_to_screen:
 
 
 ; ============================================================================
-; Object data: CUBE
+; Model data: CUBE
 ;
 ;         4         5        y
 ;          +------+          ^  z
