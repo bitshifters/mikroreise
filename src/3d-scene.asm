@@ -322,6 +322,12 @@ update_3d_scene:
 anaglyph_draw_3d_scene:
     str lr, [sp, #-4]!
 
+    ; Stash screen addr for now.
+    str r12, [sp, #-4]!
+
+	; Reset array of circles.
+    bl reset_circles
+
     ; Left eye.
     ldr r0, LeftEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
@@ -332,7 +338,8 @@ anaglyph_draw_3d_scene:
 
     ; Subtract blue & green.
     mov r4, #7                  ; brightest red
-    bl draw_3d_scene
+    ;bl draw_3d_scene
+    bl draw_3d_object_as_circles
 
     ; Right eye.
     ldr r0, RightEye_X_Pos
@@ -344,7 +351,12 @@ anaglyph_draw_3d_scene:
 
     ; Subtract red.
     mov r4, #11                 ; brightest cyan
-    bl draw_3d_scene
+    ;bl draw_3d_scene
+    bl draw_3d_object_as_circles
+
+    ; Then plot all the circles.
+    ldr r12, [sp], #4           ; pop screen addr
+    bl plot_all_circles
 
     ldr pc, [sp], #4
 
@@ -409,7 +421,7 @@ draw_3d_scene:
     cmp r0, #0                  
     bpl .3                      ; normal facing away from the view direction.
 
-    .if 1
+    .if 0
     ; SOLID
     adr r2, projected_verts     ; projected vertex array.
     ldr r3, [r9, r11, lsl #2]   ; quad indices.
@@ -530,6 +542,9 @@ project_to_screen:
     mov r8, #VIEWPORT_CENTRE_X  ; [16.16]
     add r6, r6, r8
 
+    ; TODO: Speed this up by doing one lookup for the reciprocal of the divisor (z-cz).
+    ;       As this is constant.
+
     ; Flip Y axis as we want +ve Y to point up the screen!
     ; vp_centre_y - vp_scale * (y-cy) / (z-cz)
     mov r0, r4                  ; (y-cy)
@@ -543,6 +558,56 @@ project_to_screen:
     sub r1, r8, r1              ; [16.16]
 
     mov r0, r6
+    ldr pc, [sp], #4
+
+
+; R4=colour index
+; R12=screen addr
+draw_3d_object_as_circles:
+    str lr, [sp, #-4]!
+    str r4, object_colour_index
+
+    ; Project vertices to screen.
+    adr r2, transformed_verts
+    ldr r11, object_num_verts
+    adr r12, projected_verts
+    .1:
+    ; R2=ptr to world pos vector
+    bl project_to_screen
+    ; R0=screen_x, R1=screen_y [16.16]
+    mov r0, r0, asr #16         ; [16.0]
+    mov r1, r1, asr #16         ; [16.0]
+    stmia r12!, {r0, r1}
+    add r2, r2, #VECTOR3_SIZE
+    subs r11, r11, #1
+    bne .1
+
+    ; Plot all verts as circles...
+    adr r6, projected_verts
+    adr r7, transformed_verts
+    ldr r11, object_num_verts
+    mov r5, #0
+
+    ; TODO: Would ultimately need to sort by Z.
+    ; TODO: A fixed number of sprites with radius [1,16] would be faster, i.e. vector balls!
+
+    .2:
+    ; screen_radius = VP_SCALE * world_radius / (z-cz)
+    mov r0, #VIEWPORT_SCALE
+    ldr r1, [r7, #8]            ; (z-cz)
+    bl divide                   ; [s7.16] (trashes r8-r10)
+    mov r2, r0, asr #13         ; radius = VP_SCALE * world_radius / (z-cz) where world_radius=8 (r<<3>>16)
+
+    ldmia r6!, {r0,r1}          ; screen_X & screen_Y.
+
+    ldr r9, object_colour_index
+    bl add_circle_to_2d_list    ; trashes r8,r12
+
+    add r7, r7, #VECTOR3_SIZE
+    add r5, r5, #1
+    cmp r5, r11
+    blt .2
+
     ldr pc, [sp], #4
 
 

@@ -58,6 +58,9 @@ lib_init:
     .if LibDivide_UseReciprocalTable
     bl MakeReciprocal
     .endif
+    .if LibConfig_IncludeCircles
+    bl ClearCircleBuf
+    .endif
     .if LibConfig_IncludeSpanGen
     bl gen_code
     .endif
@@ -114,6 +117,9 @@ debug_string:
 .endif
 .if LibConfig_IncludeSqrt
 .include "lib/sqrt.asm"
+.endif
+.if LibConfig_IncludeCircles
+.include "lib/circles.asm"
 .endif
 .if LibConfig_IncludeSpanGen
 .if Screen_Mode==0

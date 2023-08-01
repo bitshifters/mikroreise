@@ -68,6 +68,13 @@
 	.endif
 .endm
 
+.macro DEBUG_REGISTER_VAR addr                      ; TODO: Move this to debug.h.asm?
+    .if _DEBUG
+    adr r0, \addr
+    bl debug_register_var
+    .endif
+.endm
+
 ; ============================================================================
 ; App defines
 ; ============================================================================
@@ -84,6 +91,7 @@
 .equ KeyBit_D, 3
 .equ KeyBit_R, 4
 .equ KeyBit_ArrowRight, 5
+.equ KeyBit_C, 6
 .equ KeyBit_0, 10
 .equ KeyBit_1, 11
 .equ KeyBit_2, 12
@@ -152,6 +160,10 @@ main:
 	swi OS_ReadMonotonicTime
 	str r0, rnd_seed
 
+    ; Register debug vars.
+    DEBUG_REGISTER_VAR vsync_count
+    DEBUG_REGISTER_VAR vsync_delta
+
 	; Install our own IRQ handler - thanks Steve! :)
 	bl install_irq_handler
 
@@ -198,7 +210,7 @@ main:
 	bl get_next_bank_for_writing
 
 	; Set palette (shows screen).
-	adrl r2, logo_pal_block
+	ldr r2, palette_p
 	bl palette_set_block
 
 	; Claim the Event vector.
@@ -293,7 +305,8 @@ main_loop_skip_tick:
 
 	; show debug
 	.if _DEBUG
-	bl debug_write_info
+    ldr r12, screen_addr
+    bl debug_plot_vars
 	.endif
 
 	; Swap screens!
@@ -431,6 +444,19 @@ debug_tick:
     swi QTM_Pos         ; set position.
 
 .6:
+    tst r4, #1<<KeyBit_C
+    beq .7
+
+    ; Toggle palette.
+    ldr r2, palette_p
+    adr r3, palette_red_cyan
+    cmp r2, r3
+    adreq r2, palette_red_blue
+    movne r2, r3
+    str r2, palette_p
+    bl palette_set_block
+
+.7:
     mov r0, #-1
 
     tst r4, #1<<KeyBit_0
@@ -457,113 +483,8 @@ debug_tick:
     cmp r0, #-1
     blne set_eye_distance
 
-.7:
+.8:
     ldr pc, [sp], #4
-
-debug_print_r0:
-	stmfd sp!, {r0-r2}
-	adr r1, debug_string
-	mov r2, #10
-	swi OS_ConvertHex4	; or OS_ConvertHex8
-	adr r0, debug_string
-	swi OS_WriteO
-	ldmfd sp!, {r0-r2}
-	mov pc, lr
-
-debug_write_info:
-	ldrb r0, debug_show_info
-	cmp r0, #0
-	moveq pc, lr
-
-	str lr, [sp, #-4]!
-
-	SET_BORDER 0xffffff		; white = debug
-
-	mov r0, #30	; home cursor
-	swi OS_WriteC
-	mov r0, #17	; set text colour
-	swi OS_WriteC
-	mov r0, #15
-	swi OS_WriteC
-
-    ; display current tracker position
-	.if 0
-    mov r0, #-1
-    mov r1, #-1
-    swi QTM_Pos
-
-	mov r3, r1
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex2
-	adr r0, debug_string
-	swi OS_WriteO
-
-	mov r0, r3
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex2
-	adr r0, debug_string
-	swi OS_WriteO
-
-	swi OS_WriteI+32
-	ldr r0, keyboard_pressed_mask
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex4
-	adr r0, debug_string
-	swi OS_WriteO
-.endif
-
-.if 1
-	; display frame count / frame rate etc.
-	ldr r0, vsync_count
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex4
-	adr r0, debug_string
-	swi OS_WriteO
-
-	swi OS_WriteI+32
-	ldr r0, vsync_delta
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex4
-	adr r0, debug_string
-	swi OS_WriteO
-.endif
-
-; TODO: Register variables for debug info rather than hardcoding them...
-.if 0
-	swi OS_WriteI+32
-	ldr r0, particles_alive_count
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex4
-	adr r0, debug_string
-	swi OS_WriteO
-.endif
-
-	SET_BORDER 0x000000
-
-	ldr pc, [sp], #4
-
-debug_string:
-	.skip 16
-
-debug_play_pause:
-	.byte _DEBUG_DEFAULT_PLAY_PAUSE
-
-debug_play_step:
-	.byte 0
-
-debug_show_info:
-	.byte _DEBUG_DEFAULT_SHOW_INFO
-
-debug_show_rasters:
-	.byte _DEBUG_DEFAULT_SHOW_RASTERS
-
-	.p2align 2
 .endif
 
 ; ============================================================================
@@ -644,6 +565,8 @@ event_handler:
 	orreq r0, r0, #1<<KeyBit_R
 	cmp r2, #RMKey_ArrowRight
 	orreq r0, r0, #1<<KeyBit_ArrowRight
+	cmp r2, #RMKey_C
+	orreq r0, r0, #1<<KeyBit_C
 	cmp r2, #RMKey_0
 	orreq r0, r0, #1<<KeyBit_0
 	cmp r2, #RMKey_1
@@ -680,6 +603,8 @@ event_handler:
 	biceq r0, r0, #1<<KeyBit_R
 	cmp r2, #RMKey_ArrowRight
 	biceq r0, r0, #1<<KeyBit_ArrowRight
+	cmp r2, #RMKey_C
+	biceq r0, r0, #1<<KeyBit_C
 	cmp r2, #RMKey_0
 	biceq r0, r0, #1<<KeyBit_0
 	cmp r2, #RMKey_1
@@ -925,8 +850,29 @@ vsync_bodge:
 rnd_seed:
     .long 0x87654321
 
+palette_p:
+    .long palette_red_cyan
+
 screen_addr:
 	.long 0					; ptr to the current VIDC screen bank being written to.
+
+.if _DEBUG
+debug_play_pause:
+	.byte _DEBUG_DEFAULT_PLAY_PAUSE
+
+debug_play_step:
+	.byte 0
+
+debug_show_info:
+	.byte _DEBUG_DEFAULT_SHOW_INFO
+
+debug_show_rasters:
+	.byte _DEBUG_DEFAULT_SHOW_RASTERS
+
+.p2align 2
+.endif
+
+.include "lib/debug.asm"
 
 .include "src/fx.asm"
 .include "src/script.asm"
@@ -951,9 +897,8 @@ vdu_screen_disable_cursor:
 music_table:
 	.long changing_waves_mod_no_adr		; 14
 
-logo_pal_block:
-; .incbin "data/logo-palette-hacked.bin"
 ; For anaglpyh want CRcr
+palette_red_cyan:
     .long 0x00000000                    ; 00 = 0000 = black
     .long 0x00000077                    ; 01 = 0001 = red 1
     .long 0x00777700                    ; 02 = 0010 = cyan 1
@@ -970,6 +915,24 @@ logo_pal_block:
     .long 0x00bbbbbb                    ; 13 = 1101 = white 3
     .long 0x00dddddd                    ; 14 = 1110 = white 4
     .long 0x00ffffff                    ; 15 = 1111 = white 5
+
+palette_red_blue:
+    .long 0x00000000                    ; 00 = 0000 = black
+    .long 0x00000077                    ; 01 = 0001 = red 1
+    .long 0x00770000                    ; 02 = 0010 = cyan 1
+    .long 0x00770077                    ; 03 = 0011 = white 1
+    .long 0x00000099                    ; 04 = 0100 = red 2
+    .long 0x000000bb                    ; 05 = 0101 = red 3
+    .long 0x000000dd                    ; 06 = 0110 = red 4
+    .long 0x000000ff                    ; 07 = 0111 = red 5
+    .long 0x00990000                    ; 08 = 1000 = cyan 2
+    .long 0x00bb0000                    ; 09 = 1001 = cyan 3
+    .long 0x00dd0000                    ; 10 = 1010 = cyan 4
+    .long 0x00ff0000                    ; 11 = 1011 = cyan 5
+    .long 0x00990099                    ; 12 = 1100 = white 2
+    .long 0x00bb00bb                    ; 13 = 1101 = white 3
+    .long 0x00dd00dd                    ; 14 = 1110 = white 4
+    .long 0x00ff00ff                    ; 15 = 1111 = white 5
 
 ; ============================================================================
 ; DATA Segment
