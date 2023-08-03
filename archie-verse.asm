@@ -12,15 +12,15 @@
 
 .equ _DEBUG, 1
 .equ _DEBUG_RASTERS, (_DEBUG && 1)
-.equ _DEBUG_SHOW, (_DEBUG && 1)     ; TODO: Fast debug text on screen.
+.equ _DEBUG_SHOW, (_DEBUG && 1)
 .equ _CHECK_FRAME_DROP, (!_DEBUG && 1)
 
 .equ _DEBUG_DEFAULT_PLAY_PAUSE, 1		; play
 .equ _DEBUG_DEFAULT_SHOW_RASTERS, 1
 .equ _DEBUG_DEFAULT_SHOW_INFO, 0		; slow so off by default.
 
-.equ Sample_Speed_SlowCPU, 48		; ideally get this down for ARM2
-.equ Sample_Speed_FastCPU, 16		; ideally 16us for ARM250+
+.equ Sample_Speed_SlowCPU, 48		    ; ideally get this down for ARM2
+.equ Sample_Speed_FastCPU, 16		    ; ideally 16us for ARM250+
 
 .equ _WIDESCREEN, 0
 
@@ -46,6 +46,7 @@
 .include "lib/swis.h.asm"
 .include "lib/lib_config.h.asm"
 .include "lib/maths.h.asm"
+.include "lib/debug.h.asm"
 
 ; ============================================================================
 ; Macros.
@@ -68,13 +69,6 @@
 	.endif
 .endm
 
-.macro DEBUG_REGISTER_VAR addr                      ; TODO: Move this to debug.h.asm?
-    .if _DEBUG
-    adr r0, \addr
-    bl debug_register_var
-    .endif
-.endm
-
 ; ============================================================================
 ; App defines
 ; ============================================================================
@@ -84,24 +78,6 @@
 
 .equ AutoPlay_Default, 1
 .equ Stereo_Positions, 1		; Amiga (full) stereo positions.
-
-.equ KeyBit_Space, 0
-.equ KeyBit_A, 1
-.equ KeyBit_S, 2
-.equ KeyBit_D, 3
-.equ KeyBit_R, 4
-.equ KeyBit_ArrowRight, 5
-.equ KeyBit_C, 6
-.equ KeyBit_0, 10
-.equ KeyBit_1, 11
-.equ KeyBit_2, 12
-.equ KeyBit_3, 13
-.equ KeyBit_4, 14
-.equ KeyBit_5, 15
-.equ KeyBit_6, 16
-.equ KeyBit_7, 17
-.equ KeyBit_8, 18
-.equ KeyBit_9, 19
 
 ; TODO: Remove Timer1 split if not necessary.
 .equ RasterSplitLine, 56+90			; 56 lines from vsync to screen start
@@ -163,6 +139,23 @@ main:
     ; Register debug vars.
     DEBUG_REGISTER_VAR vsync_count
     DEBUG_REGISTER_VAR vsync_delta
+    DEBUG_REGISTER_KEY RMKey_Space,      debug_toggle_main_loop_pause,          0
+    DEBUG_REGISTER_KEY RMKey_A,          debug_restart_sequence,               0
+    DEBUG_REGISTER_KEY RMKey_S,          debug_set_byte_true,                   debug_main_loop_step
+    DEBUG_REGISTER_KEY RMKey_D,          debug_toggle_byte,                     debug_show_info
+    DEBUG_REGISTER_KEY RMKey_R,          debug_toggle_byte,                     debug_show_rasters
+    DEBUG_REGISTER_KEY RMKey_ArrowRight, debug_skip_to_next_pattern,  0
+    DEBUG_REGISTER_KEY RMKey_C,          debug_toggle_palette,                  0
+    DEBUG_REGISTER_KEY RMKey_0,          debug_set_eye_distance,                0
+    DEBUG_REGISTER_KEY RMKey_1,          debug_set_eye_distance,                1
+    DEBUG_REGISTER_KEY RMKey_2,          debug_set_eye_distance,                2
+    DEBUG_REGISTER_KEY RMKey_3,          debug_set_eye_distance,                3
+    DEBUG_REGISTER_KEY RMKey_4,          debug_set_eye_distance,                4
+    DEBUG_REGISTER_KEY RMKey_5,          debug_set_eye_distance,                5
+    DEBUG_REGISTER_KEY RMKey_6,          debug_set_eye_distance,                6
+    DEBUG_REGISTER_KEY RMKey_7,          debug_set_eye_distance,                7
+    DEBUG_REGISTER_KEY RMKey_8,          debug_set_eye_distance,                8
+    DEBUG_REGISTER_KEY RMKey_9,          debug_set_eye_distance,                9
 
 	; Install our own IRQ handler - thanks Steve! :)
 	bl install_irq_handler
@@ -240,7 +233,7 @@ main_loop:
 	; ========================================================================
 
     .if _DEBUG
-    bl debug_tick
+    bl debug_do_key_callbacks
     .endif
 
 	; exit if Escape is pressed
@@ -248,11 +241,11 @@ main_loop:
 	bcs exit
 
 	.if _DEBUG
-	ldrb r0, debug_play_pause
+	ldrb r0, debug_main_loop_pause
 	cmp r0, #0
 	bne .3
 
-	ldrb r0, debug_play_step
+	ldrb r0, debug_main_loop_step
 	cmp r0, #0
 	beq main_loop_skip_tick
 	.3:
@@ -268,6 +261,11 @@ main_loop:
     ; TODO: Update frame counter.
 
 main_loop_skip_tick:
+
+    .if _DEBUG
+    mov r0, #0
+    strb r0, debug_main_loop_step
+    .endif
 
 	; ========================================================================
 	; VSYNC
@@ -361,92 +359,43 @@ exit:
 ; ============================================================================
 
 .if _DEBUG
-keyboard_prev_mask:
-    .long 0
-
-debug_tick:
-	str lr, [sp, #-4]!
-
-    ldr r0, keyboard_pressed_mask
-	ldr r2, keyboard_prev_mask
-	mvn r2, r2				; ~old
-	and r2, r0, r2			; new & ~old		; diff bits
-	str r0, keyboard_prev_mask
-	and r4, r2, r0			; diff bits & key down bits	
-
-    tst r4, #1<<KeyBit_Space
-    beq .1
-
-	; Toggle play/pause.
-	ldrb r0, debug_play_pause
+debug_toggle_main_loop_pause:
+	ldrb r0, debug_main_loop_pause
 	eor r0, r0, #1
-	strb r0, debug_play_pause
+	strb r0, debug_main_loop_pause
 
+    ; Toggle music.
     cmp r0, #0
     swieq QTM_Pause			    ; pause
     swine QTM_Start             ; play
 
-
     ; TODO: Stop/start script.
+    mov pc, lr
 
-.1:
-	mov r0, #0
-	strb r0, debug_play_step
-
-    tst r4, #1<<KeyBit_S
-    beq .2
-
-	; Step frame (without repeat).
-    strb r4, debug_play_step
-
-.2:
-    tst r4, #1<<KeyBit_D
-    beq .3
-
-	; Toggle debug info.
-	ldrb r0, debug_show_info
-	eor r0, r0, #1
-	strb r0, debug_show_info
-
-.3:
-    tst r4, #1<<KeyBit_R
-    beq .4
-
-	; Toggle rasters
-	ldrb r0, debug_show_rasters
-	eor r0, r0, #1
-	strb r0, debug_show_rasters
-
-.4:
-    tst r4, #1<<KeyBit_A
-    beq .5
-
-    ; Start sequence again.
+debug_restart_sequence:
+    ; Start music again.
     mov r1, #0
 	swi QTM_Pos
 
     ; TODO: Start script again.
+    ; TODO: Reset frame counter.
+    mov pc, lr
 
-.5:
-    tst r4, #1<<KeyBit_ArrowRight
-    beq .6
-
-    ; Skip to next pattern.
+debug_skip_to_next_pattern:
     mov r0, #-1
     mov r1, #-1
     swi QTM_Pos         ; read position.
 
     add r0, r0, #1
-
-    ; TODO: Update frame counter to match.
-
+    ; TODO: Check max pattern?
     mov r1, #0
     swi QTM_Pos         ; set position.
 
-.6:
-    tst r4, #1<<KeyBit_C
-    beq .7
+    ; TODO: Update frame counter to match.
+    mov pc, lr
 
+debug_toggle_palette:
+    stmfd sp!, {r3-r5, lr}
     ; Toggle palette.
     ldr r2, palette_p
     adr r3, palette_red_cyan
@@ -455,36 +404,11 @@ debug_tick:
     movne r2, r3
     str r2, palette_p
     bl palette_set_block
+    ldmfd sp!, {r3-r5, pc}
 
-.7:
-    mov r0, #-1
-
-    tst r4, #1<<KeyBit_0
-    movne r0, #0
-    tst r4, #1<<KeyBit_1
-    movne r0, #1
-    tst r4, #1<<KeyBit_2
-    movne r0, #2
-    tst r4, #1<<KeyBit_3
-    movne r0, #3
-    tst r4, #1<<KeyBit_4
-    movne r0, #4
-    tst r4, #1<<KeyBit_5
-    movne r0, #5
-    tst r4, #1<<KeyBit_6
-    movne r0, #6
-    tst r4, #1<<KeyBit_7
-    movne r0, #7
-    tst r4, #1<<KeyBit_8
-    movne r0, #8
-    tst r4, #1<<KeyBit_9
-    movne r0, #9
-
-    cmp r0, #-1
-    blne set_eye_distance
-
-.8:
-    ldr pc, [sp], #4
+debug_set_eye_distance:
+    mov r0, r1
+    b set_eye_distance
 .endif
 
 ; ============================================================================
@@ -535,9 +459,6 @@ last_last_dropped_frame:
 	.long 0
 .endif
 
-keyboard_pressed_mask:
-	.long 0
-
 ; R0=event number
 event_handler:
 	cmp r0, #Event_KeyPressed
@@ -546,90 +467,11 @@ event_handler:
 	; R1=0 key up or 1 key down
 	; R2=internal key number (RMKey_*)
 
-	str r0, [sp, #-4]!
-
-	ldr r0, keyboard_pressed_mask
-	cmp r1, #0
-	beq .2
-
-	; Key down
-	cmp r2, #RMKey_Space
-	orreq r0, r0, #1<<KeyBit_Space
-	cmp r2, #RMKey_A
-	orreq r0, r0, #1<<KeyBit_A
-	cmp r2, #RMKey_S
-	orreq r0, r0, #1<<KeyBit_S
-	cmp r2, #RMKey_D
-	orreq r0, r0, #1<<KeyBit_D
-	cmp r2, #RMKey_R
-	orreq r0, r0, #1<<KeyBit_R
-	cmp r2, #RMKey_ArrowRight
-	orreq r0, r0, #1<<KeyBit_ArrowRight
-	cmp r2, #RMKey_C
-	orreq r0, r0, #1<<KeyBit_C
-	cmp r2, #RMKey_0
-	orreq r0, r0, #1<<KeyBit_0
-	cmp r2, #RMKey_1
-	orreq r0, r0, #1<<KeyBit_1
-	cmp r2, #RMKey_2
-	orreq r0, r0, #1<<KeyBit_2
-	cmp r2, #RMKey_3
-	orreq r0, r0, #1<<KeyBit_3
-	cmp r2, #RMKey_4
-	orreq r0, r0, #1<<KeyBit_4
-	cmp r2, #RMKey_5
-	orreq r0, r0, #1<<KeyBit_5
-	cmp r2, #RMKey_6
-	orreq r0, r0, #1<<KeyBit_6
-	cmp r2, #RMKey_7
-	orreq r0, r0, #1<<KeyBit_7
-	cmp r2, #RMKey_8
-	orreq r0, r0, #1<<KeyBit_8
-	cmp r2, #RMKey_9
-	orreq r0, r0, #1<<KeyBit_9
-	b .3
-
-.2:
-	; Key up
-	cmp r2, #RMKey_Space
-	biceq r0, r0, #1<<KeyBit_Space
-	cmp r2, #RMKey_A
-	biceq r0, r0, #1<<KeyBit_A
-	cmp r2, #RMKey_S
-	biceq r0, r0, #1<<KeyBit_S
-	cmp r2, #RMKey_D
-	biceq r0, r0, #1<<KeyBit_D
-	cmp r2, #RMKey_R
-	biceq r0, r0, #1<<KeyBit_R
-	cmp r2, #RMKey_ArrowRight
-	biceq r0, r0, #1<<KeyBit_ArrowRight
-	cmp r2, #RMKey_C
-	biceq r0, r0, #1<<KeyBit_C
-	cmp r2, #RMKey_0
-	biceq r0, r0, #1<<KeyBit_0
-	cmp r2, #RMKey_1
-	biceq r0, r0, #1<<KeyBit_1
-	cmp r2, #RMKey_2
-	biceq r0, r0, #1<<KeyBit_2
-	cmp r2, #RMKey_3
-	biceq r0, r0, #1<<KeyBit_3
-	cmp r2, #RMKey_4
-	biceq r0, r0, #1<<KeyBit_4
-	cmp r2, #RMKey_5
-	biceq r0, r0, #1<<KeyBit_5
-	cmp r2, #RMKey_6
-	biceq r0, r0, #1<<KeyBit_6
-	cmp r2, #RMKey_7
-	biceq r0, r0, #1<<KeyBit_7
-	cmp r2, #RMKey_8
-	biceq r0, r0, #1<<KeyBit_8
-	cmp r2, #RMKey_9
-	biceq r0, r0, #1<<KeyBit_9
-
-.3:
-	str r0, keyboard_pressed_mask
-	ldr r0, [sp], #4
-	mov pc, lr
+    .if _DEBUG
+    b debug_handle_keypress
+    .else
+    mov pc, lr
+    .endif
 
 
 mark_write_bank_as_pending_display:
@@ -857,10 +699,10 @@ screen_addr:
 	.long 0					; ptr to the current VIDC screen bank being written to.
 
 .if _DEBUG
-debug_play_pause:
+debug_main_loop_pause:
 	.byte _DEBUG_DEFAULT_PLAY_PAUSE
 
-debug_play_step:
+debug_main_loop_step:
 	.byte 0
 
 debug_show_info:
