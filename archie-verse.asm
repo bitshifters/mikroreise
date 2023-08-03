@@ -139,23 +139,23 @@ main:
     ; Register debug vars.
     DEBUG_REGISTER_VAR vsync_count
     DEBUG_REGISTER_VAR vsync_delta
-    DEBUG_REGISTER_KEY RMKey_Space,      debug_toggle_main_loop_pause,          0
-    DEBUG_REGISTER_KEY RMKey_A,          debug_restart_sequence,               0
-    DEBUG_REGISTER_KEY RMKey_S,          debug_set_byte_true,                   debug_main_loop_step
-    DEBUG_REGISTER_KEY RMKey_D,          debug_toggle_byte,                     debug_show_info
-    DEBUG_REGISTER_KEY RMKey_R,          debug_toggle_byte,                     debug_show_rasters
-    DEBUG_REGISTER_KEY RMKey_ArrowRight, debug_skip_to_next_pattern,  0
-    DEBUG_REGISTER_KEY RMKey_C,          debug_toggle_palette,                  0
-    DEBUG_REGISTER_KEY RMKey_0,          debug_set_eye_distance,                0
-    DEBUG_REGISTER_KEY RMKey_1,          debug_set_eye_distance,                1
-    DEBUG_REGISTER_KEY RMKey_2,          debug_set_eye_distance,                2
-    DEBUG_REGISTER_KEY RMKey_3,          debug_set_eye_distance,                3
-    DEBUG_REGISTER_KEY RMKey_4,          debug_set_eye_distance,                4
-    DEBUG_REGISTER_KEY RMKey_5,          debug_set_eye_distance,                5
-    DEBUG_REGISTER_KEY RMKey_6,          debug_set_eye_distance,                6
-    DEBUG_REGISTER_KEY RMKey_7,          debug_set_eye_distance,                7
-    DEBUG_REGISTER_KEY RMKey_8,          debug_set_eye_distance,                8
-    DEBUG_REGISTER_KEY RMKey_9,          debug_set_eye_distance,                9
+    DEBUG_REGISTER_KEY RMKey_Space,      debug_toggle_main_loop_pause,  0
+    DEBUG_REGISTER_KEY RMKey_A,          debug_restart_sequence,        0
+    DEBUG_REGISTER_KEY RMKey_S,          debug_set_byte_true,           debug_main_loop_step
+    DEBUG_REGISTER_KEY RMKey_D,          debug_toggle_byte,             debug_show_info
+    DEBUG_REGISTER_KEY RMKey_R,          debug_toggle_byte,             debug_show_rasters
+    DEBUG_REGISTER_KEY RMKey_ArrowRight, debug_skip_to_next_pattern,    0
+    DEBUG_REGISTER_KEY RMKey_C,          debug_toggle_palette,          0
+    DEBUG_REGISTER_KEY RMKey_0,          debug_set_eye_distance,        0
+    DEBUG_REGISTER_KEY RMKey_1,          debug_set_eye_distance,        1
+    DEBUG_REGISTER_KEY RMKey_2,          debug_set_eye_distance,        2
+    DEBUG_REGISTER_KEY RMKey_3,          debug_set_eye_distance,        3
+    DEBUG_REGISTER_KEY RMKey_4,          debug_set_eye_distance,        4
+    DEBUG_REGISTER_KEY RMKey_5,          debug_set_eye_distance,        5
+    DEBUG_REGISTER_KEY RMKey_6,          debug_set_eye_distance,        6
+    DEBUG_REGISTER_KEY RMKey_7,          debug_set_eye_distance,        7
+    DEBUG_REGISTER_KEY RMKey_8,          debug_set_eye_distance,        8
+    DEBUG_REGISTER_KEY RMKey_9,          debug_set_eye_distance,        9
 
 	; Install our own IRQ handler - thanks Steve! :)
 	bl install_irq_handler
@@ -236,10 +236,6 @@ main_loop:
     bl debug_do_key_callbacks
     .endif
 
-	; exit if Escape is pressed
-	swi OS_ReadEscapeState
-	bcs exit
-
 	.if _DEBUG
 	ldrb r0, debug_main_loop_pause
 	cmp r0, #0
@@ -311,7 +307,8 @@ main_loop_skip_tick:
 	bl mark_write_bank_as_pending_display
 
 	; repeat!
-	b main_loop
+	swi OS_ReadEscapeState
+	bcc main_loop                   ; exit if Escape is pressed
 
 exit:
 	; Disable music
@@ -761,20 +758,20 @@ palette_red_cyan:
 palette_red_blue:
     .long 0x00000000                    ; 00 = 0000 = black
     .long 0x00000077                    ; 01 = 0001 = red 1
-    .long 0x00770000                    ; 02 = 0010 = cyan 1
-    .long 0x00770077                    ; 03 = 0011 = white 1
+    .long 0x00770000                    ; 02 = 0010 = blue 1
+    .long 0x00770077                    ; 03 = 0011 = magenta 1
     .long 0x00000099                    ; 04 = 0100 = red 2
     .long 0x000000bb                    ; 05 = 0101 = red 3
     .long 0x000000dd                    ; 06 = 0110 = red 4
     .long 0x000000ff                    ; 07 = 0111 = red 5
-    .long 0x00990000                    ; 08 = 1000 = cyan 2
-    .long 0x00bb0000                    ; 09 = 1001 = cyan 3
-    .long 0x00dd0000                    ; 10 = 1010 = cyan 4
-    .long 0x00ff0000                    ; 11 = 1011 = cyan 5
-    .long 0x00990099                    ; 12 = 1100 = white 2
-    .long 0x00bb00bb                    ; 13 = 1101 = white 3
-    .long 0x00dd00dd                    ; 14 = 1110 = white 4
-    .long 0x00ff00ff                    ; 15 = 1111 = white 5
+    .long 0x00990000                    ; 08 = 1000 = blue 2
+    .long 0x00bb0000                    ; 09 = 1001 = blue 3
+    .long 0x00dd0000                    ; 10 = 1010 = blue 4
+    .long 0x00ff0000                    ; 11 = 1011 = blue 5
+    .long 0x00990099                    ; 12 = 1100 = magenta 2
+    .long 0x00bb00bb                    ; 13 = 1101 = magenta 3
+    .long 0x00dd00dd                    ; 14 = 1110 = magenta 4
+    .long 0x00ff00ff                    ; 15 = 1111 = magenta 5
 
 ; ============================================================================
 ; DATA Segment
