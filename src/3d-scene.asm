@@ -319,7 +319,7 @@ update_3d_scene:
 ; ============================================================================
 
 ; R12=screen addr
-anaglyph_draw_3d_scene:
+anaglyph_draw_3d_scene_as_circles:             ; TODO: Dedupe this code!
     str lr, [sp, #-4]!
 
     ; Stash screen addr for now.
@@ -338,7 +338,6 @@ anaglyph_draw_3d_scene:
 
     ; Subtract blue & green.
     mov r4, #7                  ; brightest red
-    ;bl draw_3d_scene
     bl draw_3d_object_as_circles
 
     ; Right eye.
@@ -351,7 +350,6 @@ anaglyph_draw_3d_scene:
 
     ; Subtract red.
     mov r4, #11                 ; brightest cyan
-    ;bl draw_3d_scene
     bl draw_3d_object_as_circles
 
     ; Then plot all the circles.
@@ -360,12 +358,72 @@ anaglyph_draw_3d_scene:
 
     ldr pc, [sp], #4
 
+; R12=screen addr
+anaglyph_draw_3d_scene_as_wire:             ; TODO: Dedupe this code!
+    str lr, [sp, #-4]!
+
+    ; Left eye.
+    ldr r0, LeftEye_X_Pos
+    str r0, camera_pos+0        ; camera_pos_x
+
+    stmfd sp!, {r12}
+    bl transform_3d_scene
+    ldmfd sp!, {r12}
+
+    ; Subtract blue & green.
+    mov r4, #7                  ; brightest red
+    bl draw_3d_scene_wire
+
+    ; Right eye.
+    ldr r0, RightEye_X_Pos
+    str r0, camera_pos+0        ; camera_pos_x
+
+    stmfd sp!, {r12}
+    bl transform_3d_scene
+    ldmfd sp!, {r12}
+
+    ; Subtract red.
+    mov r4, #11                 ; brightest cyan
+    bl draw_3d_scene_wire
+
+    ldr pc, [sp], #4
+
+; R12=screen addr
+anaglyph_draw_3d_scene_as_solid:             ; TODO: Dedupe this code!
+    str lr, [sp, #-4]!
+
+    ; Left eye.
+    ldr r0, LeftEye_X_Pos
+    str r0, camera_pos+0        ; camera_pos_x
+
+    stmfd sp!, {r12}
+    bl transform_3d_scene
+    ldmfd sp!, {r12}
+
+    ; Subtract blue & green.
+    mov r4, #7                  ; brightest red
+    bl draw_3d_scene_solid
+
+    ; Right eye.
+    ldr r0, RightEye_X_Pos
+    str r0, camera_pos+0        ; camera_pos_x
+
+    stmfd sp!, {r12}
+    bl transform_3d_scene
+    ldmfd sp!, {r12}
+
+    ; Subtract red.
+    mov r4, #11                 ; brightest cyan
+    bl draw_3d_scene_solid
+
+    ldr pc, [sp], #4
+
 object_colour_index:
     .long 0
 
 ; R4=colour index
 ; R12=screen addr
-draw_3d_scene:
+draw_3d_scene_solid:             ; TODO: Dedupe this code!
     str lr, [sp, #-4]!
     str r4, object_colour_index
 
@@ -421,7 +479,6 @@ draw_3d_scene:
     cmp r0, #0                  
     bpl .3                      ; normal facing away from the view direction.
 
-    .if 0
     ; SOLID
     adr r2, projected_verts     ; projected vertex array.
     ldr r3, [r9, r11, lsl #2]   ; quad indices.
@@ -432,7 +489,71 @@ draw_3d_scene:
     sub r4, r4, r0                  ; quick hack to make faces different shades.
     bl polygon_plot_quad_indexed    ; TODO: Use fast poly plot if we're going to do this.
     ldmfd sp!, {r11,r12}
-    .else
+
+    .3:
+    subs r11, r11, #1
+    bpl .2
+
+    ldr pc, [sp], #4
+
+; R4=colour index
+; R12=screen addr
+draw_3d_scene_wire:             ; TODO: Dedupe this code!
+    str lr, [sp, #-4]!
+    str r4, object_colour_index
+
+    ; Stash screen addr for now.
+    str r12, [sp, #-4]!
+
+    ; Project vertices to screen.
+    adr r2, transformed_verts
+    ldr r11, object_num_verts
+    adr r12, projected_verts
+    .1:
+    ; R2=ptr to world pos vector
+    bl project_to_screen
+    ; R0=screen_x, R1=screen_y [16.16]
+    mov r0, r0, asr #16         ; [16.0]
+    mov r1, r1, asr #16         ; [16.0]
+    stmia r12!, {r0, r1}
+    add r2, r2, #VECTOR3_SIZE
+    subs r11, r11, #1
+    bne .1
+
+    ldr r12, [sp], #4           ; pop screen addr
+
+    ; Plot faces as polys.
+    mov r9, #0                  ; face count
+    str r9, edge_plot_cache
+
+    ldr r11, object_num_faces
+    sub r11, r11, #1
+
+    .2:
+    ldr r9, object_face_indices_p
+    ldrb r5, [r9, r11, lsl #2]  ; vertex0 of polygon N.
+    
+    adr r1, transformed_verts
+    add r1, r1, r5, lsl #3
+    add r1, r1, r5, lsl #2      ; transformed_verts + index*12
+    adr r2, transformed_normals
+    add r2, r2, r11, lsl #3      ; face_normal for polygon N.
+    add r2, r2, r11, lsl #2      ; face_normal for polygon N.
+
+    ; Backfacing culling test (vertex - camera_pos).face_normal
+    ; Parameters:
+    ;  R1=ptr to transformed vertex in camera relative space
+    ;  R2=ptr to face normal vector
+    ; Return:
+    ;  R0=dot product of (v0-cp).n
+    ; Trashes: r3-r8
+    ; vector A = (v0 - camera_pos)
+    ; vector B = face_normal
+    bl vector_dot_product       ; trashes r3-r8
+
+    cmp r0, #0                  
+    bpl .3                      ; normal facing away from the view direction.
+
     ; WIREFRAME
     ldr r4, object_colour_index
     ldr r5, object_edge_indices_p
@@ -443,7 +564,6 @@ draw_3d_scene:
     stmfd sp!, {r11}
     bl plot_face_edge_list      ; trashes r0-r11
     ldmfd sp!, {r11}
-    .endif
 
     .3:
     subs r11, r11, #1

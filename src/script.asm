@@ -162,7 +162,7 @@ script_write_addr:
 .endm
 
 .macro wait_secs secs
-    .long script_wait, \frames*50
+    .long script_wait, \secs*50
 .endm
 
 .macro end_script
