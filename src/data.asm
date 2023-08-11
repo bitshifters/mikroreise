@@ -77,3 +77,29 @@ dot_tunnel_x_no_adr:
 dot_tunnel_y_no_adr:
     .incbin "data\dot_tunnel_y.bin"
 .endif
+
+; ============================================================================
+
+hammer_screen_no_adr:
+    .incbin "build/hammer.bin"
+
+hammer_pal_no_adr:
+    .incbin "build/hammer.bin.pal"
+
+cactus_screen_no_adr:
+    .incbin "build/cactus.bin"
+
+cactus_pal_no_adr:
+    .incbin "build/cactus.bin.pal"
+
+house_screen_no_adr:
+    .incbin "build/house.bin"
+
+house_pal_no_adr:
+    .incbin "build/house.bin.pal"
+
+persepolis_screen_no_adr:
+    .incbin "build/persepolis.bin"
+
+persepolis_pal_no_adr:
+    .incbin "build/persepolis.bin.pal"

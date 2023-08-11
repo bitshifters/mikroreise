@@ -57,7 +57,8 @@ code: ./build/archie-verse.bin
 	$(VASM) -L build/compile.txt -m250 -Fvobj -opt-adr -o build/archie-verse.o archie-verse.asm
 
 .PHONY:assets
-assets: build ./build/logo.lz4 ./build/big-font.bin ./build/icon.bin
+assets: build ./build/logo.lz4 ./build/big-font.bin ./build/icon.bin ./build/hammer.bin ./build/cactus.bin \
+	./build/house.bin ./build/persepolis.bin
 
 .PHONY:music
 music: build ./build/changing_waves.mod
@@ -88,6 +89,18 @@ clean:
 
 ./build/icon.bin: ./data/gfx/icon001.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC_SPRITE) --name !django02 -o $@ $< 9
+
+./build/hammer.bin: ./data/gfx/Hammer_320_256_16.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
+
+./build/cactus.bin: ./data/gfx/Cactus_320_256_16.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
+
+./build/house.bin: ./data/gfx/House_320_256_16.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
+
+./build/persepolis.bin: ./data/gfx/Persepolis_320_256_16.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
 
 ##########################################################################
 ##########################################################################

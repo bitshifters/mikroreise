@@ -44,3 +44,34 @@ screen_dup_lines:
 	blt .1
 	mov pc, lr
 .endif
+
+static_screen_p:
+    .long 0
+
+static_palette_p:
+    .long 0
+
+static_set_palette:
+    ldr r2, static_palette_p
+    cmp r2, #0
+    moveq pc, lr
+    b palette_set_block
+
+; R12=screen address
+static_copy_screen:
+    ldr r11, static_screen_p
+    cmp r11, #0
+    moveq pc, lr
+
+; R11=source address
+; R12=screen address
+screen_copy:
+    mov r10, #Screen_Height
+.1:
+    .rept Screen_Stride / 40
+	ldmia r11!, {r0-r9}
+	stmia r12!, {r0-r9}
+    .endr
+    subs r10, r10, #1
+    bne .1
+    mov pc, lr

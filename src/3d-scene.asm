@@ -128,7 +128,13 @@ init_3d_scene:
     mov r0, #EyeDistance_Default_Setting
     bl set_eye_distance
 
+    bl set_palette_for_3d_scene
+
     ldr pc, [sp], #4
+
+set_palette_for_3d_scene:
+    ldr r2, palette_p
+    b palette_set_block
 
 ; ============================================================================
 ; ============================================================================

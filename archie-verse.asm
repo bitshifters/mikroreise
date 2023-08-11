@@ -202,10 +202,6 @@ main:
 	; LATE INITALISATION HERE!
 	bl get_next_bank_for_writing
 
-	; Set palette (shows screen).
-	ldr r2, palette_p
-	bl palette_set_block
-
 	; Claim the Event vector.
 	MOV r0, #EventV
 	ADR r1, event_handler
@@ -400,7 +396,8 @@ debug_toggle_palette:
     adreq r2, palette_red_blue
     movne r2, r3
     str r2, palette_p
-    bl palette_set_block
+
+    bl set_palette_for_3d_scene
     ldmfd sp!, {r3-r5, pc}
 
 debug_set_eye_distance:
