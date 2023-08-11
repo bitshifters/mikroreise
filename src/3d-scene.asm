@@ -20,7 +20,7 @@
 .equ VIEWPORT_CENTRE_X, 160 * PRECISION_MULTIPLIER
 .equ VIEWPORT_CENTRE_Y, 128 * PRECISION_MULTIPLIER
 
-.equ EyeDistance_Default_Setting,   5
+.equ EyeDistance_Default_Setting,   4
 
 ; ============================================================================
 ; Scene data.
@@ -31,6 +31,10 @@ LeftEye_X_Pos:
 
 RightEye_X_Pos:
     FLOAT_TO_FP 0.0
+
+Anaglyph_Enable_Skew:
+    .byte 1
+.p2align 2
 
 ; For simplicity, we assume that the camera has a FOV of 90 degrees, so the
 ; distance to the view plane is 'd' is the same as the viewport scale. All
@@ -99,15 +103,15 @@ object_edge_indices_p:
 
 eye_distance_table:
     FLOAT_TO_FP 0.0         ; 0
-    FLOAT_TO_FP 0.4         ; 1
-    FLOAT_TO_FP 0.8         ; 2
-    FLOAT_TO_FP 1.2         ; 3
-    FLOAT_TO_FP 1.6         ; 4
-    FLOAT_TO_FP 2.0         ; 5
-    FLOAT_TO_FP 2.4         ; 6
-    FLOAT_TO_FP 2.8         ; 7
-    FLOAT_TO_FP 3.2         ; 8
-    FLOAT_TO_FP 3.6         ; 9
+    FLOAT_TO_FP 0.3         ; 1
+    FLOAT_TO_FP 0.6         ; 2
+    FLOAT_TO_FP 0.9         ; 3
+    FLOAT_TO_FP 1.2         ; 4
+    FLOAT_TO_FP 1.5         ; 5
+    FLOAT_TO_FP 1.8         ; 6
+    FLOAT_TO_FP 2.1         ; 7
+    FLOAT_TO_FP 2.4         ; 8
+    FLOAT_TO_FP 2.7         ; 9
 
 ; R0=distance index.
 set_eye_distance:
@@ -279,7 +283,7 @@ update_3d_scene:
     ldr r0, object_pos+8            ; POSTION_Z
     ldr r1, object_dir_z
     add r0, r0, r1
-    cmp r0, #64.0*PRECISION_MULTIPLIER
+    cmp r0, #128.0*PRECISION_MULTIPLIER
     mvnge r1, r1                    ; invert dir
     cmp r0, #-24.0*PRECISION_MULTIPLIER
     mvnle r1, r1                    ; invert dir
@@ -443,6 +447,13 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     .1:
     ; R2=ptr to world pos vector
     bl project_to_screen
+
+    ldrb r3, Anaglyph_Enable_Skew
+    cmp r3, #0
+    ldrne r3, camera_pos+0        ; camera_pos_x
+    movne r3, r3, asl #1
+    addne r0, r0, r3
+
     ; R0=screen_x, R1=screen_y [16.16]
     mov r0, r0, asr #16         ; [16.0]
     mov r1, r1, asr #16         ; [16.0]
@@ -518,6 +529,13 @@ draw_3d_scene_wire:             ; TODO: Dedupe this code!
     .1:
     ; R2=ptr to world pos vector
     bl project_to_screen
+
+    ldrb r3, Anaglyph_Enable_Skew
+    cmp r3, #0
+    ldrne r3, camera_pos+0        ; camera_pos_x
+    movne r3, r3, asl #1
+    addne r0, r0, r3
+
     ; R0=screen_x, R1=screen_y [16.16]
     mov r0, r0, asr #16         ; [16.0]
     mov r1, r1, asr #16         ; [16.0]
@@ -700,6 +718,13 @@ draw_3d_object_as_circles:
     .1:
     ; R2=ptr to world pos vector
     bl project_to_screen
+
+    ldrb r3, Anaglyph_Enable_Skew
+    cmp r3, #0
+    ldrne r3, camera_pos+0        ; camera_pos_x
+    movne r3, r3, asl #1
+    addne r0, r0, r3
+
     ; R0=screen_x, R1=screen_y [16.16]
     mov r0, r0, asr #16         ; [16.0]
     mov r1, r1, asr #16         ; [16.0]

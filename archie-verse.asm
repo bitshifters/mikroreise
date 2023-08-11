@@ -144,6 +144,7 @@ main:
     DEBUG_REGISTER_KEY RMKey_S,          debug_set_byte_true,           debug_main_loop_step
     DEBUG_REGISTER_KEY RMKey_D,          debug_toggle_byte,             debug_show_info
     DEBUG_REGISTER_KEY RMKey_R,          debug_toggle_byte,             debug_show_rasters
+    DEBUG_REGISTER_KEY RMKey_K,          debug_toggle_byte,             Anaglyph_Enable_Skew
     DEBUG_REGISTER_KEY RMKey_ArrowRight, debug_skip_to_next_pattern,    0
     DEBUG_REGISTER_KEY RMKey_C,          debug_toggle_palette,          0
     DEBUG_REGISTER_KEY RMKey_0,          debug_set_eye_distance,        0
