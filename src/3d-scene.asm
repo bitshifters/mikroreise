@@ -26,16 +26,6 @@
 ; Scene data.
 ; ============================================================================
 
-LeftEye_X_Pos:
-    FLOAT_TO_FP 0.0
-
-RightEye_X_Pos:
-    FLOAT_TO_FP 0.0
-
-Anaglyph_Enable_Skew:
-    .byte 1
-.p2align 2
-
 ; For simplicity, we assume that the camera has a FOV of 90 degrees, so the
 ; distance to the view plane is 'd' is the same as the viewport scale. All
 ; coordinates (x,y) lying on the view plane +d from the camera map 1:1 with
@@ -861,3 +851,13 @@ projected_verts:
     .skip OBJ_MAX_VERTS * 2 * 4
 
 ; ============================================================================
+
+LeftEye_X_Pos:
+    FLOAT_TO_FP 0.0
+
+RightEye_X_Pos:
+    FLOAT_TO_FP 0.0
+
+Anaglyph_Enable_Skew:
+    .byte 1
+.p2align 2

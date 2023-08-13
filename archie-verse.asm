@@ -133,8 +133,8 @@ main:
 	ble .1
 
 	; Seed RND.
-	swi OS_ReadMonotonicTime
-	str r0, rnd_seed
+	;swi OS_ReadMonotonicTime
+	;str r0, rnd_seed
 
     ; Register debug vars.
     DEBUG_REGISTER_VAR vsync_count
@@ -684,9 +684,6 @@ vsync_bodge:
 ; Additional code modules
 ; ============================================================================
 
-rnd_seed:
-    .long 0x87654321
-
 palette_p:
     .long palette_red_cyan
 
@@ -713,8 +710,14 @@ debug_show_rasters:
 
 .include "src/fx.asm"
 .include "src/script.asm"
+
 .include "src/3d-scene.asm"
+
+rnd_seed:
+    .long 0x87654321
+
 .include "src/dot-tunnel.asm"
+.include "src/starfield.asm"
 
 .include "lib/palette.asm"
 .include "lib/mode9-screen.asm"

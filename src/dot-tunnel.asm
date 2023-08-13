@@ -3,6 +3,8 @@
 ; ============================================================================
 
 .equ DotTunnel_Total, 512      ; ?
+.equ DotTunnel_CentreX, 160
+.equ DotTunnel_CentreY, 128
 
 dot_tunnel_t:
     .long 0
@@ -120,8 +122,8 @@ dot_tunnel_draw_spiral:
     mov r0, r0, asr #16             ; [s15.0]
     mov r1, r1, asr #16             ; [s15.0]
 
-    add r0, r0, #160
-    add r1, r1, #128
+    add r0, r0, #DotTunnel_CentreX
+    add r1, r1, #DotTunnel_CentreY
 
     ; Clip.
     cmp r0, #0
@@ -323,7 +325,7 @@ dot_tunnel_draw_circles_loop:
     ldr pc, [sp], #4
 .endif
 
-
+; TODO: Share with starfield?
 dot_tunnel_recip_z:
 .set z, 64.0                ; distance to start of tunnel.
 .rept DotTunnel_Total

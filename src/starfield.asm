@@ -2,129 +2,182 @@
 ; Starfield.
 ; ============================================================================
 
-.equ Starfield_NumVerts, 100
+.equ Starfield_Total, 512
+.equ Starfield_CentreX, 160
+.equ Starfield_CentreY, 128
 
-starfield_cam_pos:
-    VECTOR3 0.0, 0.0, 0.0
+starfield_t:
+    .long 0
+
+starfield_x_p:
+    .long starfield_x_no_adr
+
+starfield_y_p:
+    .long starfield_y_no_adr
+
 
 starfield_init:
-    adr r9, starfield_verts
     ldr r8, rnd_seed
-    mov r7, #1
+	ldr r7, bits_mask			; bit
 
-    mov r10, #Starfield_NumVerts
+    ldr r4, starfield_x_p
+    ldr r5, starfield_y_p
+
+    mov r10, #Starfield_Total
 .1:
-    ; Generate 3x random numbers for x,y,z.
+    ; Generate 2x random numbers for x,y.
     RND r8, r7, r6              ; seed, bit, temp
-    bic r0, r8, #0x7f000000     ; cap at +/=256 [s15.16]
-    bic r0, r0, #0x00800000
+    mov r0, r8, asr #8          ; cap at +/=256 [s15.16]
 
     RND r8, r7, r6              ; seed, bit, temp
-    bic r1, r8, #0x7f000000     ; cap at +/=256 [s15.16]
-    bic r1, r1, #0x00800000
+    mov r1, r8, asr #8          ; cap at +/=256 [s15.16]
 
-    RND r8, r7, r6              ; seed, bit, temp
-    bic r2, r8, #0x7f000000     ; cap at +/=256 [s15.16]
-    bic r2, r2, #0x00800000
-
-    stmia r9!, {r0-r2}
+    str r0, [r4], #4
+    str r1, [r5], #4
 
     subs r10, r10, #1
     bne .1
 
     mov pc, lr
 
+bits_mask:
+	.long 0x11111111
+
 starfield_update:
-    ldr r2, starfield_cam_pos+8 ; cam_z
-    add r2, r2, #1.0*PRECISION_MULTIPLIER
-    cmp r2, #256.0*PRECISION_MULTIPLIER
-    movge r2, #-256.0*PRECISION_MULTIPLIER
-    str r2, starfield_cam_pos+8 ; cam_z
+    ldr r11, starfield_t
+    add r11, r11, #1
+    cmp r11, #DotTunnel_Total
+    movge r11, #0
+    str r11, starfield_t
     mov pc, lr
 
-starfield_colour:
+; R12=screen addr
+; TODO: Dedupe from starfield_draw_anaglyph_spiral?
+starfield_draw_anaglyph:
+    str lr, [sp, #-4]!
+
+    ; Left eye.
+    ldr r0, LeftEye_X_Pos
+
+    ; Subtract blue & green.
+    mov r4, #7                  ; brightest red
+    bl starfield_draw
+
+    ; Right eye.
+    ldr r0, RightEye_X_Pos
+
+    ; Subtract red.
+    mov r4, #11                 ; brightest cyan
+    bl starfield_draw
+
+    ldr pc, [sp], #4
+
+starfield_skew_offset:
     .long 0
 
+; R0=eye offset.
 ; R4=colour index.
-; R12=screen_addr.
+; R12=screen addr
 starfield_draw:
     str lr, [sp, #-4]!
 
-    mov r4, #0xf
-    str r4, starfield_colour
+    strb r4, .3                     ; SELF-MOD!!
+    ldr r11, starfield_t           ; t
 
-    adr r7, starfield_verts
-    mov r11, #Starfield_NumVerts
+    ldr r9, starfield_x_p
+    ldr r10, starfield_y_p
+
+    adr r14, starfield_recip_z
+
+    ; TODO: Any camera path.
+    mov r5, #0                      ; TEMP: Force camera to (0,0) 
+    add r5, r5, r0                  ; eye offset.
+    str r0, tunnel_skew_offset      ; TODO: Not needed if camera is forced to (0,0)
+    mov r6, #0                      ; TEMP: Force camera to (0,0) 
+
 .1:
-    ; Load a star position.
-    ldmia r7!, {r3-r5}
+    ldr r2, [r14], #4               ; 80/z [7.16]
+    ldr r3, [r9, r11, lsl #2]       ; x[i+t] [s8.16]
+    ldr r4, [r10, r11, lsl #2]      ; y[i+t] [s8.16]
 
-    ; Make camera relative.
-    adr r2, starfield_cam_pos
-    ldmia r2, {r6-r8}
+    ; NB. No tunnel offset!
 
-    sub r3, r3, r6
-    sub r4, r4, r7
-    sub r5, r5, r8
+    sub r3, r3, r5                  ; x+ox-cx
+    sub r4, r4, r6                  ; y+oy-cy
 
-    ; Store temp. (ARGH!)
-    adr r2, starfield_temp_vec
-    stmia r2, {r3-r5}
-    
-    ; Project to screen.
-    bl project_to_screen
+    mov r2, r2, asr #8              ; [7.8]
+    mov r3, r3, asr #8              ; [s8.8]
+    mov r4, r4, asr #8              ; [s8.8]
+    mul r0, r3, r2                  ; x/z   [s15.16]
+    mul r1, r4, r2                  ; y/z   [s15.16]
 
     ldrb r3, Anaglyph_Enable_Skew
     cmp r3, #0
-    ldrne r3, starfield_cam_pos+0        ; camera_pos_x
-    movne r3, r3, asl #1
+    ldrne r5, tunnel_skew_offset    ; TODO: No LDR required.
+    movne r3, r5, asl #1
     addne r0, r0, r3
 
-    ; R0=screen_x, R1=screen_y [16.16]
-    mov r0, r0, asr #16         ; [16.0]
+    mov r0, r0, asr #16             ; [s15.0]
+    mov r1, r1, asr #16             ; [s15.0]
+
+    add r0, r0, #Starfield_CentreX
+    add r1, r1, #Starfield_CentreY
+
+    ; Clip.
     cmp r0, #0
     blt .2
     cmp r0, #Screen_Width
     bge .2
-
-    mov r1, r1, asr #16         ; [16.0]
     cmp r1, #0
     blt .2
-    cmp r1, #Screen_Height
+    cmp r1, #Screen_Height-1
     bge .2
 
-    ; Plot a pixel.
-	; ptr = screen_addr + starty * screen_stride + startx DIV 2
-	add r10, r12, r1, lsl #7	; r10 = screen_addr + starty * 128
-	add r10, r10, r1, lsl #5	; r10 += starty * 32 = starty * 160
-	add r10, r10, r0, lsr #1	; r10 += startx DIV 2
+    .if Screen_Mode==13
+    add r3, r12, r1, lsl #8
+    add r3, r3, r1, lsl #6
 
-	ldrb r9, [r10]				; load screen byte
+    ;mov r2, #0xff
+    strb r2, [r3, r0]!
+    ;strb r2, [r3, #1]
+    ;strb r2, [r3, #Screen_Stride]!
+    .else
+    ; Assume MODE 9!
+    add r3, r12, r1, lsl #7
+    add r3, r3, r1, lsl #5
+	add r3, r3, r0, lsr #1	; r10 += startx DIV 2
 
+    .3:
+    mov r4, #0xf                ; SELF-MOD!
+
+	ldrb r2, [r3]				; load screen byte
 	tst r0, #1					; odd or even pixel?
-	andeq r9, r9, #0xF0		; mask out left hand pixel
-	orreq r9, r9, r4			; mask in colour as left hand pixel
-
-	andne r9, r9, #0x0F		; mask out right hand pixel
-	orrne r9, r9, r4, lsl #4	; mask in colour as right hand pixel
-
-	strb r9, [r10]				; store screen byte
+	orreq r2, r2, r4			; mask in colour as left hand pixel
+	orrne r2, r2, r4, lsl #4	; mask in colour as right hand pixel
+	strb r2, [r3]				; store screen byte
+    .endif
 
 .2:
-    subs r11, r11, #1
-    bne .1
+    add r11, r11, #1
+    cmp r11, #DotTunnel_Total
+    movge r11, #0
+
+    adr r0, starfield_recip_z_end
+    cmp r14, r0
+    blt .1
 
     ldr pc, [sp], #4
 
-starfield_temp_vec:
-    VECTOR3 0.0, 0.0, 0.0
-
 ; ============================================================================
 
-starfield_verts:
-    .skip Starfield_NumVerts * VECTOR3_SIZE
-
-starfield_projected:
-    .skip Starfield_NumVerts * 2 * 4
+; TODO: Share with dot_tunnel?
+starfield_recip_z:
+.set dz, 40.0               ; distance to start of tunnel.
+                            ; zero parallax plane at dz=80.0
+.rept Starfield_Total
+    FLOAT_TO_FP (160.0/dz)  ; scale to screen.
+    .set dz, dz+2           ; larger steps = further into screen.
+.endr
+starfield_recip_z_end:
 
 ; ============================================================================
