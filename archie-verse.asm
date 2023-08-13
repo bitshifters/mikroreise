@@ -714,6 +714,7 @@ debug_show_rasters:
 .include "src/fx.asm"
 .include "src/script.asm"
 .include "src/3d-scene.asm"
+.include "src/dot-tunnel.asm"
 
 .include "lib/palette.asm"
 .include "lib/mode9-screen.asm"

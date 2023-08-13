@@ -668,7 +668,7 @@ plot_face_edge_list:
 ; Returns:
 ;  R0=screen x
 ;  R1=screen y
-; Trashes: R3-R10
+; Trashes: R3-R6,R8-R10
 project_to_screen:
     str lr, [sp, #-4]!
 
@@ -678,10 +678,14 @@ project_to_screen:
     ; vp_centre_x + vp_scale * (x-cx) / (z-cz)
     mov r0, r3                  ; (x-cx)
     mov r1, r5                  ; (z-cz)
+    ; Trashes R8-R10!
     bl divide                   ; (x-cx)/(z-cz)
                                 ; [0.16]
-    mov r7, #VIEWPORT_SCALE>>12 ; [16.4]
-    mul r6, r0, r7              ; [12.20]
+
+    ; TODO: Could also speed this up by choosing a viewport scale as a shift, e.g. 128.
+
+    mov r8, #VIEWPORT_SCALE>>12 ; [16.4]
+    mul r6, r0, r8              ; [12.20]
     mov r6, r6, asr #4          ; [12.16]
     mov r8, #VIEWPORT_CENTRE_X  ; [16.16]
     add r6, r6, r8
@@ -693,10 +697,11 @@ project_to_screen:
     ; vp_centre_y - vp_scale * (y-cy) / (z-cz)
     mov r0, r4                  ; (y-cy)
     mov r1, r5                  ; (z-cz)
+    ; Trashes R8-R10!
     bl divide                   ; (y-cy)/(z-cz)
                                 ; [0.16]
-    mov r7, #VIEWPORT_SCALE>>12 ; [16.4]
-    mul r1, r0, r7              ; [12.20]
+    mov r8, #VIEWPORT_SCALE>>12 ; [16.4]
+    mul r1, r0, r8              ; [12.20]
     mov r1, r1, asr #4          ; [12.16]
     mov r8, #VIEWPORT_CENTRE_Y  ; [16.16]
     sub r1, r8, r1              ; [16.16]

@@ -61,6 +61,7 @@ dots_y_table_2_no_adr:
 .incbin "data/dots_y_table_2.bin"
 dots_y_table_2_end_no_adr:
 .incbin "data/dots_y_table_2.bin"
+.endif
 
 ; ============================================================================
 
@@ -76,7 +77,6 @@ dot_tunnel_x_no_adr:
 
 dot_tunnel_y_no_adr:
     .incbin "data\dot_tunnel_y.bin"
-.endif
 
 ; ============================================================================
 

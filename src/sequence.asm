@@ -41,6 +41,9 @@ seq_main_program:
 
 effect_loop:
 
+    call_3 fx_set_layer_fns, 1, dot_tunnel_update,    dot_tunnel_draw_anaglyph_spiral
+    wait_secs 30.0
+
     call_3 fx_set_layer_fns, 1, update_3d_scene,     anaglyph_draw_3d_scene_as_wire
     wait_secs 10.0
 

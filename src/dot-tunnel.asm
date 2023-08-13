@@ -2,7 +2,7 @@
 ; Dot Tunnel.
 ; ============================================================================
 
-.equ DotTunnel_Total, 1024      ; ?
+.equ DotTunnel_Total, 512      ; ?
 
 dot_tunnel_t:
     .long 0
@@ -35,10 +35,44 @@ dot_tunnel_y:
 ; calculate camera relative pos (tpx+dx, tpy+dy, z)
 ; apply perspective and plot to screen.
 
+dot_tunnel_update:
+    ldr r11, dot_tunnel_t
+    add r11, r11, #1
+    cmp r11, #DotTunnel_Total
+    movge r11, #0
+    str r11, dot_tunnel_t
+    mov pc, lr
+
+; R12=screen addr
+dot_tunnel_draw_anaglyph_spiral:
+    str lr, [sp, #-4]!
+
+    ; Left eye.
+    ldr r0, LeftEye_X_Pos
+
+    ; Subtract blue & green.
+    mov r4, #7                  ; brightest red
+    bl dot_tunnel_draw_spiral
+
+    ; Right eye.
+    ldr r0, RightEye_X_Pos
+
+    ; Subtract red.
+    mov r4, #11                 ; brightest cyan
+    bl dot_tunnel_draw_spiral
+
+    ldr pc, [sp], #4
+
+tunnel_skew_offset:
+    .long 0
+
+; R0=eye offset.
+; R4=colour index.
 ; R12=screen addr
 dot_tunnel_draw_spiral:
     str lr, [sp, #-4]!
 
+    strb r4, .3                     ; SELF-MOD!!
     ldr r11, dot_tunnel_t           ; t
 
     ldr r9, dot_tunnel_x
@@ -50,7 +84,11 @@ dot_tunnel_draw_spiral:
     adr r14, dot_tunnel_recip_z
 
     ldr r5, [r7, r11, lsl #2]       ; cx=ox[t]
+    mov r5, #0                      ; TEMP: Force camera to (0,0) 
+    add r5, r5, r0                  ; eye offset.
+    str r0, tunnel_skew_offset      ; TODO: Not needed if camera is forced to (0,0)
     ldr r6, [r8, r11, lsl #2]       ; cy=oy[t]
+    mov r6, #0                      ; TEMP: Force camera to (0,0) 
 
 .1:
     ldr r2, [r14], #4               ; 80/z [7.16]
@@ -60,8 +98,9 @@ dot_tunnel_draw_spiral:
     ldr r0, [r7, r11, lsl #2]       ; ox[i+t]
     ldr r1, [r8, r11, lsl #2]       ; oy[i+t]
 
-    add r3, r0, r3                  ; x+ox
-    add r4, r1, r4                  ; y+oy
+    ; TEMP: Remove tunnel offset.
+    ;add r3, r0, r3                  ; x+ox
+    ;add r4, r1, r4                  ; y+oy
 
     sub r3, r3, r5                  ; x+ox-cx
     sub r4, r4, r6                  ; y+oy-cy
@@ -71,6 +110,12 @@ dot_tunnel_draw_spiral:
     mov r4, r4, asr #8              ; [s8.8]
     mul r0, r3, r2                  ; x/z   [s15.16]
     mul r1, r4, r2                  ; y/z   [s15.16]
+
+    ldrb r3, Anaglyph_Enable_Skew
+    cmp r3, #0
+    ldrne r5, tunnel_skew_offset
+    movne r3, r5, asl #1
+    addne r0, r0, r3
 
     mov r0, r0, asr #16             ; [s15.0]
     mov r1, r1, asr #16             ; [s15.0]
@@ -88,13 +133,29 @@ dot_tunnel_draw_spiral:
     cmp r1, #Screen_Height-1
     bge .2
 
+    .if Screen_Mode==13
     add r3, r12, r1, lsl #8
     add r3, r3, r1, lsl #6
 
-;    mov r2, #0xff
+    ;mov r2, #0xff
     strb r2, [r3, r0]!
-;    strb r2, [r3, #1]
-;    strb r2, [r3, #Screen_Stride]!
+    ;strb r2, [r3, #1]
+    ;strb r2, [r3, #Screen_Stride]!
+    .else
+    ; Assume MODE 9!
+    add r3, r12, r1, lsl #7
+    add r3, r3, r1, lsl #5
+	add r3, r3, r0, lsr #1	; r10 += startx DIV 2
+
+    .3:
+    mov r4, #0xf                ; SELF-MOD!
+
+	ldrb r2, [r3]				; load screen byte
+	tst r0, #1					; odd or even pixel?
+	orreq r2, r2, r4			; mask in colour as left hand pixel
+	orrne r2, r2, r4, lsl #4	; mask in colour as right hand pixel
+	strb r2, [r3]				; store screen byte
+    .endif
 
 .2:
     add r11, r11, #1
@@ -104,12 +165,6 @@ dot_tunnel_draw_spiral:
     adr r0, dot_tunnel_recip_z_end
     cmp r14, r0
     blt .1
-
-    ldr r11, dot_tunnel_t
-    add r11, r11, #4
-    cmp r11, #DotTunnel_Total
-    movge r11, #0
-    str r11, dot_tunnel_t
 
     ldr pc, [sp], #4
 
@@ -205,6 +260,7 @@ dot_tunnel_draw_spiral:
     DOT_CIRCLE_PLOT_1 rsbs, r1, rsbs, r0, clip_8_\angle
 .endm
 
+.if 0
 ; Circles every Z units.
 ; R12=screen addr
 dot_tunnel_draw_circles:
@@ -265,19 +321,21 @@ dot_tunnel_draw_circles_loop:
     str r11, dot_tunnel_t
 
     ldr pc, [sp], #4
-
+.endif
 
 
 dot_tunnel_recip_z:
-.set z, 120.0                ; distance to start of tunnel.
+.set z, 64.0                ; distance to start of tunnel.
 .rept DotTunnel_Total
     FLOAT_TO_FP (160.0/z)    ; scale to screen.
-    .set z, z+1
+    .set z, z+2
 .endr
 dot_tunnel_recip_z_end:
 
+.if 0
 dot_tunnel_x_octant:
     .incbin "data/dot_tunnel_x_octant.bin"
 
 dot_tunnel_y_octant:
     .incbin "data/dot_tunnel_y_octant.bin"
+.endif

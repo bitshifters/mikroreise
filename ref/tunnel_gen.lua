@@ -30,7 +30,7 @@ file6 = io.open("data/dot_tunnel_y_octant.bin", "wb")
 sin=math.sin
 cos=math.cos
 pi=math.pi
-steps=1024
+steps=512
 
 function map(value, in_low, in_high, out_low, out_high)
     if (value <= in_low) then
@@ -45,7 +45,7 @@ function map(value, in_low, in_high, out_low, out_high)
     return out_low + delta * (out_high-out_low)
 end
 
-r=120 -- radius of tunnel
+r=80 -- 120 -- radius of tunnel
 amp=40 -- offset amplitude
 
 cx=160
