@@ -712,6 +712,17 @@ debug_show_rasters:
 .include "src/script.asm"
 
 .include "src/3d-scene.asm"
+.include "src/scene-2d.asm"
+
+LeftEye_X_Pos:
+    FLOAT_TO_FP 0.0
+
+RightEye_X_Pos:
+    FLOAT_TO_FP 0.0
+
+Anaglyph_Enable_Skew:
+    .byte 1
+.p2align 2
 
 rnd_seed:
     .long 0x87654321

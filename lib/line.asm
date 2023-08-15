@@ -32,49 +32,60 @@ mode12_drawline_batch:
     ldr pc, [sp], #4
 
 ; R0=startx, R1=starty, R2=endx, R3=endy, R4=colour, R12=screen_addr
-; Trashes r5-r10
+; Trashes r5-r9
 mode9_drawline_orr:
+	str lr, [sp, #-4]!			; push lr on stack
 	subs r5, r2, r0				; r5 = dx = endx - startx
 	orrs r7, r5, #1<<30			; int sx = dx > 0 ? 1 : -1;
 	rsbmi r5, r5, #0			; r5 = abs(dx)
 
-	mov r8, #160                ; r8 = sy = +stride
+	mov r8, #Screen_Stride      ; r8 = sy = +stride
 	subs r6, r3, r1				; r6 = dy = endy - starty
 	rsbpl r6, r6, #0			; r6 = -abs(dy)
 	rsbmi r8, r8, #0            ; r8 = sy = -stride
 
 	add r9, r5, r6				; r9 = dx + dy = err
 
-	add r10, r12, r1, lsl #7	; 
-	add r1, r10, r1, lsl #5	    ; replace current_y with current_y_ptr
+	add r14, r12, r1, lsl #7	; 
+	add r1, r14, r1, lsl #5	    ; replace current_y with current_y_ptr
 
-	add r10, r12, r3, lsl #7	; 
-	add r3, r10, r3, lsl #5	    ; replace endy with end_y_ptr
+	add r14, r12, r3, lsl #7	; 
+	add r3, r14, r3, lsl #5	    ; replace endy with end_y_ptr
 
 .1:
 	cmp r0, r2					; x0 == x1?
 	cmpeq r1, r3				; y0 == y1?
-    moveq pc, lr                ; rts
+    ldreq pc, [sp], #4          ; rts
 
-    ; NB. No screen clipping.
+    ; TODO: Clip line ends to screen rather than per pixel?
+    cmp r0, #0
+    blt .2
+    cmp r0, #Screen_Width
+    bge .2
+    cmp r1, r12
+    blt .2
+    add r14, r12, #Screen_Bytes
+    cmp r1, r14
+    bge .2
 
-	ldrb r10, [r1, r0, lsr #1]	; load screen byte
+	ldrb r14, [r1, r0, lsr #1]	; load screen byte
 
 	tst r0, #1					; odd or even pixel?
 	;andeq r10, r10, #0xF0		; mask out left hand pixel
-	orreq r10, r10, r4			; mask in colour as left hand pixel
+	orreq r14, r14, r4			; mask in colour as left hand pixel
 
 	;andne r10, r10, #0x0F		; mask out right hand pixel
-	orrne r10, r10, r4, lsl #4	; mask in colour as right hand pixel
+	orrne r14, r14, r4, lsl #4	; mask in colour as right hand pixel
 
-	strb r10, [r1, r0, lsr #1]	; store screen byte
+	strb r14, [r1, r0, lsr #1]	; store screen byte
 
-	mov r10, r9, lsl #1			; r10 = err * 2
-	cmp r10, r6					; e2 >= dy?
+.2:
+	mov r14, r9, lsl #1			; r10 = err * 2
+	cmp r14, r6					; e2 >= dy?
 	addge r9, r9, r6			; err += dy
 	addge r0, r0, r7, asr #30   ; x0 += sx
 
-	cmp r10, r5					; e2 <= dx?
+	cmp r14, r5					; e2 <= dx?
 	addle r9, r9, r5			; err += dx
 	addle r1, r1, r8			; y0 += stride_y
 

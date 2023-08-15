@@ -14,7 +14,7 @@ seq_main_program:
 	; Setup layers of FX.
     call_3 fx_set_layer_fns, 0, 0,                   screen_cls
 
-.if 1
+.if 0
     call_3 fx_set_layer_fns, 1, static_set_palette,  static_copy_screen
     write_addr static_palette_p, hammer_pal_no_adr
     write_addr static_screen_p, hammer_screen_no_adr
@@ -41,6 +41,9 @@ seq_main_program:
     end_script
 
 effect_loop:
+
+    call_3 fx_set_layer_fns, 1, scene2d_update,      scene2d_draw_anaglyph
+    wait_secs 30.0
 
     call_3 fx_set_layer_fns, 1, starfield_update,    starfield_draw_anaglyph
     wait_secs 20.0

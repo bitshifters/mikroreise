@@ -46,6 +46,9 @@
 ; likely to occur. If this does happen, then we can further reduce the
 ; coordinate space and use d=40, h=4, etc.
 
+; TODO: Probably don't need 8.8 precision when doing division [which is the
+;       cause of the overflow] - could likely reduce to 10.6 or similar.
+
 
 camera_pos:
     VECTOR3 0.0, 0.0, -80.0
@@ -366,6 +369,10 @@ anaglyph_draw_3d_scene_as_wire:             ; TODO: Dedupe this code!
     ldr r0, LeftEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
 
+    ; TODO: Don't need to transform the entire object twice.
+    ;       Complete object rotation, scale and position once.
+    ;       Then subtract camera position before transform.
+    ;       See scene2d_transform_object and scene2d_draw as example.
     stmfd sp!, {r12}
     bl transform_3d_scene
     ldmfd sp!, {r12}
@@ -518,6 +525,9 @@ draw_3d_scene_wire:             ; TODO: Dedupe this code!
     adr r12, projected_verts
     .1:
     ; R2=ptr to world pos vector
+    ; TODO: Actually ptr to camera relative vector.
+    ;       Make this world pos so can subtract camera pos
+    ;       for each eye.
     bl project_to_screen
 
     ldrb r3, Anaglyph_Enable_Skew
@@ -627,7 +637,7 @@ plot_face_edge_list:
     ldmia r9, {r2,r3}           ; end_x, end_y
 
     stmfd sp!, {r5-r8}
-    bl mode9_drawline_orr       ; trashes r5-r10
+    bl mode9_drawline_orr       ; trashes r5-r9
     ldmfd sp!, {r5-r8}
 
     ; Mark edge as plotted in cache.
@@ -681,7 +691,7 @@ project_to_screen:
     add r6, r6, r8
 
     ; TODO: Speed this up by doing one lookup for the reciprocal of the divisor (z-cz).
-    ;       As this is constant.
+    ;       As this is constant. See scene2d_transform_object as example.
 
     ; Flip Y axis as we want +ve Y to point up the screen!
     ; vp_centre_y - vp_scale * (y-cy) / (z-cz)
@@ -835,6 +845,7 @@ model_cube_edge_indices:
 
 ; ============================================================================
 ; Scene data.
+; TODO: Move these buffers to bss?
 ; ============================================================================
 
 transformed_verts:
@@ -848,16 +859,6 @@ transformed_normals:
 ; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
 
 projected_verts:
-    .skip OBJ_MAX_VERTS * 2 * 4
+    .skip OBJ_MAX_VERTS * VECTOR2_SIZE
 
 ; ============================================================================
-
-LeftEye_X_Pos:
-    FLOAT_TO_FP 0.0
-
-RightEye_X_Pos:
-    FLOAT_TO_FP 0.0
-
-Anaglyph_Enable_Skew:
-    .byte 1
-.p2align 2
