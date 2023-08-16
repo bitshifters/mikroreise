@@ -26,19 +26,31 @@ scene2d_colour_index:
 scene2d_reciprocal_table_p:
     .long reciprocal_table_no_adr
 
+.equ SQ_BACK, 128   ; furthest
+.equ SQ_GAP, 32     ; gap between squares
+.equ SQ_NUM, 6     ; how many
+.equ SQ_SCALE, 1    ; size of squares
+.equ SQ_SPEED, 1.0  ; move forward at.
+.equ SQ_TWIST, 16   ; between squares.
+.equ SQ_ROT, 0.5    ; rotation speed.
+
+scene2d_object_pos:
+    VECTOR3 0.0, 0.0, SQ_BACK
+
+scene2d_object_rot:
+    .long 0
+
+; TODO: Move camera, spawn objects, move objects etc.
 scene2d_update:
     str lr, [sp, #-4]!
-
-    ; TODO: Move camera.
-    ; TODO: Spawn objects.
-    ; TODO: Move objects.
-    
-    ; TEMP: To update object_pos, object_rot.
-    bl update_3d_scene
 
     ; Reset object list.
     adr r0, scene2d_object_buffer
     str r0, scene2d_object_list_p
+
+    mov r11, #SQ_NUM    ; num objects.
+    ldr r1, scene2d_object_rot
+.1:
 
     ; R0=Ptr to object position vector (3D).
     ; R1=Object rotation (just around Z for now).
@@ -46,59 +58,46 @@ scene2d_update:
     ; R3=Number of verts.
     ; R5=Object scale.
 
-    adr r0, object_pos
-    ldr r1, object_rot+8
+    adr r0, scene2d_object_pos
     adr r2, model_square_verts
     mov r3, #4
-    ldr r5, object_scale
+    mov r5, #MATHS_CONST_1*SQ_SCALE
+
+    stmfd sp!, {r1,r11}
     bl scene2d_transform_object
+    ldmfd sp!, {r1,r11}
 
-.if 1
-; Position left.
-    mov r0, #-32*PRECISION_MULTIPLIER
-    str r0, object_pos+0
-    ldr r0, object_pos+8
-    str r0, [sp, #-4]!
-
-    add r0, r0, #32*PRECISION_MULTIPLIER
-    str r0, object_pos+8
-
-    adr r0, object_pos
-    ldr r1, object_rot+8
-    sub r1, r1, #16*PRECISION_MULTIPLIER
+    ; Twist.
+    sub r1, r1, #SQ_TWIST*MATHS_CONST_1
     bic r1, r1, #0xff000000         ; brads
-    adr r2, model_square_verts
-    mov r3, #4
-    mov r5, #2*PRECISION_MULTIPLIER
-    bl scene2d_transform_object
 
-; Position right.
-    mov r0, #32*PRECISION_MULTIPLIER
-    str r0, object_pos+0
-    ldr r0, object_pos+8
-    add r0, r0, #32*PRECISION_MULTIPLIER
-    str r0, object_pos+8
+    ; Step forward.
+    ldr r0, scene2d_object_pos+8    ; object_pos_z
+    sub r0, r0, #SQ_GAP*MATHS_CONST_1
+    str r0, scene2d_object_pos+8    ; object_pos_z
 
-    adr r0, object_pos
-    ldr r1, object_rot+8
-    add r1, r1, #32*PRECISION_MULTIPLIER
-    bic r1, r1, #0xff000000         ; brads
-    adr r2, model_square_verts
-    mov r3, #4
-    mov r5, #MATHS_CONST_HALF
-    bl scene2d_transform_object
-
-    mov r0, #0
-    str r0, object_pos+0
-
-    ldr r0, [sp], #4
-    str r0, object_pos+8
-.endif
+    subs r11, r11, #1
+    bne .1
 
     ; Terminate object list.
     ldr r0, scene2d_object_list_p
     mov r1, #-1
     str r1, [r0]
+
+    ; Update rotation & position.
+    ldr r1, scene2d_object_rot
+
+    ldr r0, scene2d_object_pos+8    ; object_pos_z
+    add r0, r0, #SQ_NUM*SQ_GAP*MATHS_CONST_1
+    sub r0, r0, #SQ_SPEED*MATHS_CONST_1
+    cmp r0, #MATHS_CONST_1*(SQ_BACK-SQ_GAP)
+    movle r0, #SQ_BACK*MATHS_CONST_1
+    addle r1, r1, #SQ_ROT*(SQ_GAP/SQ_SPEED)*MATHS_CONST_1
+    str r0, scene2d_object_pos+8    ; object_pos_z
+
+    add r1, r1, #SQ_ROT*MATHS_CONST_1
+    bic r1, r1, #0xff000000         ; brads
+    str r1, scene2d_object_rot
 
     ldr pc, [sp], #4
 
@@ -250,12 +249,13 @@ scene2d_draw:
 .endif
 
 ; Transform an object into world coordinates.
-; Assume 2D objects are just outlines.
+; And add it to the object draw list.
 ; R0=Ptr to object position vector (3D).
 ; R1=Object rotation (just around Z for now).
 ; R2=Ptr to object data = a list of verts (currently VECTOR3)
 ; R3=Number of verts.
 ; R5=Object scale.
+; Trashes: R0-R12
 scene2d_transform_object:
     str lr, [sp, #-4]!
 

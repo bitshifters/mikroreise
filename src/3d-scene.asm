@@ -59,9 +59,6 @@ camera_pos:
 object_pos:
     VECTOR3 0.0, 0.0, 16.0
 
-object_pos_camera_relative:
-    VECTOR3 0.0, 0.0, 0.0
-
 object_rot:
     VECTOR3 0.0, 0.0, 0.0
 
