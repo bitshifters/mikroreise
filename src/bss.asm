@@ -39,6 +39,30 @@ starfield_y_no_adr:
 
 ; ============================================================================
 
+transformed_verts_no_adr:
+    .skip OBJ_MAX_VERTS * VECTOR3_SIZE
+
+; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
+
+;transformed_normals:       ; this is dynamic depending on num_verts.
+    .skip OBJ_MAX_FACES * VECTOR3_SIZE
+
+; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
+
+projected_verts_no_adr:
+    .skip OBJ_MAX_VERTS * VECTOR2_SIZE
+
+; ============================================================================
+
+; All objects transformed to world space.
+scene2d_object_buffer_no_adr:
+    .skip Scene2D_ObjectBuffer_Size
+
+scene2d_verts_buffer_no_adr:
+    .skip Scene2D_MaxVerts * VECTOR2_SIZE
+
+; ============================================================================
+
 .include "lib/lib_bss.asm"
 
 ; ============================================================================

@@ -86,6 +86,7 @@ hammer_screen_no_adr:
 hammer_pal_no_adr:
     .incbin "build/hammer.bin.pal"
 
+.if 0
 cactus_screen_no_adr:
     .incbin "build/cactus.bin"
 
@@ -103,3 +104,10 @@ persepolis_screen_no_adr:
 
 persepolis_pal_no_adr:
     .incbin "build/persepolis.bin.pal"
+.endif
+
+; ============================================================================
+
+.include "src/3d-model-data.asm"
+
+; ============================================================================

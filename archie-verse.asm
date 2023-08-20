@@ -138,7 +138,7 @@ main:
 
     ; Register debug vars.
     DEBUG_REGISTER_VAR vsync_count
-    DEBUG_REGISTER_VAR vsync_delta
+    DEBUG_REGISTER_VAR Anaglyph_Enable_Skew
     DEBUG_REGISTER_KEY RMKey_Space,      debug_toggle_main_loop_pause,  0
     DEBUG_REGISTER_KEY RMKey_A,          debug_restart_sequence,        0
     DEBUG_REGISTER_KEY RMKey_S,          debug_set_byte_true,           debug_main_loop_step
@@ -722,6 +722,9 @@ RightEye_X_Pos:
 
 Anaglyph_Enable_Skew:
     .byte 1
+
+Anaglyph_Eye_setting:
+    .byte EyeDistance_Default_Setting
 .p2align 2
 
 rnd_seed:

@@ -2,15 +2,14 @@
 ; 3D Scene.
 ; ============================================================================
 
-.equ OBJ_MAX_VERTS, 8
-.equ OBJ_MAX_FACES, 6
-
-;.equ OBJ_MAX_VISIBLE_FACES, 3       ; True for cube.
-;.equ OBJ_VERTS_PER_FACE, 4
-;.equ OBJ_MAX_EDGES_PER_FACE, OBJ_VERTS_PER_FACE
+.equ OBJ_MAX_VERTS, 32
+.equ OBJ_MAX_FACES, 16
 
 .equ Model_Cube_Num_Verts, 8
 .equ Model_Cube_Num_Faces, 6
+
+.equ Model_Cobra_Num_Verts, 22
+.equ Model_Cobra_Num_Faces, 13
 
 ; The camera viewport is assumed to be [-1,+1] across its widest axis.
 ; Therefore we multiply all projected coordinates by the screen width/2
@@ -71,22 +70,33 @@ object_dir_z:
 ; ============================================================================
 
 object_num_verts:
-    .long Model_Cube_Num_Verts
+    .long Model_Cobra_Num_Verts
 
 object_num_faces:
-    .long Model_Cube_Num_Faces
+    .long Model_Cobra_Num_Faces
 
 object_verts_p:
-    .long model_cube_verts
+    .long model_cobra_verts
 
 object_face_indices_p:
-    .long model_cube_face_indices
+    .long model_cobra_face_indices
 
 object_edge_list_per_face_p:
-    .long model_cube_edges_per_face
+    .long model_cobra_edges_per_face
 
 object_edge_indices_p:
-    .long model_cube_edge_indices
+    .long model_cobra_edge_indices
+
+; ============================================================================
+
+transformed_verts_p:
+    .long transformed_verts_no_adr
+
+transformed_normals_p:
+    .long transformed_verts_no_adr
+
+projected_verts_p:
+    .long projected_verts_no_adr
 
 ; ============================================================================
 ; ============================================================================
@@ -105,6 +115,7 @@ eye_distance_table:
 
 ; R0=distance index.
 set_eye_distance:
+    strb r0, Anaglyph_Eye_setting
 
     adr r1, eye_distance_table
     ldr r0, [r1, r0, lsl #2]
@@ -156,10 +167,16 @@ transform_3d_scene:
     mov r9, r1, asr #MULTIPLICATION_SHIFT  ; r9 = cos(B)
 
     ldr r1, object_verts_p
-    adr r2, transformed_verts
+    ldr r2, transformed_verts_p
     ldr r12, object_num_verts
+
+    add r4, r2, r12, lsl #3
+    add r4, r4, r12, lsl #2               ; transform_normals=&transformed_verts[object_num_verts]
+    str r4, transformed_normals_p
+
     ldr r3, object_num_faces
     add r12, r12, r3                      ; object_num_verts + object_num_faces
+
     ; ASSUMES THAT VERTEX AND NORMAL ARRAYS ARE CONSECUTIVE!
     .1:
     ldmia r1!, {r3-r5}                    ; x,y,z
@@ -220,7 +237,7 @@ transform_3d_scene:
     ldr r0, object_scale
     mov r0, r0, asr #MULTIPLICATION_SHIFT
 
-    adr r2, transformed_verts
+    ldr r2, transformed_verts_p
     ldr r12, object_num_verts
     .2:
     ldmia r2, {r3-r5}
@@ -435,9 +452,9 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     str r12, [sp, #-4]!
 
     ; Project vertices to screen.
-    adr r2, transformed_verts
+    ldr r2, transformed_verts_p
     ldr r11, object_num_verts
-    adr r12, projected_verts
+    ldr r12, projected_verts_p
     .1:
     ; R2=ptr to world pos vector
     bl project_to_screen
@@ -469,10 +486,10 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     ldr r9, object_face_indices_p
     ldrb r5, [r9, r11, lsl #2]  ; vertex0 of polygon N.
     
-    adr r1, transformed_verts
+    ldr r1, transformed_verts_p
     add r1, r1, r5, lsl #3
     add r1, r1, r5, lsl #2      ; transformed_verts + index*12
-    adr r2, transformed_normals
+    ldr r2, transformed_normals_p
     add r2, r2, r11, lsl #3      ; face_normal for polygon N.
     add r2, r2, r11, lsl #2      ; face_normal for polygon N.
 
@@ -491,7 +508,7 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     bpl .3                      ; normal facing away from the view direction.
 
     ; SOLID
-    adr r2, projected_verts     ; projected vertex array.
+    ldr r2, projected_verts_p   ; projected vertex array.
     ldr r3, [r9, r11, lsl #2]   ; quad indices.
 
     stmfd sp!, {r11,r12}
@@ -517,9 +534,9 @@ draw_3d_scene_wire:             ; TODO: Dedupe this code!
     str r12, [sp, #-4]!
 
     ; Project vertices to screen.
-    adr r2, transformed_verts
+    ldr r2, transformed_verts_p
     ldr r11, object_num_verts
-    adr r12, projected_verts
+    ldr r12, projected_verts_p
     .1:
     ; R2=ptr to world pos vector
     ; TODO: Actually ptr to camera relative vector.
@@ -552,12 +569,12 @@ draw_3d_scene_wire:             ; TODO: Dedupe this code!
 
     .2:
     ldr r9, object_face_indices_p
-    ldrb r5, [r9, r11, lsl #2]  ; vertex0 of polygon N.
+    ldrb r5, [r9, r11, lsl #2]   ; vertex0 of polygon N.
     
-    adr r1, transformed_verts
+    ldr r1, transformed_verts_p
     add r1, r1, r5, lsl #3
-    add r1, r1, r5, lsl #2      ; transformed_verts + index*12
-    adr r2, transformed_normals
+    add r1, r1, r5, lsl #2       ; transformed_verts + index*12
+    ldr r2, transformed_normals_p
     add r2, r2, r11, lsl #3      ; face_normal for polygon N.
     add r2, r2, r11, lsl #2      ; face_normal for polygon N.
 
@@ -578,7 +595,7 @@ draw_3d_scene_wire:             ; TODO: Dedupe this code!
     ; WIREFRAME
     ldr r4, object_colour_index
     ldr r5, object_edge_indices_p
-    adr r6, projected_verts     ; projected vertex array.
+    ldr r6, projected_verts_p   ; projected vertex array.
     ldr r7, object_edge_list_per_face_p
     ldr r7, [r7, r11, lsl #2]   ; edge list word for polygon N.
 
@@ -714,9 +731,9 @@ draw_3d_object_as_circles:
     str r4, object_colour_index
 
     ; Project vertices to screen.
-    adr r2, transformed_verts
+    ldr r2, transformed_verts_p
     ldr r11, object_num_verts
-    adr r12, projected_verts
+    ldr r12, projected_verts_p
     .1:
     ; R2=ptr to world pos vector
     bl project_to_screen
@@ -736,8 +753,8 @@ draw_3d_object_as_circles:
     bne .1
 
     ; Plot all verts as circles...
-    adr r6, projected_verts
-    adr r7, transformed_verts
+    ldr r6, projected_verts_p
+    ldr r7, transformed_verts_p
     ldr r11, object_num_verts
     mov r5, #0
 
@@ -763,99 +780,6 @@ draw_3d_object_as_circles:
 
     ldr pc, [sp], #4
 
-
-; ============================================================================
-; Model data: CUBE
-;
-;         4         5        y
-;          +------+          ^  z
-;         /      /|          |/
-;        /      / |          +--> x
-;     0 +------+ 1|
-;       | 7 +  |  + 6
-;       |      | /
-;       |      |/
-;       +------+
-;      3        2
-; ============================================================================
-
-model_cube_verts:
-    VECTOR3 -16.0,  16.0, -16.0
-    VECTOR3  16.0,  16.0, -16.0
-    VECTOR3  16.0, -16.0, -16.0
-    VECTOR3 -16.0, -16.0, -16.0
-    VECTOR3 -16.0,  16.0,  16.0
-    VECTOR3  16.0,  16.0,  16.0
-    VECTOR3  16.0, -16.0,  16.0
-    VECTOR3 -16.0, -16.0,  16.0
-
-; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
-
-model_cube_face_normals:
-    VECTOR3  0.0,  0.0, -1.0
-    VECTOR3  1.0,  0.0,  0.0
-    VECTOR3  0.0,  1.0,  0.0
-    VECTOR3  0.0,  0.0,  1.0
-    VECTOR3 -1.0,  0.0,  0.0
-    VECTOR3  0.0  -1.0,  0.0
-
-; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
-
-; Winding order is clockwise (from outside)
-model_cube_face_indices:
-    .byte 0, 1, 2, 3
-    .byte 1, 5, 6, 2
-    .byte 0, 4, 5, 1
-    .byte 5, 4, 7, 6
-    .byte 4, 0, 3, 7
-    .byte 2, 3, 7, 6
-
-; TODO: Determine this from model_cube_face_indices.
-; TODO: Handle more than 32 total edges.
-model_cube_edges_per_face:
-;            3         2         1         
-;           10987654321098765432109876543210
-    .long 0b00000000000000000000000000001111
-    .long 0b00000000000000000000011000100010
-    .long 0b00000000000000000000001100010001
-    .long 0b00000000000000000000000011110000
-    .long 0b00000000000000000000100110001000
-    .long 0b00000000000000000000110001000100
-
-; TODO: Determine this from model_cube_face_indices.
-model_cube_edge_indices:
-    .byte 0, 1              ; 0
-    .byte 1, 2              ; 1
-    .byte 2, 3              ; 2
-    .byte 3, 0              ; 3
-    .byte 4, 5              ; 4
-    .byte 5, 6              ; 5
-    .byte 6, 7              ; 6
-    .byte 7, 4              ; 7
-    .byte 0, 4              ; 8
-    .byte 1, 5              ; 9
-    .byte 2, 6              ; 10
-    .byte 3, 7              ; 11
-.p2align 2
-
- ;TODO: Object face colours or vertex colours etc.
-
 ; ============================================================================
 ; Scene data.
-; TODO: Move these buffers to bss?
-; ============================================================================
-
-transformed_verts:
-    .skip OBJ_MAX_VERTS * VECTOR3_SIZE
-
-; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
-
-transformed_normals:
-    .skip OBJ_MAX_FACES * VECTOR3_SIZE
-
-; !VERTEX AND NORMAL ARRAYS MUST BE CONSECUTIVE!
-
-projected_verts:
-    .skip OBJ_MAX_VERTS * VECTOR2_SIZE
-
 ; ============================================================================

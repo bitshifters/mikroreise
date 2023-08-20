@@ -26,6 +26,15 @@ scene2d_colour_index:
 scene2d_reciprocal_table_p:
     .long reciprocal_table_no_adr
 
+scene2d_object_buffer_p:
+    .long scene2d_object_buffer_no_adr
+
+scene2d_object_list_p:
+    .long scene2d_object_buffer_no_adr
+
+scene2d_verts_buffer_p:
+    .long scene2d_verts_buffer_no_adr
+
 .equ SQ_BACK, 128   ; furthest
 .equ SQ_GAP, 32     ; gap between squares
 .equ SQ_NUM, 6     ; how many
@@ -45,7 +54,7 @@ scene2d_update:
     str lr, [sp, #-4]!
 
     ; Reset object list.
-    adr r0, scene2d_object_buffer
+    ldr r0, scene2d_object_buffer_p
     str r0, scene2d_object_list_p
 
     mov r11, #SQ_NUM    ; num objects.
@@ -130,7 +139,7 @@ scene2d_draw:
 
     str r4, scene2d_colour_index
 
-    adr r2, scene2d_object_buffer
+    ldr r2, scene2d_object_buffer_p
 .1:
     ldr r1, [r2], #4                       ; load num verts
     cmp r1, #0
@@ -141,7 +150,7 @@ scene2d_draw:
     ldmia r0, {r6-r8}
 
     ldr r9, scene2d_reciprocal_table_p
-    adr r10, scene2d_verts_buffer
+    ldr r10, scene2d_verts_buffer_p
 .2:
     ; Load transformed verts [R3,R5,R5] = [x,y,z]
     ldmia r2!, {r3-r5}
@@ -215,7 +224,7 @@ scene2d_draw:
 
     ; R10=top of buffer
     ldr r4, scene2d_colour_index
-    adr r11, scene2d_verts_buffer
+    ldr r11, scene2d_verts_buffer_p
 .5:
     ldmia r11, {r0-r3}          ; (xstart,ystart,xend,yend)
     add r11, r11, #VECTOR2_SIZE
@@ -229,7 +238,7 @@ scene2d_draw:
 
 .6:
     ; Load vertex 0 as (xend,yend) for last line.
-    adr r11, scene2d_verts_buffer
+    ldr r11, scene2d_verts_buffer_p
     ldmia r11, {r2-r3}
     bl mode9_drawline_orr       ; trashes r5-r9
 
@@ -337,13 +346,3 @@ model_square_verts:
 ; ============================================================================
 ; TODO: Model data for: triangle, pentagon, hexagon, stars, seagull etc.
 ; ============================================================================
-
-scene2d_object_list_p:
-    .long scene2d_object_buffer
-
-; All objects transformed to world space.
-scene2d_object_buffer:
-    .skip Scene2D_ObjectBuffer_Size
-
-scene2d_verts_buffer:
-    .skip Scene2D_MaxVerts * VECTOR2_SIZE
