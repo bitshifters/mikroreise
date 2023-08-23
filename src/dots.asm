@@ -3,7 +3,7 @@
 ; ============================================================================
 
 .equ _DOTS_ENABLE_REVEAL, 1
-.equ Dots_Total, 6504                   ; needs to match dot_gen.lua
+.equ Dots_Total, 4096                   ; needs to match dot_gen.lua
 
 dots_y_table_1_p:
     .long dots_y_table_1_no_adr
@@ -18,7 +18,7 @@ dots_total:
     .long Dots_Total
 
 dots_screen_1_addr:
-    .long 0x01fd8000
+    .long 0x01ff6000                    ; 0x02000000 - 40K (MODE 9)
 
 .if _DOTS_ENABLE_REVEAL
 dots_visible:
@@ -43,9 +43,9 @@ dots_draw_all:
     cmp r0, r1
     strlt r0, dots_visible
 
-    adr r1, dots_gen_code
-    add r1, r1, r0, lsl #6              ;  n*64
-    add r1, r1, r0, lsl #5              ; +n*32
+    adr r1, dots_gen_code               ; 49 instructions per block 
+    add r1, r1, r0, lsl #7              ; =n*128
+    add r1, r1, r0, lsl #6              ; +n*64
     add r1, r1, r0, lsl #2              ; +n*4
     ldr r0, dots_return_code
     str r0, [r1]
@@ -77,8 +77,11 @@ dots_draw_all:
     add r9, r9, r8, lsl #2
 
     ; Set colours.
-    mov r10, #0xff           ; colour
-    mov r8, #0xaf
+    ; Subtract blue & green for left eye.
+    mov r11, #7                 ; brightest red
+
+    ; Subtract red for right eye.
+    mov r8, #11                 ; brightest cyan
 
     bl dots_gen_code
 
@@ -89,9 +92,9 @@ dots_draw_all:
     cmp r0, r1
     ldrge pc, [sp], #4
 
-    adr r1, dots_gen_code
-    add r1, r1, r0, lsl #6              ;  n*64
-    add r1, r1, r0, lsl #5              ; +n*32
+    adr r1, dots_gen_code               ; 49 instructions per block
+    add r1, r1, r0, lsl #7              ; =n*128
+    add r1, r1, r0, lsl #6              ; +n*64
     add r1, r1, r0, lsl #2              ; +n*4
     ldr r0, dots_load_code
     str r0, [r1]

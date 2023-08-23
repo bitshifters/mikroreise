@@ -80,7 +80,14 @@ Tech TODOs
     - Journey into space part with simple solid 3D ship and scaled sprite stars.
     => ELITE SHIP DATA
         - Need to support polygons of different sides.
-        
+- Line draw needs screen clipping outside of inner loop.
+    - Trivial reject xs<0 && xe<0 or xs>width && xe>width
+    - Calculate slope dy/dx.
+    - If x<0 then y+=(-x)*dy/dx and x=0.
+    - If x>width then y-=(x-width)*dy/dx
+    - Same for y<0 and y>height.
+
+- Move all potting code to MODE 12? Can work on single bytes for plotting...
 
 
 

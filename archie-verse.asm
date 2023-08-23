@@ -732,6 +732,7 @@ rnd_seed:
 
 .include "src/dot-tunnel.asm"
 .include "src/starfield.asm"
+.include "src/dots.asm"
 
 .include "lib/palette.asm"
 .include "lib/mode9-screen.asm"

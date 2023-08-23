@@ -50,7 +50,7 @@ scroller_text_string_end_no_adr:
 
 ; ============================================================================
 
-.if 0
+.if 1
 .p2align 6
 dots_y_table_1_no_adr:
 .incbin "data/dots_y_table_1.bin"

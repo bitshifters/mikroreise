@@ -16,20 +16,17 @@ file1 = io.open("data/dots_x_table.bin", "wb")
 file2 = io.open("data/dots_y_table_1.bin", "wb")
 file3 = io.open("data/dots_y_table_2.bin", "wb")
 file4 = io.open("src/dot_plot_generated.asm", "w")
+file5 = io.open("build/dots.txt", "w")
 
 t=0
 sin=math.sin
 cos=math.cos
 pi=math.pi
 num=1
-tot=6504
-cx=160
-cy=128
 
 register=0
-x_values={}
-scr_base1=0x01fd8000
-scr_base2=0x01fec000
+xl_values={}
+xr_values={}
 
 function map(value, in_low, in_high, out_low, out_high)
     if (value <= in_low) then
@@ -48,13 +45,28 @@ function radians(degrees)
     return degrees * 2 * pi / 360.0
 end
 
+tot=4096            -- must match equ in dots.asm!
+
+scr_base1=0x01ff6000
+scr_base2=0x01fec000
+
 screen_width=320
 screen_height=256
-width=256
-height=240
-stride=320
-left_edge=(screen_width-width)/2
-top_edge=(screen_height-height)/2
+stride=160
+
+centre_x=screen_width/2
+centre_y=20 + screen_height/2
+vp_scale=160.0
+
+scale_x=40
+scale_y=40
+depth=40
+eye_dist=1.2        -- must match final choice in 3d-scene.asm!
+left_eye_pos=-eye_dist
+right_eye_pos=eye_dist
+cam_z=-80
+
+skew=2.0            -- must match final choice in 3d-scene.asm!
 
 for i=1,tot do
     a = i*0.001
@@ -71,49 +83,84 @@ for i=1,tot do
  
     freqX = 13
     freqY = 11
+    freqZ = 2
     phi = 97
 
     modFreqX = 1
     modFreqY = 3
+    modFreqZ = 2
 
     modFreq2X = 11
     modFreq2Y = 17
+    modFreq2Z = 1
     modFreq2Strength = 0.0
 
     -- an additional modulation of the osscillations
     fmx = sin(angle*modFreq2X) * modFreq2Strength + 1
     fmy = sin(angle*modFreq2Y) * modFreq2Strength + 1
+    fmz = sin(angle*modFreq2Z) * modFreq2Strength + 1
 
     x = sin(angle * freqX * fmx + radians(phi)) * cos(angle * modFreqX)
     y = sin(angle * freqY * fmy) * cos(angle * modFreqY)
+    z = sin(angle * freqZ * fmz)
 
-    x = map(x, -1, 1, 0, width)
-    y = map(y, -1, 1, 0, height)
+    x = map(x, -1, 1, -scale_x, scale_x)
+    y = map(y, -1, 1, -scale_y, scale_y)
+    z = map(z, -1, 1, -depth,   depth)
 
-    xi = left_edge + math.modf(x)
-    yi = top_edge + math.modf(y)
+    xleft = centre_x + vp_scale*((x-left_eye_pos) / (z-cam_z))
+    xright = centre_x + vp_scale*((x-right_eye_pos) / (z-cam_z))
+    ys = centre_y + vp_scale*(y / (z-cam_z))
 
-    writeLong(file1,xi)
+    if (ys<0 or ys>=screen_height or xleft<0 or xleft>=screen_width or xright<0 or xright>=screen_width) then
+        print(string.format("WARNING! Pixel %d offscreen a=%f [%f, %f, %f] => [%f - %f, %f]", i, angle, x,y,z, xleft, xright, ys))
+    end
+
+    yi = math.modf(ys)
+
+    writeLong(file1,math.modf((xleft+xright)/2))  -- unused
     writeLong(file2,scr_base1+yi*stride)
     writeLong(file3,scr_base2+yi*stride)
+
+    file5:write(string.format("i=%d a=%f [%f, %f, %f] => [%f - %f, %f]\n", i, angle, x,y,z, xleft, xright, ys))
 
     if (register==0) then
         file4:write("ldmia r9!, {r0-r7}\n")
     end
 
-    x_values[register+1]=xi
+    xl_values[register+1]=xleft
+    xr_values[register+1]=xright
     register=register + 1
 
     if (register==8) then
-        for i=1,8 do
-            -- file4:write(string.format("add r14, r12, r%d\n", i-1))
-            file4:write(string.format("strb r10, [r%d, #%d]\n", i-1, x_values[i]))
+        file4:write(string.format(";left eye\n"))
+        for j=1,8 do
+            local xl = math.modf(xl_values[j] + left_eye_pos*skew)    -- skew
+
+            file4:write(string.format("ldrb r10, [r%d, #%d]\n", j-1, xl//2))
+            
+            if (xl%2==0) then
+                file4:write(string.format("orr r10, r10, r11\t; lh pixel(%d)\n", xl))
+            else
+                file4:write(string.format("orr r10, r10, r11, lsl #4\t; rh pixel(%d)\n", xl))
+            end
+
+            file4:write(string.format("strb r10, [r%d, #%d]\n", j-1, xl//2))
         end
 
-        for i=1,8 do
-            -- file4:write(string.format("sub r14, r11, r%d\n", i-1))
-            file4:write(string.format("sub r12, r11, r%d\n", i-1))
-            file4:write(string.format("strb r8, [r12, #%d]\n", x_values[i]))
+        file4:write(string.format(";right eye\n"))
+        for j=1,8 do
+            local xr = math.modf(xr_values[j] + right_eye_pos*skew)    -- skew
+
+            file4:write(string.format("ldrb r10, [r%d, #%d]\n", j-1, xr//2))
+            
+            if (xr%2==0) then
+                file4:write(string.format("orr r10, r10, r8\t; lh pixel(%d)\n", xr))
+            else
+                file4:write(string.format("orr r10, r10, r8, lsl #4\t; rh pixel(%d)\n", xr))
+            end
+
+            file4:write(string.format("strb r10, [r%d, #%d]\n", j-1, xr//2))
         end
         
         register=0
@@ -125,3 +172,4 @@ file1:close()
 file2:close()
 file3:close()
 file4:close()
+file5:close()

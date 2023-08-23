@@ -20,6 +20,7 @@ SHRINKLER?=shrinkler
 PYTHON3?=python
 DOS2UNIX?=dos2unix
 endif
+# TODO: Add Lua code and table gen to dependencies.
 
 PNG2ARC=./bin/png2arc.py
 PNG2ARC_FONT=./bin/png2arc_font.py

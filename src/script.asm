@@ -17,6 +17,7 @@
 .equ ScriptContext_Wait, 4          ; wait frames.
                                     ; imagine we might want to add arbitrary vars into context.
                                     ; but wait until we need to do this.
+                                    ; NOTE: we don't have a stack!!
 
 .equ Script_ContextSize, 8
 .equ Script_MaxScripts, 2
@@ -173,6 +174,14 @@ script_write_addr:
     .long script_write_addr, \address, \value
 .endm
 
+; NOTE: Forked program not guaranteed to be executed on this frame as the PC
+;       is inserted into the first free slot in the program list. If this is
+;       before the currently running program then it won't get around until
+;       next tick. This could be solved by using a linked-list of programs
+;       inserted into a frame array, similar to Rose.
 .macro fork program
     .long script_fork, \program
 .endm
+
+; TODO: Call subroutine (for model setup etc.) that is guaranteed to be
+;       executed there and then.

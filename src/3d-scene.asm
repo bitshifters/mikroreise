@@ -507,6 +507,9 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     cmp r0, #0                  
     bpl .3                      ; normal facing away from the view direction.
 
+    ; TODO: Screen space winding order test:
+    ;       (y1 - y0) * (x2 - x1) - (x1 - x0) * (y2 - y1) > 0
+
     ; SOLID
     ldr r2, projected_verts_p   ; projected vertex array.
     ldr r3, [r9, r11, lsl #2]   ; quad indices.

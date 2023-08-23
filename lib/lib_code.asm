@@ -8,6 +8,8 @@
 ; MACROS
 ; ============================================================================
 
+; NOTE: This macro only works if rDst==rBase!!!
+; TODO: Proper MLA_BY_CONST rDst, rBase, const
 .macro CALC_SCANLINE_ADDR rDst, rBase, rY
 .set val, Screen_Stride
 .if val&256
