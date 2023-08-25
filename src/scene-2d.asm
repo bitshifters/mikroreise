@@ -231,8 +231,7 @@ scene2d_draw:
     cmp r11, r10
     bge .6
 
-    ; TODO: When to clip to edges of screen? :S
-    bl mode9_drawline_orr       ; trashes r5-r9
+    bl mode9_drawline_with_clip  ; trashes r5-r9
     ; NOTE: Can't reuse R3=yend as gets scaled by Screen_Stride.
     b .5
 
@@ -240,7 +239,8 @@ scene2d_draw:
     ; Load vertex 0 as (xend,yend) for last line.
     ldr r11, scene2d_verts_buffer_p
     ldmia r11, {r2-r3}
-    bl mode9_drawline_orr       ; trashes r5-r9
+
+    bl mode9_drawline_with_clip  ; trashes r5-r9
 
     ; Next object.
     ldr r2, [sp], #4            ; unstash ptr in r2

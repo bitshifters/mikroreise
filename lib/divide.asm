@@ -52,7 +52,7 @@ divide:
     rsbmi r1, r1, #0            ; make positive  
 
     .if LibDivide_UseReciprocalTable
-    mov r1, r1, asr #16-LibDivide_Reciprocal_s    ; [16.6]    (b<<s)
+    mov r1, r1, asr #16-LibDivide_Reciprocal_s    ; [15.7]    (b<<s)
 
     .if _DEBUG
     cmp r1,#0                   ; Test for division by zero
@@ -76,9 +76,9 @@ divide:
 ;   bic r1, r1, #0xff0000       ; [10.6]    (b<<6)
     ldr r1, [r9, r1, lsl #2]    ; [0.16]    (1<<16+s)/(b<<s) = (1<<16)/b
 
-    mov r0, r0, asr #16-LibDivide_Reciprocal_s    ; [16.6]    (a<<s)
-    mul r9, r0, r1                      ; [10.22]   (a<<s)*(1<<16)/b = (a<<16+s)/b
-    mov r9, r9, asr #LibDivide_Reciprocal_s       ; [10.16]   (a<<16)/b = (a/b)<<16
+    mov r0, r0, asr #16-LibDivide_Reciprocal_s    ; [9.7]    (a<<s)
+    mul r9, r0, r1                      ; [9.23]   (a<<s)*(1<<16)/b = (a<<16+s)/b
+    mov r9, r9, asr #LibDivide_Reciprocal_s       ; [9.16]   (a<<16)/b = (a/b)<<16
     .else
 
     ; Limited precision.

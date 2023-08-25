@@ -2,6 +2,9 @@
 ; Line drawing routines.
 ; ============================================================================
 
+line_reciprocal_table_p:
+    .long reciprocal_table_no_adr
+
 ; Plot a batch of lines.
 ; Parameters:
 ;  R0=number of lines
@@ -33,6 +36,114 @@ mode12_drawline_batch:
 
 ; R0=startx, R1=starty, R2=endx, R3=endy, R4=colour, R12=screen_addr
 ; Trashes r5-r9
+
+mode9_drawline_with_clip:
+    cmp r1, r3                  ; starty>endy?
+    ble .10
+    
+    ; Swap ends so ystart<yend
+    mov r5, r0
+    mov r0, r2
+    mov r2, r5
+    mov r5, r1
+    mov r1, r3
+    mov r3, r5
+
+.10:
+    cmp r1, #Screen_Height      ; fully off screen?
+    movge pc, lr
+    cmp r3, #0                  ; fully off screen?
+    movlt pc, lr
+
+    ; Need to clip if ystart<0 or yend>=screen height
+    cmp r1, #0
+    blt .11                      ; top off screen, need clip
+    cmp r3, #Screen_Height
+    blt .2                      ; bottom off screen, need clip
+
+.11:
+    sub r5, r2, r0              ; r5 = dx = endx - startx
+    sub r6, r3, r1              ; r6 = dy = endy - starty [+ve]
+
+    ldr r9, line_reciprocal_table_p
+    ldr r8, [r9, r6, lsl #2+LibDivide_Reciprocal_s] ; r8 = 1/dy [0.16]
+
+    mul r8, r5, r8              ; dx/dy [s9.16]
+    cmp r1, #0                  ;
+    bge .12
+    ; ystart<0
+    rsblt r6, r1, #0            ; y_to_zero=-ystart
+    mul r5, r8, r6              ; y_to_zero*dx/dy
+    add r0, r0, r5, asr #16     ; xstart += y_to_zero*dx/dy
+    mov r1, #0                  ; ystart = 0
+
+.12:
+    cmp r3, #Screen_Height
+    blt .2
+    ; yend>=screen height
+    sub r6, r3, #Screen_Height-1; y_to_zero=yend-255
+    mul r5, r8, r6              ; y_to_zero*dx/dy
+    sub r2, r2, r5, asr #16     ; xend -= y_to_zero*dx/dy
+    mov r3, #Screen_Height-1    ; yend = 255
+
+.2:
+    ; Clipped in Y. Now Clip in X.
+
+    cmp r0, r2                  ; startx>endx?
+    ble .20
+    
+    ; Swap ends so xstart<xend
+    mov r5, r0
+    mov r0, r2
+    mov r2, r5
+    mov r5, r1
+    mov r1, r3
+    mov r3, r5
+
+.20:
+    cmp r0, #Screen_Width      ; fully off screen?
+    movge pc, lr
+    cmp r2, #0                  ; fully off screen?
+    movlt pc, lr
+
+    ; Need to clip if xstart<0 or xend>=screen width
+    cmp r0, #0
+    blt .21                      ; top off screen, need clip
+    cmp r2, #Screen_Width
+    blt .3                      ; bottom off screen, need clip
+
+.21:
+    sub r5, r2, r0              ; r5 = dx = endx - startx [+ve]
+    sub r6, r3, r1              ; r6 = dy = endy - starty
+
+    ldr r9, line_reciprocal_table_p
+    ldr r8, [r9, r5, lsl #2+LibDivide_Reciprocal_s] ; r8 = 1/dx [0.16]
+
+    mul r8, r6, r8              ; dy/dx [s9.16]
+    cmp r0, #0                  ;
+    bge .22
+    ; xstart<0
+    rsblt r5, r0, #0            ; x_to_zero=-xstart
+    mul r6, r8, r5              ; x_to_zero*dy/dx
+    add r1, r1, r6, asr #16     ; ystart += x_to_zero*dy/dx
+    mov r0, #0                  ; xstart = 0
+
+.22:
+    cmp r2, #Screen_Width
+    blt .3
+    ; xend>=screen width
+    sub r5, r2, #Screen_Width-1 ; x_to_zero=xend-319
+    mul r6, r8, r5              ; x_to_zero*dy/dx
+    sub r3, r3, r6, asr #16     ; yend -= x_to_zero*dy/dx
+    mov r2, #Screen_Width-1     ; xend = 319
+
+.3:
+    ; Clipped in X & Y. \o/
+
+; FALL THROUGH FOR NOW!
+
+; R0=startx, R1=starty, R2=endx, R3=endy, R4=colour, R12=screen_addr
+; Trashes r5-r9
 mode9_drawline_orr:
 	str lr, [sp, #-4]!			; push lr on stack
 	subs r5, r2, r0				; r5 = dx = endx - startx
@@ -56,17 +167,6 @@ mode9_drawline_orr:
 	cmp r0, r2					; x0 == x1?
 	cmpeq r1, r3				; y0 == y1?
     ldreq pc, [sp], #4          ; rts
-
-    ; TODO: Clip line ends to screen rather than per pixel?
-    cmp r0, #0
-    blt .2
-    cmp r0, #Screen_Width
-    bge .2
-    cmp r1, r12
-    blt .2
-    add r14, r12, #Screen_Bytes
-    cmp r1, r14
-    bge .2
 
 	ldrb r14, [r1, r0, lsr #1]	; load screen byte
 
@@ -168,3 +268,8 @@ mode12_drawline:
 
 	b .1                                                    ; 4c
     ; ~18c per pixel?
+
+; PONDER: Unroll this loop to maximum length (320)
+;         Compute number of loop iterations (max(dx,dy))
+;         Poke in a return instruction after N iterations.
+;         Restore original instruction upon completion.
