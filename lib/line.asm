@@ -38,6 +38,7 @@ mode12_drawline_batch:
 ; Trashes r5-r9
 
 mode9_drawline_with_clip:
+    ldr r9, line_reciprocal_table_p
     cmp r1, r3                  ; starty>endy?
     ble .10
     
@@ -65,7 +66,6 @@ mode9_drawline_with_clip:
     sub r5, r2, r0              ; r5 = dx = endx - startx
     sub r6, r3, r1              ; r6 = dy = endy - starty [+ve]
 
-    ldr r9, line_reciprocal_table_p
     ldr r8, [r9, r6, lsl #2+LibDivide_Reciprocal_s] ; r8 = 1/dy [0.16]
 
     mul r8, r5, r8              ; dx/dy [s9.16]
@@ -116,7 +116,6 @@ mode9_drawline_with_clip:
     sub r5, r2, r0              ; r5 = dx = endx - startx [+ve]
     sub r6, r3, r1              ; r6 = dy = endy - starty
 
-    ldr r9, line_reciprocal_table_p
     ldr r8, [r9, r5, lsl #2+LibDivide_Reciprocal_s] ; r8 = 1/dx [0.16]
 
     mul r8, r6, r8              ; dy/dx [s9.16]
@@ -138,7 +137,91 @@ mode9_drawline_with_clip:
     mov r2, #Screen_Width-1     ; xend = 319
 
 .3:
+	str lr, [sp, #-4]!			; push lr on stack
+
     ; Clipped in X & Y. \o/
+    ; We also know that startx<endx.
+	sub r5, r2, r0				; r5 = dx = endx - startx
+	subs r6, r3, r1				; r6 = dy = endy - starty
+	rsbmi r6, r6, #0			; r6 = abs(dy)
+
+    cmp r5, r6
+    blt .4                      ; dy>dx steep line
+
+    ; dx>=dy shallow line.
+	subs r6, r3, r1				; r6 = dy = endy - starty
+    ldr r8, [r9, r5, lsl #2+LibDivide_Reciprocal_s] ; r8 = 1/dx [0.16]
+    mul r8, r6, r8              ; dy/dx [s9.16]
+
+    mov r1, r1, asl #16         ; y     [9.16]
+
+	tst r0, #1					; odd or even pixel?
+    bne .32
+
+    ; for x=xstart to xend
+.31:
+    cmp r0, r2                  ; xstart==xend?
+    ldreq pc, [sp], #4          ; rts
+
+    mov r9, r1, asr #16         ; y [9.0]
+	add r5, r12, r9, lsl #7
+	add r5, r5, r9, lsl #5	    ; y*stride
+
+  	ldrb r14, [r5, r0, lsr #1]	; load screen byte
+	orr r14, r14, r4			; mask in colour as left hand pixel
+	strb r14, [r5, r0, lsr #1]	; store screen byte
+
+    add r0, r0, #1              ; x+=1
+    add r1, r1, r8              ; y+=dy/dx
+
+.32:
+    cmp r0, r2                  ; xstart==xend?
+    ldreq pc, [sp], #4          ; rts
+
+    mov r9, r1, asr #16         ; y [9.0]
+	add r5, r12, r9, lsl #7
+	add r5, r5, r9, lsl #5	    ; scr_addr+y*stride
+
+  	ldrb r14, [r5, r0, lsr #1]	; load screen byte
+	orr r14, r14, r4, lsl #4	; mask in colour as right hand pixel
+	strb r14, [r5, r0, lsr #1]	; store screen byte
+
+    add r0, r0, #1              ; x+=1
+    add r1, r1, r8              ; y+=dy/dx
+
+    b .31
+
+.4:
+    ; dx<dy steep line.
+    ldr r8, [r9, r6, lsl #2+LibDivide_Reciprocal_s] ; r8 = 1/dy [0.16]
+    mul r8, r5, r8              ; dx/dy [s9.16]
+
+    mov r9, #Screen_Stride
+	subs r6, r3, r1				; r6 = dy = endy - starty
+    rsbmi r9, r9, #0            ; -stride
+
+	add r14, r12, r1, lsl #7	; 
+	add r1, r14, r1, lsl #5	    ; replace current_y with current_y_ptr
+
+	add r14, r12, r3, lsl #7	; 
+	add r3, r14, r3, lsl #5	    ; replace endy with end_y_ptr
+
+    mov r0, r0, asl #16         ; x     [9.16]
+
+    ; for y=ystart to yend
+.41:
+    cmp r1, r3                  ; ystart==yend
+    ldreq pc, [sp], #4          ; rts
+
+  	ldrb r14, [r1, r0, lsr #17]	; load screen byte
+	tst r0, #1<<16				; odd or even pixel?
+	orreq r14, r14, r4			; mask in colour as left hand pixel
+	orrne r14, r14, r4, lsl #4	; mask in colour as right hand pixel
+	strb r14, [r1, r0, lsr #17]	; store screen byte
+
+    add r0, r0, r8              ; x+=dx/dy
+    add r1, r1, r9              ; y+=1
+    b .41
 
 ; FALL THROUGH FOR NOW!
 

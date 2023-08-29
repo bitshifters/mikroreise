@@ -28,17 +28,19 @@
 
 .equ Screen_Mode, 9
 .equ Screen_Width, 320
+.equ Screen_PixelsPerByte, 2
+
 .if _WIDESCREEN
 .equ Vdu_Mode, 97					; MODE 9 widescreen (320x180)
 									; or 96 for MODE 13 widescreen (320x180)
 .equ Screen_Height, 180
 .equ Mode_Height, 180
 .else
-.equ Vdu_Mode, 9
+.equ Vdu_Mode, Screen_Mode
 .equ Screen_Height, 256
 .equ Mode_Height, 256
 .endif
-.equ Screen_PixelsPerByte, 2
+
 .equ Screen_Stride, Screen_Width/Screen_PixelsPerByte
 .equ Screen_Bytes, Screen_Stride*Screen_Height
 .equ Mode_Bytes, Screen_Stride*Mode_Height

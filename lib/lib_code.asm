@@ -127,7 +127,7 @@ debug_string:
 .if Screen_Mode==0
 .include "lib/mode0.asm"
 .endif
-.if Screen_Mode==13
+.if Screen_Mode==13 || Screen_Mode==12
 .include "lib/mode13.asm"
 .endif
 .if Screen_Mode==9
