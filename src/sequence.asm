@@ -14,7 +14,7 @@ seq_main_program:
 	; Setup layers of FX.
     call_3 fx_set_layer_fns, 0, 0,                   screen_cls
 
-.if 0
+.if 1
     call_3 fx_set_layer_fns, 1, static_set_palette,  static_copy_screen
     write_addr static_palette_p, hammer_pal_no_adr
     write_addr static_screen_p, hammer_screen_no_adr
@@ -42,11 +42,10 @@ seq_main_program:
 
 effect_loop:
 
-    call_3 fx_set_layer_fns, 1, 0,     dots_draw_all
-    wait_secs 20.0
+    write_addr object_dir_z, MATHS_CONST_1
 
     ; Set Cobra model.
-    write_addr object_scale, MATHS_CONST_1*2
+    write_addr object_scale, MATHS_CONST_1*1.9
     write_addr object_num_verts, Model_Cobra_Num_Verts
     write_addr object_num_faces, Model_Cobra_Num_Faces
     write_addr object_verts_p, model_cobra_verts
@@ -55,10 +54,13 @@ effect_loop:
     write_addr object_edge_indices_p, model_cobra_edge_indices
 
     call_3 fx_set_layer_fns, 1, update_3d_scene,     anaglyph_draw_3d_scene_as_wire
-    wait_secs 20.0
+    wait_secs 10.0
 
     call_3 fx_set_layer_fns, 1, scene2d_update,      scene2d_draw_anaglyph
     wait_secs 10.0
+
+    call_3 fx_set_layer_fns, 1, 0,     dots_draw_all
+    wait_secs 20.0
 
     call_3 fx_set_layer_fns, 1, starfield_update,    starfield_draw_anaglyph
     wait_secs 10.0

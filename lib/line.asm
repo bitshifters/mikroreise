@@ -228,6 +228,21 @@ mode9_drawline_with_clip:
 ; R0=startx, R1=starty, R2=endx, R3=endy, R4=colour, R12=screen_addr
 ; Trashes r5-r9
 mode9_drawline_orr:
+    .if _DEBUG
+    cmp r1, #0
+    adrlt r0,errneedclip          ; and flag an error
+    swilt OS_GenerateError      ; when necessary
+    cmp r3, #0
+    adrlt r0,errneedclip          ; and flag an error
+    swilt OS_GenerateError      ; when necessary
+    cmp r1, #Screen_Height
+    adrge r0,errneedclip          ; and flag an error
+    swige OS_GenerateError      ; when necessary
+    cmp r3, #Screen_Height
+    adrge r0,errneedclip          ; and flag an error
+    swige OS_GenerateError      ; when necessary
+    .endif
+
 	str lr, [sp, #-4]!			; push lr on stack
 	subs r5, r2, r0				; r5 = dx = endx - startx
 	orrs r7, r5, #1<<30			; int sx = dx > 0 ? 1 : -1;
@@ -273,6 +288,14 @@ mode9_drawline_orr:
 	addle r1, r1, r8			; y0 += stride_y
 
 	b .1
+
+.if _DEBUG
+    errneedclip: ;The error block
+    .long 0
+    .byte "Line needs clipping in Y."
+	.align 4
+	.long 0
+.endif
 
 ; R0=x, R1=y, R4=colour, R12=screen_addr, trashes r10, r11
 mode9_plot_pixel:

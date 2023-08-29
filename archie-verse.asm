@@ -16,7 +16,7 @@
 .equ _CHECK_FRAME_DROP, (!_DEBUG && 1)
 
 .equ _DEBUG_DEFAULT_PLAY_PAUSE, 1		; play
-.equ _DEBUG_DEFAULT_SHOW_RASTERS, 1
+.equ _DEBUG_DEFAULT_SHOW_RASTERS, 0
 .equ _DEBUG_DEFAULT_SHOW_INFO, 0		; slow so off by default.
 
 .equ Sample_Speed_SlowCPU, 48		    ; ideally get this down for ARM2
