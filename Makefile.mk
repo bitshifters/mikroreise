@@ -34,41 +34,44 @@ HOSTFS=../arculator/hostfs
 ##########################################################################
 
 .PHONY:deploy
-deploy:folder
+deploy: $(FOLDER)
 	$(RM_RF) "$(HOSTFS)\$(FOLDER)"
 	$(MKDIR_P) "$(HOSTFS)\$(FOLDER)"
 	$(COPY) "$(FOLDER)\*.*" "$(HOSTFS)\$(FOLDER)\*.*"
 
-.PHONY:folder
-folder: build code text
+$(FOLDER): build ./build/archie-verse.bin ./build/seq.bin ./build/!run.txt ./build/icon.bin
 	$(RM_RF) $(FOLDER)
 	$(MKDIR_P) $(FOLDER)
 	$(COPY) .\folder\*.* "$(FOLDER)\*.*"
 	$(COPY) .\build\!run.txt "$(FOLDER)\!Run,feb"
 	$(COPY) .\build\icon.bin "$(FOLDER)\!Sprites,ff9"
 	$(COPY) .\build\archie-verse.bin "$(FOLDER)\!RunImage,ff8"
+	$(COPY) .\build\seq.bin  "$(FOLDER)\Seq,ffd"
 
-.PHONY:code
-code: ./build/archie-verse.bin
-
-./build/archie-verse.bin: ./build/archie-verse.o link_script.txt
-	$(VLINK) -T link_script.txt -b rawbin1 -o $@ build/archie-verse.o -Mbuild/linker.txt
-
-./build/archie-verse.o: build archie-verse.asm assets music
-	$(VASM) -L build/compile.txt -m250 -Fvobj -opt-adr -o build/archie-verse.o archie-verse.asm
-
-.PHONY:assets
-assets: build ./build/logo.lz4 ./build/big-font.bin ./build/icon.bin ./build/hammer.bin ./build/cactus.bin \
-	./build/house.bin ./build/persepolis.bin
-
-.PHONY:music
-music: build ./build/changing_waves.mod
-
-.PHONY:text build
-text: ./build/!run.txt
+.PHONY:seq
+seq: ./build/seq.bin
+	$(COPY) .\build\seq.bin  "$(FOLDER)\Seq,ffd"
+	$(COPY) "$(FOLDER)\Seq,ffd" "$(HOSTFS)\$(FOLDER)"
 
 build:
 	$(MKDIR_P) "./build"
+
+./build/assets.txt: build ./build/logo.lz4 ./build/big-font.bin ./build/icon.bin ./build/hammer.bin ./build/cactus.bin \
+	./build/house.bin ./build/persepolis.bin
+	echo done > $@
+
+./build/seq.bin: build ./build/seq.o link_script2.txt
+	$(VLINK) -T link_script2.txt -b rawbin1 -o $@ build/seq.o -Mbuild/linker2.txt
+
+./build/seq.o: build archie-verse.asm ./src/sequence-data.asm ./build/changing_waves.mod ./build/assets.txt
+	$(VASM) -L build/compile.txt -D_DO_SEQUENCE=1 -m250 -Fvobj -opt-adr -o build/seq.o archie-verse.asm
+
+./build/archie-verse.bin: build ./build/archie-verse.o ./build/seq.bin link_script.txt
+	$(VLINK) -T link_script.txt -b rawbin1 -o $@ build/archie-verse.o -Mbuild/linker.txt
+
+.PHONY:./build/archie-verse.o
+./build/archie-verse.o: build archie-verse.asm ./build/changing_waves.mod ./build/assets.txt
+	$(VASM) -L build/compile.txt -m250 -Fvobj -opt-adr -o build/archie-verse.o archie-verse.asm
 
 ##########################################################################
 ##########################################################################

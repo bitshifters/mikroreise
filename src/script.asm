@@ -64,6 +64,20 @@ script_tick_all:
 
     ldr pc, [sp], #4
 
+script_init:
+    str lr, [sp, #-4]!
+
+    adr r12, script_contexts
+.1:
+    bl script_terminate
+
+    adr r11, script_contexts_end
+    add r12, r12, #Script_ContextSize
+    cmp r12, r11
+    blt .1
+
+    ldr pc, [sp], #4
+
 ; R0=ptr to program.
 script_add_program:
     adr r2, script_contexts

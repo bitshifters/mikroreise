@@ -24,6 +24,10 @@
 
 .equ _WIDESCREEN, 0
 
+.ifndef _DO_SEQUENCE
+.equ _DO_SEQUENCE, 0
+.endif
+
 .equ Screen_Banks, 2
 
 .equ Screen_Mode, 9
@@ -168,8 +172,7 @@ main:
 	; R12=top of RAM used.
 
 	; Bootstrap the main sequence.
-	adr r0, seq_main_program
-	bl script_add_program
+    bl sequence_init
 
     ; Tick script once for module init.
     bl script_tick_all
@@ -365,16 +368,18 @@ debug_toggle_main_loop_pause:
     swieq QTM_Pause			    ; pause
     swine QTM_Start             ; play
 
-    ; TODO: Stop/start script.
     mov pc, lr
 
 debug_restart_sequence:
     ; Start music again.
+    mov r0, #0
     mov r1, #0
 	swi QTM_Pos
 
-    ; TODO: Start script again.
-    ; TODO: Reset frame counter.
+    ; Start script again.
+    bl sequence_init
+
+    ; TODO: Reset frame counter. [We don't have a frame counter.]
     mov pc, lr
 
 debug_skip_to_next_pattern:
