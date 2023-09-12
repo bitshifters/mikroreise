@@ -66,7 +66,7 @@ build:
 ./build/seq.o: build archie-verse.asm ./src/sequence-data.asm ./build/changing_waves.mod ./build/assets.txt
 	$(VASM) -L build/compile.txt -D_DO_SEQUENCE=1 -m250 -Fvobj -opt-adr -o build/seq.o archie-verse.asm
 
-./build/archie-verse.bin: build ./build/archie-verse.o ./build/seq.bin link_script.txt
+./build/archie-verse.bin: build ./build/archie-verse.o ./build/seq.o link_script.txt
 	$(VLINK) -T link_script.txt -b rawbin1 -o $@ build/archie-verse.o -Mbuild/linker.txt
 
 .PHONY:./build/archie-verse.o

@@ -569,7 +569,7 @@ install_irq_handler:
 	ldr r0, [r1]					; old IRQ handler.
 	str r0, oldirqjumper
 
-	; Calculate old IRQ hanlder address from branch opcode.
+	; Calculate old IRQ handler address from branch opcode.
 	bic r0, r0, #0xff000000
 	mov r0, r0, lsl #2
 	add r0, r0, #32
@@ -750,7 +750,6 @@ rnd_seed:
 ; Data Segment
 ; ============================================================================
 
-; TODO: Hot-reload this one day?
 .include "src/sequence.asm"
 
 vdu_screen_disable_cursor:

@@ -42,16 +42,31 @@ effect_loop:
     write_addr object_dir_z, MATHS_CONST_1
 
     ; Set Cobra model.
-    write_addr object_scale, MATHS_CONST_1*1.9
-    write_addr object_num_verts, Model_Cobra_Num_Verts
-    write_addr object_num_faces, Model_Cobra_Num_Faces
-    write_addr object_verts_p, model_cobra_verts
-    write_addr object_face_indices_p, model_cobra_face_indices
-    write_addr object_edge_list_per_face_p, model_cobra_edges_per_face
-    write_addr object_edge_indices_p, model_cobra_edge_indices
-
+    gosub seq_set_cobra_model
     call_3 fx_set_layer_fns, 1, update_3d_scene,     anaglyph_draw_3d_scene_as_wire
-    wait_secs 20.0
+
+    wait_secs 1.0
+    gosub seq_set_cube_model
+    wait_secs 1.0
+    gosub seq_set_cobra_model
+    wait_secs 1.0
+    gosub seq_set_cube_model
+    wait_secs 1.0
+    gosub seq_set_cobra_model
+    wait_secs 1.0
+    gosub seq_set_cube_model
+    wait_secs 1.0
+    gosub seq_set_cobra_model
+    wait_secs 1.0
+    gosub seq_set_cube_model
+    wait_secs 1.0
+    gosub seq_set_cobra_model
+    wait_secs 1.0
+    gosub seq_set_cube_model
+    wait_secs 1.0
+    gosub seq_set_cobra_model
+
+    wait_secs 10.0
 
     call_3 fx_set_layer_fns, 1, scene2d_update,      scene2d_draw_anaglyph
     wait_secs 10.0
@@ -66,14 +81,7 @@ effect_loop:
     wait_secs 10.0
 
     ; Set Cube model.
-    ; TODO: call_subroutine sequence_set_cube_model etc.
-    write_addr object_scale, MATHS_CONST_1
-    write_addr object_num_verts, Model_Cube_Num_Verts
-    write_addr object_num_faces, Model_Cube_Num_Faces
-    write_addr object_verts_p, model_cube_verts
-    write_addr object_face_indices_p, model_cube_face_indices
-    write_addr object_edge_list_per_face_p, model_cube_edges_per_face
-    write_addr object_edge_indices_p, model_cube_edge_indices
+    gosub seq_set_cube_model
 
     call_3 fx_set_layer_fns, 1, update_3d_scene,     anaglyph_draw_3d_scene_as_circles
     wait_secs 10.0
@@ -88,3 +96,23 @@ effect_loop:
 
 ; ============================================================================
 ; ============================================================================
+
+seq_set_cube_model:
+    write_addr object_scale, MATHS_CONST_1
+    write_addr object_num_verts, Model_Cube_Num_Verts
+    write_addr object_num_faces, Model_Cube_Num_Faces
+    write_addr object_verts_p, model_cube_verts
+    write_addr object_face_indices_p, model_cube_face_indices
+    write_addr object_edge_list_per_face_p, model_cube_edges_per_face
+    write_addr object_edge_indices_p, model_cube_edge_indices
+    end_script
+
+seq_set_cobra_model:
+    write_addr object_scale, MATHS_CONST_1*1.9
+    write_addr object_num_verts, Model_Cobra_Num_Verts
+    write_addr object_num_faces, Model_Cobra_Num_Faces
+    write_addr object_verts_p, model_cobra_verts
+    write_addr object_face_indices_p, model_cobra_face_indices
+    write_addr object_edge_list_per_face_p, model_cobra_edges_per_face
+    write_addr object_edge_indices_p, model_cobra_edge_indices
+    end_script

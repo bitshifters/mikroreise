@@ -13,13 +13,13 @@
 ; TODO: Make this a library if proven to be sufficiently useful / reuseable.
 ; ============================================================================
 
-.equ ScriptContext_Ptr, 0           ; program pointer.
-.equ ScriptContext_Wait, 4          ; wait frames.
+.equ ScriptContext_PC, 0            ; Program Pointer.
+.equ ScriptContext_Wait, 4          ; Wait frames.
                                     ; imagine we might want to add arbitrary vars into context.
                                     ; but wait until we need to do this.
-                                    ; NOTE: we don't have a stack!!
+.equ ScriptContext_LR, 8            ; Link Register. NOTE: we don't have a stack!!
 
-.equ Script_ContextSize, 8
+.equ Script_ContextSize, 12
 .equ Script_MaxScripts, 2
 
 script_contexts:
@@ -43,7 +43,7 @@ script_tick_context:
 
     ; Execute program.
     ldr r11, [r10], #4                  ; load program ptr.
-    str r10, [r12, #ScriptContext_Ptr]
+    str r10, [r12, #ScriptContext_PC]
 
     ; TODO: Push R12 on the stack?
 
@@ -67,9 +67,16 @@ script_tick_all:
 script_init:
     str lr, [sp, #-4]!
 
+    mov r0, #0
+    mov r1, r0
+    mov r2, r0
+
     adr r12, script_contexts
 .1:
-    bl script_terminate
+    stmia r12, {r0-r2}
+    .if Script_ContextSize!=12
+    .err "Expecting Script_ContextSize == 12!"
+    .endif
 
     adr r11, script_contexts_end
     add r12, r12, #Script_ContextSize
@@ -87,8 +94,9 @@ script_add_program:
     cmp r3, #0
 
     ; Insert into context with NULL program ptr.
-    streq r0, [r2, #ScriptContext_Ptr]
+    streq r0, [r2, #ScriptContext_PC]
     streq r3, [r2, #ScriptContext_Wait]
+    streq r3, [r2, #ScriptContext_LR]
     moveq pc, lr
 
     add r2, r2, #Script_ContextSize
@@ -103,52 +111,75 @@ script_add_program:
 script_wait:
     ldr r11, [r10], #4          ; param=wait frames
     str r11, [r12, #ScriptContext_Wait]
-    str r10, [r12, #ScriptContext_Ptr]
+    str r10, [r12, #ScriptContext_PC]
     mov pc, lr
 
 script_call_1:
     ldr r11, [r10], #4          ; fn ptr.
     ldr r0, [r10], #4           ; param
-    str r10, [r12, #ScriptContext_Ptr]
+    str r10, [r12, #ScriptContext_PC]
     mov pc, r11
 
 script_call_2:
     ldr r11, [r10], #4          ; fn ptr.
     ldmia r10!, {r0-r1}         ; params
-    str r10, [r12, #ScriptContext_Ptr]
+    str r10, [r12, #ScriptContext_PC]
     mov pc, r11
 
 script_call_3:
     ldr r11, [r10], #4          ; fn ptr.
     ldmia r10!, {r0-r2}         ; params
-    str r10, [r12, #ScriptContext_Ptr]
+    str r10, [r12, #ScriptContext_PC]
     mov pc, r11
 
 script_call_4:
     ldr r11, [r10], #4          ; fn ptr.
     ldmia r10!, {r0-r3}         ; params
-    str r10, [r12, #ScriptContext_Ptr]
+    str r10, [r12, #ScriptContext_PC]
     mov pc, r11
 
 ; R12=context.
-script_terminate:
-    mov r10, #0                 ; NULL the program ptr.
-    str r10, [r12, #ScriptContext_Ptr]
-    str r10, [r12, #ScriptContext_Wait]
+script_return:
+    ldr r11, [r12, #ScriptContext_LR]
+    str r11, [r12, #ScriptContext_PC]
+    mov r11, #0
+    str r11, [r12, #ScriptContext_LR]
+    ; Can't be waiting if terminate command is executing.
     mov pc, lr
 
 ; R12=context.
 script_fork:
     ldr r0, [r10], #4           ; param=program ptr.
-    str r10, [r12, #ScriptContext_Ptr]
+    str r10, [r12, #ScriptContext_PC]
     b script_add_program
+
+; R12=context.
+script_gosub:
+    ldr r0, [r10], #4           ; param=program ptr.
+    .if _DEBUG
+    ldr r11, [r12, #ScriptContext_LR]
+    cmp r11, #0
+    adrne r0, error_lrused
+    swine OS_GenerateError
+    .endif
+    str r10, [r12, #ScriptContext_LR]       ; return here.
+    str r0, [r12, #ScriptContext_PC]        ; continue from here.
+    mov pc, lr
+
+.if _DEBUG
+error_lrused:
+	.long 0
+	.byte "Link Register already used in script!"
+	.p2align 2
+	.long 0
+.endif
 
 ; R12=context.
 ; R10=script ptr.
 script_write_addr:
     ldmia r10!, {r0-r1}         ; params={address, value}
     str r1, [r0]
-    str r10, [r12, #ScriptContext_Ptr]
+    str r10, [r12, #ScriptContext_PC]
     mov pc, lr
 
 
@@ -181,7 +212,7 @@ script_write_addr:
 .endm
 
 .macro end_script
-    .long script_terminate
+    .long script_return
 .endm
 
 .macro write_addr address, value
@@ -198,4 +229,7 @@ script_write_addr:
 .endm
 
 ; TODO: Call subroutine (for model setup etc.) that is guaranteed to be
-;       executed there and then.
+;       executed there and then. Would need a stack to support this.
+.macro gosub routine
+    .long script_gosub, \routine
+.endm
