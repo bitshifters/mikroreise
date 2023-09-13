@@ -176,3 +176,41 @@ Write at word aligned boundary.
 In our anaglyph case want to also mask in colour and mask to screen!
 
 After all this, maybe we just want a vector font!!!
+
+
+Battle Stations!
+~~~
+Available FX and quick options for extra content:
+
+Wireframe:
+- Add more 3D model shapes. Eg?
+- Scale size & rotation according to music cf. Chipo Django.
+- Remove duplicated vertex transform.
+- Some sort of background to anchor the object?
+
+Solid:
+- Sort out colours per face.
+- Add more 3D model shapes. Eg?
+- Scale size & rotation according to music cf. Chipo Django.
+- Remove duplicated vertex transform.
+- Some sort of background to anchor the object? => could just be a static screen.
+
+Circle balls:
+- Add more shapes or circle paths.
+- Could bake out circle paths into x,y,r per frame. [Lua?]
+
+Starfield:
+- Fade distant stars
+- Add camera rotation?
+
+Tunnel:
+- Second tunnel path variation - change Lua script.
+
+2D shapes:
+- Additional 2D shapes. Eg? Star, triangle.
+- Additional movement paths.
+
+Sine Y Dots
+- Second shape variation - change Lua script.
+
+Need something for text => could just be static screens.

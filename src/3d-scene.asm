@@ -67,6 +67,9 @@ object_scale:
 object_dir_z:
     FLOAT_TO_FP 1.0
 
+object_rot_speed:
+    VECTOR3 MATHS_CONST_HALF, MATHS_CONST_HALF, MATHS_CONST_HALF
+
 ; ============================================================================
 
 object_num_verts:
@@ -268,19 +271,19 @@ update_3d_scene:
 
     ; Update any scene vars, camera, object position etc. (Rocket?)
     .if 1
-    mov r1, #MATHS_CONST_HALF    ; ROTATION_X
+    ldr r1, object_rot_speed + 0 ; ROTATION_X
     ldr r0, object_rot+0
     add r0, r0, r1
     bic r0, r0, #0xff000000         ; brads
     str r0, object_rot+0
 
-    mov r1, #MATHS_CONST_HALF    ; ROTATION_Y
+    ldr r1, object_rot_speed + 4 ; ROTATION_Y
     ldr r0, object_rot+4
     add r0, r0, r1
     bic r0, r0, #0xff000000         ; brads
     str r0, object_rot+4
 
-    mov r1, #MATHS_CONST_HALF    ; ROTATION_Z
+    ldr r1, object_rot_speed + 8 ; ROTATION_Z
     ldr r0, object_rot+8
     add r0, r0, r1
     bic r0, r0, #0xff000000         ; brads
