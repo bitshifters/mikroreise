@@ -68,7 +68,7 @@ object_dir_z:
     FLOAT_TO_FP 1.0
 
 object_rot_speed:
-    VECTOR3 MATHS_CONST_HALF, MATHS_CONST_HALF, MATHS_CONST_HALF
+    VECTOR3 0.5, 0.5, 0.5
 
 ; ============================================================================
 
@@ -100,6 +100,9 @@ transformed_normals_p:
 
 projected_verts_p:
     .long projected_verts_no_adr
+
+scene3d_reciprocal_table_p:
+    .long reciprocal_table_no_adr
 
 ; ============================================================================
 ; ============================================================================
@@ -225,16 +228,11 @@ transform_3d_scene:
     subs r12, r12, #1
     bne .1
 
-    ; Subtract camera position from object position.
-    adr r12, camera_pos
-    ldmia r12, {r3-r5}
-
+    ; Transform to world coordinates.
     adr r11, object_pos
     ldmia r11, {r6-r8}
 
-    sub r6, r6, r3
-    sub r7, r7, r4
-    sub r8, r8, r5
+    ; NB. No longer transformed to camera relative.
 
     ; Apply object scale after rotation.
     ldr r0, object_scale
@@ -299,7 +297,6 @@ update_3d_scene:
     mvnle r1, r1                    ; invert dir
     str r0, object_pos+8
     str r1, object_dir_z
-
     .else
 	mov r0, #0
 	swi QTM_ReadVULevels
@@ -333,6 +330,9 @@ update_3d_scene:
     str r1, object_rot + 8
     .endif
 
+    ; Transform the object into world space.
+    bl transform_3d_scene
+
     ldr pc, [sp], #4
 
 ; ============================================================================
@@ -352,10 +352,6 @@ anaglyph_draw_3d_scene_as_circles:             ; TODO: Dedupe this code!
     ldr r0, LeftEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
 
-    stmfd sp!, {r12}
-    bl transform_3d_scene
-    ldmfd sp!, {r12}
-
     ; Subtract blue & green.
     mov r4, #7                  ; brightest red
     bl draw_3d_object_as_circles
@@ -363,10 +359,6 @@ anaglyph_draw_3d_scene_as_circles:             ; TODO: Dedupe this code!
     ; Right eye.
     ldr r0, RightEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
-
-    stmfd sp!, {r12}
-    bl transform_3d_scene
-    ldmfd sp!, {r12}
 
     ; Subtract red.
     mov r4, #11                 ; brightest cyan
@@ -386,14 +378,6 @@ anaglyph_draw_3d_scene_as_wire:             ; TODO: Dedupe this code!
     ldr r0, LeftEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
 
-    ; TODO: Don't need to transform the entire object twice.
-    ;       Complete object rotation, scale and position once.
-    ;       Then subtract camera position before transform.
-    ;       See scene2d_transform_object and scene2d_draw as example.
-    stmfd sp!, {r12}
-    bl transform_3d_scene
-    ldmfd sp!, {r12}
-
     ; Subtract blue & green.
     mov r4, #7                  ; brightest red
     bl draw_3d_scene_wire
@@ -401,10 +385,6 @@ anaglyph_draw_3d_scene_as_wire:             ; TODO: Dedupe this code!
     ; Right eye.
     ldr r0, RightEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
-
-    stmfd sp!, {r12}
-    bl transform_3d_scene
-    ldmfd sp!, {r12}
 
     ; Subtract red.
     mov r4, #11                 ; brightest cyan
@@ -420,10 +400,6 @@ anaglyph_draw_3d_scene_as_solid:             ; TODO: Dedupe this code!
     ldr r0, LeftEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
 
-    stmfd sp!, {r12}
-    bl transform_3d_scene
-    ldmfd sp!, {r12}
-
     ; Subtract blue & green.
     mov r4, #7                  ; brightest red
     bl draw_3d_scene_solid
@@ -431,10 +407,6 @@ anaglyph_draw_3d_scene_as_solid:             ; TODO: Dedupe this code!
     ; Right eye.
     ldr r0, RightEye_X_Pos
     str r0, camera_pos+0        ; camera_pos_x
-
-    stmfd sp!, {r12}
-    bl transform_3d_scene
-    ldmfd sp!, {r12}
 
     ; Subtract red.
     mov r4, #11                 ; brightest cyan
@@ -445,39 +417,95 @@ anaglyph_draw_3d_scene_as_solid:             ; TODO: Dedupe this code!
 object_colour_index:
     .long 0
 
+project_3d_scene:
+    ; Load camera [x, y, z].
+    adr r0, camera_pos
+    ldmia r0, {r6-r8}
+
+    ; Project vertices to screen.
+    ldr r2, transformed_verts_p
+    ldr r9, scene2d_reciprocal_table_p
+    ldr r1, object_num_verts
+    ldr r10, projected_verts_p
+    .1:
+    ; R2=ptr to world pos vector
+    ; bl project_to_screen
+
+    ; Load transformed verts [R3,R5,R5] = [x,y,z]
+    ldmia r2!, {r3-r5}
+
+    ; Subtract camera_pos from world_pos.
+    sub r3, r3, r6
+    sub r4, r4, r7
+    sub r5, r5, r8
+
+    ; Project to screen.
+
+    ; Put divisor in table range.
+    mov r5, r5, asr #16-LibDivide_Reciprocal_s    ; [16.6]    (b<<s)
+
+    .if _DEBUG
+    cmp r5, #0
+    adrle r0,errbehindcamera    ; and flag an error
+    swile OS_GenerateError      ; when necessary
+    ; TODO: Probably just cull these objects?
+
+    ; Limited precision.
+    cmp r5, #1<<LibDivide_Reciprocal_t    ; Test for numerator too large
+    adrge r0,divrange           ; and flag an error
+    swige OS_GenerateError      ; when necessary
+    .endif
+
+    ; Lookup 1/z.
+    ldr r5, [r9, r5, lsl #2]    ; [0.16]    (1<<16+s)/(b<<s) = (1<<16)/b
+
+    ; x/z
+    mov r3, r3, asr #16-LibDivide_Reciprocal_s    ; [16.6]    (a<<s)
+    mul r3, r5, r3                      ; [10.22]   (a<<s)*(1<<16)/b = (a<<16+s)/b
+    mov r3, r3, asr #LibDivide_Reciprocal_s       ; [10.16]   (a<<16)/b = (a/b)<<16
+
+    ; y/z
+    mov r4, r4, asr #16-LibDivide_Reciprocal_s    ; [16.6]    (a<<s)
+    mul r4, r5, r4                      ; [10.22]   (a<<s)*(1<<16)/b = (a<<16+s)/b
+    mov r4, r4, asr #LibDivide_Reciprocal_s       ; [10.16]   (a<<16)/b = (a/b)<<16
+
+    ; screen_x = vp_centre_x + vp_scale * (x-cx) / (z-cz)
+    mov r0, #VIEWPORT_SCALE>>12 ; [16.4]
+    mul r3, r0, r3              ; [12.20]
+    mov r3, r3, asr #4           ; [12.16]
+    mov r0, #VIEWPORT_CENTRE_X  ; [16.16]
+    add r3, r3, r0
+
+    ldrb r0, Anaglyph_Enable_Skew
+    cmp r0, #0
+    addne r3, r3, r6, asl #1     ; camera_pos_x * 2
+
+    ; screen_y = vp_centre_y - vp_scale * (y-cy) / (z-cz)
+    mov r0, #VIEWPORT_SCALE>>12 ; [16.4]
+    mul r4, r0, r4              ; [12.20]
+    mov r4, r4, asr #4           ; [12.16]
+    mov r0, #VIEWPORT_CENTRE_Y  ; [16.16]
+    sub r4, r0, r4              ; [16.16]
+
+    ; R0=screen_x, R1=screen_y [16.16]
+    mov r3, r3, asr #16         ; [16.0]
+    mov r4, r4, asr #16         ; [16.0]
+
+    stmia r10!, {r3, r4}
+    subs r1, r1, #1
+    bne .1
+
+    mov pc, lr
+
 ; R4=colour index
 ; R12=screen addr
 draw_3d_scene_solid:             ; TODO: Dedupe this code!
     str lr, [sp, #-4]!
     str r4, object_colour_index
 
-    ; Stash screen addr for now.
-    str r12, [sp, #-4]!
-
-    ; Project vertices to screen.
-    ldr r2, transformed_verts_p
-    ldr r11, object_num_verts
-    ldr r12, projected_verts_p
-    .1:
-    ; R2=ptr to world pos vector
-    bl project_to_screen
-
-    ldrb r3, Anaglyph_Enable_Skew
-    cmp r3, #0
-    ldrne r3, camera_pos+0        ; camera_pos_x
-    movne r3, r3, asl #1
-    addne r0, r0, r3
-
-    ; R0=screen_x, R1=screen_y [16.16]
-    mov r0, r0, asr #16         ; [16.0]
-    mov r1, r1, asr #16         ; [16.0]
-    stmia r12!, {r0, r1}
-    add r2, r2, #VECTOR3_SIZE
-    subs r11, r11, #1
-    bne .1
-
-    ldr r12, [sp], #4           ; pop screen addr
-
+    ; Project world space verts to screen space.
+    bl project_3d_scene
+ 
     ; Plot faces as polys.
     mov r9, #0                  ; face count
     str r9, edge_plot_cache
@@ -505,8 +533,16 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     ; Trashes: r3-r8
     ; vector A = (v0 - camera_pos)
     ; vector B = face_normal
-    bl vector_dot_product       ; trashes r3-r8
 
+    ldmia r1!, {r3-r5}          ; [tx, ty, tz]
+    adr r0, camera_pos
+    ldmia r0, {r6-r8}           ; camera_pos
+
+    sub r3, r3, r6
+    sub r4, r4, r7
+    sub r5, r5, r8
+
+    bl vector_dot_product_load_B ; trashes r3-r8
     cmp r0, #0                  
     bpl .3                      ; normal facing away from the view direction.
 
@@ -518,10 +554,13 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     ldr r3, [r9, r11, lsl #2]   ; quad indices.
 
     stmfd sp!, {r11,r12}
+
+    ; TODO: Sort out a colour per face scheme.
     ldr r4, object_colour_index
     and r0, r11, #3
     sub r4, r4, r0                  ; quick hack to make faces different shades.
-    bl polygon_plot_quad_indexed    ; TODO: Use fast poly plot if we're going to do this.
+    ; TODO: Use fast poly plot if we're going to do this.
+    bl polygon_plot_quad_indexed
     ldmfd sp!, {r11,r12}
 
     .3:
@@ -536,35 +575,8 @@ draw_3d_scene_wire:             ; TODO: Dedupe this code!
     str lr, [sp, #-4]!
     str r4, object_colour_index
 
-    ; Stash screen addr for now.
-    str r12, [sp, #-4]!
-
-    ; Project vertices to screen.
-    ldr r2, transformed_verts_p
-    ldr r11, object_num_verts
-    ldr r12, projected_verts_p
-    .1:
-    ; R2=ptr to world pos vector
-    ; TODO: Actually ptr to camera relative vector.
-    ;       Make this world pos so can subtract camera pos
-    ;       for each eye.
-    bl project_to_screen
-
-    ldrb r3, Anaglyph_Enable_Skew
-    cmp r3, #0
-    ldrne r3, camera_pos+0        ; camera_pos_x
-    movne r3, r3, asl #1
-    addne r0, r0, r3
-
-    ; R0=screen_x, R1=screen_y [16.16]
-    mov r0, r0, asr #16         ; [16.0]
-    mov r1, r1, asr #16         ; [16.0]
-    stmia r12!, {r0, r1}
-    add r2, r2, #VECTOR3_SIZE
-    subs r11, r11, #1
-    bne .1
-
-    ldr r12, [sp], #4           ; pop screen addr
+    ; Project world space verts to screen space.
+    bl project_3d_scene
 
     ; Plot faces as polys.
     mov r9, #0                  ; face count
@@ -593,8 +605,17 @@ draw_3d_scene_wire:             ; TODO: Dedupe this code!
     ; Trashes: r3-r8
     ; vector A = (v0 - camera_pos)
     ; vector B = face_normal
-    bl vector_dot_product       ; trashes r3-r8
 
+    ldmia r1!, {r3-r5}          ; [tx, ty, tz]
+    adr r0, camera_pos
+    ldmia r0, {r6-r8}           ; camera_pos
+
+    sub r3, r3, r6
+    sub r4, r4, r7
+    sub r5, r5, r8
+
+; TODO: Backface culling needs to subtract camera pos from vertex!
+    bl vector_dot_product_load_B ; trashes r3-r8
     cmp r0, #0                  
     bpl .3                      ; normal facing away from the view direction.
 
@@ -689,6 +710,7 @@ plot_face_edge_list:
 ;  R0=screen x
 ;  R1=screen y
 ; Trashes: R3-R6,R8-R10
+.if 0
 project_to_screen:
     str lr, [sp, #-4]!
 
@@ -728,7 +750,7 @@ project_to_screen:
 
     mov r0, r6
     ldr pc, [sp], #4
-
+.endif
 
 ; R4=colour index
 ; R12=screen addr
@@ -736,33 +758,15 @@ draw_3d_object_as_circles:
     str lr, [sp, #-4]!
     str r4, object_colour_index
 
-    ; Project vertices to screen.
-    ldr r2, transformed_verts_p
-    ldr r11, object_num_verts
-    ldr r12, projected_verts_p
-    .1:
-    ; R2=ptr to world pos vector
-    bl project_to_screen
-
-    ldrb r3, Anaglyph_Enable_Skew
-    cmp r3, #0
-    ldrne r3, camera_pos+0        ; camera_pos_x
-    movne r3, r3, asl #1
-    addne r0, r0, r3
-
-    ; R0=screen_x, R1=screen_y [16.16]
-    mov r0, r0, asr #16         ; [16.0]
-    mov r1, r1, asr #16         ; [16.0]
-    stmia r12!, {r0, r1}
-    add r2, r2, #VECTOR3_SIZE
-    subs r11, r11, #1
-    bne .1
+    ; Project world space verts to screen space.
+    bl project_3d_scene
 
     ; Plot all verts as circles...
     ldr r6, projected_verts_p
     ldr r7, transformed_verts_p
     ldr r11, object_num_verts
     mov r5, #0
+    ldr r4, camera_pos+8        ; camera_pos_z
 
     ; TODO: Would ultimately need to sort by Z.
     ; TODO: A fixed number of sprites with radius [1,16] would be faster, i.e. vector balls!
@@ -770,7 +774,8 @@ draw_3d_object_as_circles:
     .2:
     ; screen_radius = VP_SCALE * world_radius / (z-cz)
     mov r0, #VIEWPORT_SCALE
-    ldr r1, [r7, #8]            ; (z-cz)
+    ldr r1, [r7, #8]            ; (z)
+    sub r1, r1, r4              ; (z-cz)
     bl divide                   ; [s7.16] (trashes r8-r10)
     mov r2, r0, asr #13         ; radius = VP_SCALE * world_radius / (z-cz) where world_radius=8 (r<<3>>16)
 

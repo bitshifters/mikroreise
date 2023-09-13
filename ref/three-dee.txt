@@ -214,3 +214,4 @@ Sine Y Dots
 - Second shape variation - change Lua script.
 
 Need something for text => could just be static screens.
+Need something for transitions => quick fade to black.

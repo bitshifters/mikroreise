@@ -39,11 +39,11 @@
 
 effect_loop:
 
-    write_addr object_dir_z, 0
-    write_addr object_pos+8, 0
-    write_addr object_rot_speed+0, MATHS_CONST_1
-    write_addr object_rot_speed+4, 0
-    write_addr object_rot_speed+8, 0
+    ;write_addr object_dir_z, 1
+    ;write_addr object_pos+8, 0
+    ;write_addr object_rot_speed+0, MATHS_CONST_1
+    ;write_addr object_rot_speed+4, 0
+    ;write_addr object_rot_speed+8, 0
 
     ; Set Cobra model.
     gosub seq_set_cobra_model
