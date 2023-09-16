@@ -215,3 +215,5 @@ Sine Y Dots
 
 Need something for text => could just be static screens.
 Need something for transitions => quick fade to black.
+Anything we can do Paul's jugged BASIC tunnel?
+Try switching some FX to black on white?

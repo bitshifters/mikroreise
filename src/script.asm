@@ -85,6 +85,25 @@ script_init:
 
     ldr pc, [sp], #4
 
+.if _DEBUG
+; R2=new frame counter.
+script_ffwd_to_frame:
+    stmfd sp!, {r0-r12, lr}
+
+    ldr r1, frame_counter
+    subs r9, r2, r1
+    ble .2
+    str r2, frame_counter
+
+    .1:
+    bl script_tick_all
+    subs r9, r9, #1
+    bne .1
+
+    .2:
+    ldmfd sp!, {r0-r12, pc}
+.endif
+
 ; R0=ptr to program.
 script_add_program:
     adr r2, script_contexts
@@ -103,8 +122,21 @@ script_add_program:
     cmp r2, r1
     blt .1
 
+    .if _DEBUG
+    adr r0, error_outofscripts
+    swi OS_GenerateError
+    .endif
+
     ; TODO: Assert ran out of contexts.
     mov pc, lr
+
+.if _DEBUG
+error_outofscripts:
+	.long 0
+	.byte "Ran out of script contexts!"
+	.p2align 2
+	.long 0
+.endif
 
 ; R12=context.
 ; R10=script ptr.

@@ -22,6 +22,9 @@
 .equ Sample_Speed_SlowCPU, 48		    ; ideally get this down for ARM2
 .equ Sample_Speed_FastCPU, 16		    ; ideally 16us for ARM250+
 
+.equ _ENABLE_LOOP, 0
+.equ _MaxFrames, 7680   ;65536
+
 .equ _WIDESCREEN, 0
 
 .ifndef _DO_SEQUENCE
@@ -143,7 +146,7 @@ main:
 	;str r0, rnd_seed
 
     ; Register debug vars.
-    DEBUG_REGISTER_VAR vsync_count
+    DEBUG_REGISTER_VAR frame_counter
     DEBUG_REGISTER_VAR Anaglyph_Enable_Skew
     DEBUG_REGISTER_KEY RMKey_Space,      debug_toggle_main_loop_pause,  0
     DEBUG_REGISTER_KEY RMKey_A,          debug_restart_sequence,        0
@@ -183,6 +186,9 @@ main:
 	cmp r1, #80		; ARM3~=20, ARM250~=70, ARM2~=108
 	movge r0, #Sample_Speed_SlowCPU
 	movlt r0, #Sample_Speed_FastCPU
+.else
+    mov r0, #Sample_Speed_SlowCPU
+.endif
 
 	; Setup QTM for our needs.
 	swi QTM_SetSampleSpeed
@@ -190,10 +196,6 @@ main:
 	mov r0, #VU_Bars_Effect
 	mov r1, #VU_Bars_Gravity
 	swi QTM_VUBarControl
-.else
-    mov r0, #Sample_Speed_SlowCPU
-    swi QTM_SetSampleSpeed
-.endif
 
 	mov r0, #0
 	mov r1, #Stereo_Positions
@@ -256,7 +258,17 @@ main_loop:
 	bl script_tick_all
 	bl fx_tick_layers
 
-    ; TODO: Update frame counter.
+    ; Update frame counter.
+    ldr r0, frame_counter
+    ldr r1, MaxFrames
+    add r0, r0, #1
+    cmp r0, r1
+    .if _ENABLE_LOOP
+    movge r0, #0
+    .else
+    bge exit
+    .endif
+    str r0, frame_counter
 
 main_loop_skip_tick:
 
@@ -389,10 +401,11 @@ debug_skip_to_next_pattern:
 
     add r0, r0, #1
     ; TODO: Check max pattern?
+
+    bl sequence_jump_to_pattern
+
     mov r1, #0
     swi QTM_Pos         ; set position.
-
-    ; TODO: Update frame counter to match.
     mov pc, lr
 
 debug_toggle_palette:
@@ -460,6 +473,12 @@ last_dropped_frame:
 last_last_dropped_frame:
 	.long 0
 .endif
+
+frame_counter:
+    .long 0
+
+MaxFrames:
+    .long _MaxFrames
 
 ; R0=event number
 event_handler:
@@ -717,6 +736,7 @@ debug_show_rasters:
 
 .include "src/fx.asm"
 .include "src/script.asm"
+.include "src/sequence.asm"
 
 .include "src/3d-scene.asm"
 .include "src/scene-2d.asm"
@@ -749,8 +769,6 @@ rnd_seed:
 ; ============================================================================
 ; Data Segment
 ; ============================================================================
-
-.include "src/sequence.asm"
 
 vdu_screen_disable_cursor:
 .byte 22, Vdu_Mode, 23,1,0,0,0,0,0,0,0,0

@@ -47,7 +47,7 @@ effect_loop:
 
     ; Set Cobra model.
     gosub seq_set_cobra_model
-    call_3 fx_set_layer_fns, 1, update_3d_scene,     anaglyph_draw_3d_scene_as_wire
+    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_wire
 
     wait_secs 2.0
     write_addr object_rot_speed+4, MATHS_CONST_1
@@ -74,12 +74,23 @@ effect_loop:
 
     ; Set Cube model.
     gosub seq_set_cube_model
+    write_addr object_pos+8, 0
 
-    call_3 fx_set_layer_fns, 1, update_3d_scene,     anaglyph_draw_3d_scene_as_circles
+    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,        anaglyph_draw_3d_scene_as_circles
     wait_secs 10.0
 
-    call_3 fx_set_layer_fns, 1, update_3d_scene,     anaglyph_draw_3d_scene_as_solid
+    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
     wait_secs 10.0
+
+    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
+    wait_secs 5.0
+    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
+    wait_secs 1.0
+    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
+    wait_secs 0.5
+    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
+    wait_secs 0.2
+    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
 
     fork effect_loop
     end_script

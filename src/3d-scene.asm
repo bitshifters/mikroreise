@@ -264,11 +264,10 @@ transform_3d_scene:
 
     ldr pc, [sp], #4
 
-update_3d_scene:
+update_3d_scene_from_vars:
     str lr, [sp, #-4]!
 
     ; Update any scene vars, camera, object position etc. (Rocket?)
-    .if 1
     ldr r1, object_rot_speed + 0 ; ROTATION_X
     ldr r0, object_rot+0
     add r0, r0, r1
@@ -297,7 +296,14 @@ update_3d_scene:
     mvnle r1, r1                    ; invert dir
     str r0, object_pos+8
     str r1, object_dir_z
-    .else
+
+    ; Transform the object into world space.
+    bl transform_3d_scene
+    ldr pc, [sp], #4
+
+update_3d_scene_from_vu_bars:
+    str lr, [sp, #-4]!
+
 	mov r0, #0
 	swi QTM_ReadVULevels
 	; R0 = word containing 1 byte per channel 1-4 VU bar heights 0-64
@@ -328,11 +334,9 @@ update_3d_scene:
     ldr r1, object_rot + 8
     add r1, r1, r10                 ; object_rot_z += inc_z
     str r1, object_rot + 8
-    .endif
 
     ; Transform the object into world space.
     bl transform_3d_scene
-
     ldr pc, [sp], #4
 
 ; ============================================================================
