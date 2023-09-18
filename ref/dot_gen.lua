@@ -47,8 +47,8 @@ end
 
 tot=4096            -- must match equ in dots.asm!
 
-scr_base1=0x01ff6000
-scr_base2=0x01fec000
+scr_base1=0x01ff2000 -- 0x01ff6000
+scr_base2=0x01fe8000 -- 0x01fec000
 
 screen_width=320
 screen_height=256

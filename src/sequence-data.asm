@@ -2,6 +2,8 @@
 ; The actual sequence for the demo.
 ; ============================================================================
 
+.equ PatternLength_Secs, 4.4444
+
     ; TODO: Setup music etc. here also?
 
     ; Init FX modules.
@@ -49,48 +51,41 @@ effect_loop:
     gosub seq_set_cobra_model
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_wire
 
-    wait_secs 2.0
+    wait_secs PatternLength_Secs
     write_addr object_rot_speed+4, MATHS_CONST_1
 
-    wait_secs 2.0
+    wait_secs PatternLength_Secs
     write_addr object_rot_speed+8, MATHS_CONST_1
 
-    wait_secs 5.0
+    wait_secs PatternLength_Secs
     write_addr object_dir_z, MATHS_CONST_1
 
-    wait_secs 5.0
+    wait_secs PatternLength_Secs
 
     call_3 fx_set_layer_fns, 1, scene2d_update,      scene2d_draw_anaglyph
-    wait_secs 10.0
+    wait_secs PatternLength_Secs*2
 
     call_3 fx_set_layer_fns, 1, dots_tick,           dots_draw_all
-    wait_secs 20.0
+    wait_secs PatternLength_Secs*4
 
     call_3 fx_set_layer_fns, 1, starfield_update,    starfield_draw_anaglyph
-    wait_secs 10.0
+    wait_secs PatternLength_Secs*2
 
     call_3 fx_set_layer_fns, 1, dot_tunnel_update,   dot_tunnel_draw_anaglyph_spiral
-    wait_secs 10.0
+    wait_secs PatternLength_Secs*2
 
     ; Set Cube model.
     gosub seq_set_cube_model
     write_addr object_pos+8, 0
 
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,        anaglyph_draw_3d_scene_as_circles
-    wait_secs 10.0
+    wait_secs PatternLength_Secs*2
 
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
-    wait_secs 10.0
+    wait_secs PatternLength_Secs*2
 
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
-    wait_secs 5.0
-    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
-    wait_secs 1.0
-    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
-    wait_secs 0.5
-    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
-    wait_secs 0.2
-    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
+    wait_secs PatternLength_Secs*2
 
     fork effect_loop
     end_script
@@ -111,7 +106,7 @@ seq_set_cube_model:
     end_script
 
 seq_set_cobra_model:
-    write_addr object_scale, MATHS_CONST_1*1.9
+    write_addr object_scale, MATHS_CONST_1*1.5
     write_addr object_num_verts, Model_Cobra_Num_Verts
     write_addr object_num_faces, Model_Cobra_Num_Faces
     write_addr object_verts_p, model_cobra_verts

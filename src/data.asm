@@ -34,7 +34,7 @@ scroller_font_data_no_adr:
 
 .p2align 2
 changing_waves_mod_no_adr:
-.incbin "build/changing_waves.mod"
+.incbin "build/three-dee.mod"
 
 ; ============================================================================
 

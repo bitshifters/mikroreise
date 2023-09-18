@@ -24,6 +24,15 @@
 
 .equ _ENABLE_LOOP, 0
 .equ _MaxFrames, 7680   ;65536
+.equ _MaxPatterns, 28   ; TODO: Some standard prod defs.
+.equ PatternLength_Rows, 64
+.equ ProTracker_Tempo, 108
+.equ ProTracker_TicksPerRow, 3
+
+.equ StereoPos_Ch1, -127                ; full left
+.equ StereoPos_Ch2, +127                ; full right
+.equ StereoPos_Ch3, +32                 ; off centre R
+.equ StereoPos_Ch4, -32                 ; off centre L
 
 .equ _WIDESCREEN, 0
 
@@ -147,6 +156,7 @@ main:
 
     ; Register debug vars.
     DEBUG_REGISTER_VAR frame_counter
+    DEBUG_REGISTER_VAR music_pos
     DEBUG_REGISTER_VAR Anaglyph_Enable_Skew
     DEBUG_REGISTER_KEY RMKey_Space,      debug_toggle_main_loop_pause,  0
     DEBUG_REGISTER_KEY RMKey_A,          debug_restart_sequence,        0
@@ -197,9 +207,21 @@ main:
 	mov r1, #VU_Bars_Gravity
 	swi QTM_VUBarControl
 
-	mov r0, #0
-	mov r1, #Stereo_Positions
-	swi QTM_Stereo
+    mov r0, #1
+    mov r1, #StereoPos_Ch1
+    swi QTM_Stereo
+
+    mov r0, #2
+    mov r1, #StereoPos_Ch2
+    swi QTM_Stereo
+
+    mov r0, #3
+    mov r1, #StereoPos_Ch3
+    swi QTM_Stereo
+
+    mov r0, #4
+    mov r1, #StereoPos_Ch4
+    swi QTM_Stereo
 
 	; Load the music.
 	mov r0, #-1					; load from address and copy to RMA.
@@ -238,9 +260,7 @@ main_loop:
 
     .if _DEBUG
     bl debug_do_key_callbacks
-    .endif
 
-	.if _DEBUG
 	ldrb r0, debug_main_loop_pause
 	cmp r0, #0
 	bne .3
@@ -269,6 +289,15 @@ main_loop:
     bge exit
     .endif
     str r0, frame_counter
+
+    .if _DEBUG
+    mov r0, #-1
+    mov r1, #-1
+    swi QTM_Pos         ; read position.
+
+    strb r1, music_pos+0
+    strb r0, music_pos+1
+    .endif
 
 main_loop_skip_tick:
 
@@ -400,7 +429,8 @@ debug_skip_to_next_pattern:
     swi QTM_Pos         ; read position.
 
     add r0, r0, #1
-    ; TODO: Check max pattern?
+    cmp r0, #_MaxPatterns
+    movge pc, lr
 
     bl sequence_jump_to_pattern
 
@@ -479,6 +509,11 @@ frame_counter:
 
 MaxFrames:
     .long _MaxFrames
+
+.if _DEBUG
+music_pos:
+    .long 0
+.endif
 
 ; R0=event number
 event_handler:

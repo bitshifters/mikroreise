@@ -43,8 +43,8 @@ sequence_jump_to_pattern:
 
     ldr pc, [sp], #4
 
-.macro frame_for_pattern pat
-    .long \pat*64*4*50.0/60.0
+.macro frame_for_pattern pat, 
+    .long \pat*PatternLength_Rows*ProTracker_TicksPerRow*125.0/ProTracker_Tempo
 .endm
 
 debug_pattern_to_frame:
@@ -76,13 +76,4 @@ debug_pattern_to_frame:
     frame_for_pattern 25
     frame_for_pattern 26
     frame_for_pattern 27
-    frame_for_pattern 28
-    frame_for_pattern 29
-    frame_for_pattern 30
-    frame_for_pattern 31
-    frame_for_pattern 32
-    frame_for_pattern 33
-    frame_for_pattern 34
-    frame_for_pattern 35
-
 .endif

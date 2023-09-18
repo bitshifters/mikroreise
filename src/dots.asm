@@ -18,7 +18,7 @@ dots_total:
     .long Dots_Total
 
 dots_screen_1_addr:
-    .long 0x01ff6000                    ; 0x02000000 - 40K (MODE 9)
+    .long 0x01ff2000                    ; 0x02000000 - 40K (MODE 9)
 
 .if _DOTS_ENABLE_REVEAL
 dots_visible:

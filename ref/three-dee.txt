@@ -217,3 +217,17 @@ Need something for text => could just be static screens.
 Need something for transitions => quick fade to black.
 Anything we can do Paul's jugged BASIC tunnel?
 Try switching some FX to black on white?
+
+Music
+~~~
+Tempo/BPM=108
+Speed=3
+
+Tick (ms) = 2500/BPM = 2500/108 = 23.148148148 ms
+Player ticks at 1000/23.148148 = 43.2 Hz
+3x ticks per row. 1 row = 69.4444 ms
+64 rows per patterm = 4444.4444 ms per pattern = 4.44s
+Or 222.2222 vsyncs per pattern.
+Or 3.472222 vsyncs per row. :\
+If a beat is every 8 rows that's 27.777778 vsyncs. (:
+

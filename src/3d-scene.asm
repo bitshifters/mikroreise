@@ -564,7 +564,8 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     and r0, r11, #3
     sub r4, r4, r0                  ; quick hack to make faces different shades.
     ; TODO: Use fast poly plot if we're going to do this.
-    bl polygon_plot_quad_indexed
+    ;bl polygon_plot_quad_indexed
+    bl triangle_plot_quad_indexed
     ldmfd sp!, {r11,r12}
 
     .3:
