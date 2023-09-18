@@ -13,25 +13,10 @@
 	; Setup layers of FX.
     call_3 fx_set_layer_fns, 0, 0,                   screen_cls
 
-.if 0
     call_3 fx_set_layer_fns, 1, static_set_palette,  static_copy_screen
-    write_addr static_palette_p, hammer_pal_no_adr
-    write_addr static_screen_p, hammer_screen_no_adr
-    wait_secs 1.0
-.endif
-.if 0
-    write_addr static_palette_p, cactus_pal_no_adr
-    write_addr static_screen_p, cactus_screen_no_adr
-    wait_secs 5.0
-
-    write_addr static_palette_p, house_pal_no_adr
-    write_addr static_screen_p, house_screen_no_adr
-    wait_secs 5.0
-
-    write_addr static_palette_p, persepolis_pal_no_adr
-    write_addr static_screen_p, persepolis_screen_no_adr
-    wait_secs 5.0
-.endif
+    write_addr static_palette_p, bs_logo_pal_no_adr
+    write_addr static_screen_p, bs_logo_screen_no_adr
+    wait_secs PatternLength_Secs
 
     call_0 set_palette_for_3d_scene
     fork effect_loop
@@ -50,16 +35,13 @@ effect_loop:
     ; Set Cobra model.
     gosub seq_set_cobra_model
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_wire
-
     wait_secs PatternLength_Secs
+
     write_addr object_rot_speed+4, MATHS_CONST_1
-
-    wait_secs PatternLength_Secs
     write_addr object_rot_speed+8, MATHS_CONST_1
-
     wait_secs PatternLength_Secs
-    write_addr object_dir_z, MATHS_CONST_1
 
+    write_addr object_dir_z, MATHS_CONST_1
     wait_secs PatternLength_Secs
 
     call_3 fx_set_layer_fns, 1, scene2d_update,      scene2d_draw_anaglyph

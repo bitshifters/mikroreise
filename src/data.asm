@@ -80,31 +80,11 @@ dot_tunnel_y_no_adr:
 
 ; ============================================================================
 
-hammer_screen_no_adr:
-    .incbin "build/hammer.bin"
+bs_logo_screen_no_adr:
+    .incbin "build/bs-logo.bin"
 
-hammer_pal_no_adr:
-    .incbin "build/hammer.bin.pal"
-
-.if 0
-cactus_screen_no_adr:
-    .incbin "build/cactus.bin"
-
-cactus_pal_no_adr:
-    .incbin "build/cactus.bin.pal"
-
-house_screen_no_adr:
-    .incbin "build/house.bin"
-
-house_pal_no_adr:
-    .incbin "build/house.bin.pal"
-
-persepolis_screen_no_adr:
-    .incbin "build/persepolis.bin"
-
-persepolis_pal_no_adr:
-    .incbin "build/persepolis.bin.pal"
-.endif
+bs_logo_pal_no_adr:
+    .incbin "build/bs-logo.bin.pal"
 
 ; ============================================================================
 
