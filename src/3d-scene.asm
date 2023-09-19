@@ -308,9 +308,10 @@ update_3d_scene_from_vu_bars:
 	swi QTM_ReadVULevels
 	; R0 = word containing 1 byte per channel 1-4 VU bar heights 0-64
     ; TODO: Finalise mapping of vu levels to scale & rotation deltas.
-    and r10, r0, #0xff              ; channel 1 = scale
+  	mov r10, r0, lsr #24            ; channel 4 = scale
+	and r10, r10, #0xff
     mov r1, #MATHS_CONST_1
-    add r1, r1, r10, asl #11         ; scale maps [1, 2]
+    add r1, r1, r10, asl #10         ; scale maps [1, 2]
     str r1, object_scale
 
     ; TODO: Make this code more compact?
@@ -328,8 +329,7 @@ update_3d_scene_from_vu_bars:
     add r1, r1, r10                 ; object_rot_y += inc_y
     str r1, object_rot + 4
 
-  	mov r10, r0, lsr #24            ; channel 4 = inc_z
-	and r10, r10, #0xff
+    and r10, r0, #0xff              ; channel 1 = inc_z
     mov r10, r10, asl #11           ; inc_z maps [0, 2]
     ldr r1, object_rot + 8
     add r1, r1, r10                 ; object_rot_z += inc_z

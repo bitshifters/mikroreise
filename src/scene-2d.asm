@@ -39,7 +39,7 @@ scene2d_verts_buffer_p:
 .equ SQ_GAP, 32     ; gap between squares
 .equ SQ_NUM, 6     ; how many
 .equ SQ_SCALE, 1    ; size of squares
-.equ SQ_SPEED, 1.0  ; move forward at.
+.equ SQ_SPEED, 1.152  ; move forward at.
 .equ SQ_TWIST, 16   ; between squares.
 .equ SQ_ROT, 0.5    ; rotation speed.
 
@@ -48,6 +48,12 @@ scene2d_object_pos:
 
 scene2d_object_rot:
     .long 0
+
+scene2d_object_speed:
+    FLOAT_TO_FP SQ_SPEED
+
+scene2d_object_adjust:
+    FLOAT_TO_FP SQ_ROT*SQ_GAP;/SQ_SPEED)
 
 ; TODO: Move camera, spawn objects, move objects etc.
 scene2d_update:
@@ -95,13 +101,17 @@ scene2d_update:
 
     ; Update rotation & position.
     ldr r1, scene2d_object_rot
+    
+    ; TODO: Move remaining params to vars and bulk load.
+    ldr r2, scene2d_object_speed
+    ldr r3, scene2d_object_adjust
 
     ldr r0, scene2d_object_pos+8    ; object_pos_z
     add r0, r0, #SQ_NUM*SQ_GAP*MATHS_CONST_1
-    sub r0, r0, #SQ_SPEED*MATHS_CONST_1
+    sub r0, r0, r2
     cmp r0, #MATHS_CONST_1*(SQ_BACK-SQ_GAP)
     movle r0, #SQ_BACK*MATHS_CONST_1
-    addle r1, r1, #SQ_ROT*(SQ_GAP/SQ_SPEED)*MATHS_CONST_1
+    addle r1, r1, r3
     str r0, scene2d_object_pos+8    ; object_pos_z
 
     add r1, r1, #SQ_ROT*MATHS_CONST_1

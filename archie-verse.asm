@@ -22,8 +22,8 @@
 .equ Sample_Speed_SlowCPU, 48		    ; ideally get this down for ARM2
 .equ Sample_Speed_FastCPU, 16		    ; ideally 16us for ARM250+
 
-.equ _ENABLE_LOOP, 0
-.equ _MaxFrames, 7680   ;65536
+.equ _ENABLE_LOOP, 1
+.equ _MaxFrames, 6222   ; 222.222 frames per pattern.
 .equ _MaxPatterns, 28   ; TODO: Some standard prod defs.
 .equ PatternLength_Rows, 64
 .equ ProTracker_Tempo, 108
@@ -285,10 +285,12 @@ main_loop:
     cmp r0, r1
     .if _ENABLE_LOOP
     movge r0, #0
+    str r0, frame_counter
+    blge sequence_init
     .else
+    str r0, frame_counter
     bge exit
     .endif
-    str r0, frame_counter
 
     .if _DEBUG
     mov r0, #-1

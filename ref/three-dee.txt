@@ -231,3 +231,11 @@ Or 222.2222 vsyncs per pattern.
 Or 3.472222 vsyncs per row. :\
 If a beat is every 8 rows that's 27.777778 vsyncs. (:
 
+Patterns
+0,1,2,3 = long melody alone                 => slow build up
+4,5,4,5 = wobbly bass added                 => some movement added
+6,7,6,7 = bass kick added, short melody     => we're off!
+9,8,9,8 = percusion added                   => more energy
+10,11,12,11 = short melody drops out        => slow down
+15,14,13,14,13.. = long melody w/ all       => full intensity
+

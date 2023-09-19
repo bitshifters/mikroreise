@@ -20,7 +20,7 @@
 .equ ScriptContext_LR, 8            ; Link Register. NOTE: we don't have a stack!!
 
 .equ Script_ContextSize, 12
-.equ Script_MaxScripts, 2
+.equ Script_MaxScripts, 28
 
 script_contexts:
     .skip Script_ContextSize*Script_MaxScripts
@@ -106,20 +106,24 @@ script_ffwd_to_frame:
 
 ; R0=ptr to program.
 script_add_program:
+    mov r1, #0
+
+; R1=initial wait delay.
+script_add_program_with_wait:
     adr r2, script_contexts
-    adr r1, script_contexts_end
+    adr r4, script_contexts_end
 .1:
-    ldmia r2, {r3-r4}                ; load context
+    ldr r3, [r2, #ScriptContext_PC] ; load relevant context.
     cmp r3, #0
 
     ; Insert into context with NULL program ptr.
     streq r0, [r2, #ScriptContext_PC]
-    streq r3, [r2, #ScriptContext_Wait]
+    streq r1, [r2, #ScriptContext_Wait]
     streq r3, [r2, #ScriptContext_LR]
     moveq pc, lr
 
     add r2, r2, #Script_ContextSize
-    cmp r2, r1
+    cmp r2, r4
     blt .1
 
     .if _DEBUG
@@ -184,6 +188,12 @@ script_fork:
     ldr r0, [r10], #4           ; param=program ptr.
     str r10, [r12, #ScriptContext_PC]
     b script_add_program
+
+; R12=context.
+script_fork_and_wait:
+    ldmia r10!, {r0-r1}         ; params=program ptr & wait.
+    str r10, [r12, #ScriptContext_PC]
+    b script_add_program_with_wait
 
 ; R12=context.
 script_gosub:
@@ -264,4 +274,12 @@ script_write_addr:
 ;       executed there and then. Would need a stack to support this.
 .macro gosub routine
     .long script_gosub, \routine
+.endm
+
+.macro fork_and_wait frames, program
+    .long script_fork_and_wait, \program, \frames
+.endm
+
+.macro fork_and_wait_secs secs, program
+    .long script_fork_and_wait, \program, \secs*50
 .endm
