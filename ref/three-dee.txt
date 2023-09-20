@@ -239,3 +239,16 @@ Patterns
 10,11,12,11 = short melody drops out        => slow down
 15,14,13,14,13.. = long melody w/ all       => full intensity
 
+TODO
+~~~
+- Global fade - done.
+- Update Bitshifters logo from Spiny
+- Add Torment logo, add credits / greets
+- Starfield fade colour with depth
+- Dot tunnel add second variant
+- Wire cube ease bounce back
+- 2D scene add star shape
+- Solid cube set colour per face
+- Wire cube add background?
+- Y Sine dots add second variant
+- Circles change shape to circles

@@ -25,9 +25,13 @@
 .equ _ENABLE_LOOP, 1
 .equ _MaxFrames, 6222   ; 222.222 frames per pattern.
 .equ _MaxPatterns, 28   ; TODO: Some standard prod defs.
-.equ PatternLength_Rows, 64
+
 .equ ProTracker_Tempo, 108
 .equ ProTracker_TicksPerRow, 3
+
+.equ PatternLength_Rows, 64
+.equ PatternLength_Secs, 4.44444
+.equ PatternLength_Frames, 222.222
 
 .equ StereoPos_Ch1, -127                ; full left
 .equ StereoPos_Ch2, +127                ; full right
@@ -817,39 +821,39 @@ music_table:
 ; For anaglpyh want CRcr
 palette_red_cyan:
     .long 0x00000000                    ; 00 = 0000 = black
-    .long 0x00000077                    ; 01 = 0001 = red 1
-    .long 0x00777700                    ; 02 = 0010 = cyan 1
-    .long 0x00777777                    ; 03 = 0011 = white 1
-    .long 0x00000099                    ; 04 = 0100 = red 2
-    .long 0x000000bb                    ; 05 = 0101 = red 3
-    .long 0x000000dd                    ; 06 = 0110 = red 4
-    .long 0x000000ff                    ; 07 = 0111 = red 5
-    .long 0x00999900                    ; 08 = 1000 = cyan 2
-    .long 0x00bbbb00                    ; 09 = 1001 = cyan 3
-    .long 0x00dddd00                    ; 10 = 1010 = cyan 4
-    .long 0x00ffff00                    ; 11 = 1011 = cyan 5
-    .long 0x00999999                    ; 12 = 1100 = white 2
-    .long 0x00bbbbbb                    ; 13 = 1101 = white 3
-    .long 0x00dddddd                    ; 14 = 1110 = white 4
-    .long 0x00ffffff                    ; 15 = 1111 = white 5
+    .long 0x00000070                    ; 01 = 0001 = red 1
+    .long 0x00707000                    ; 02 = 0010 = cyan 1
+    .long 0x00707070                    ; 03 = 0011 = white 1
+    .long 0x00000090                    ; 04 = 0100 = red 2
+    .long 0x000000b0                    ; 05 = 0101 = red 3
+    .long 0x000000d0                    ; 06 = 0110 = red 4
+    .long 0x000000f0                    ; 07 = 0111 = red 5
+    .long 0x00909000                    ; 08 = 1000 = cyan 2
+    .long 0x00b0b000                    ; 09 = 1001 = cyan 3
+    .long 0x00d0d000                    ; 10 = 1010 = cyan 4
+    .long 0x00f0f000                    ; 11 = 1011 = cyan 5
+    .long 0x00909090                    ; 12 = 1100 = white 2
+    .long 0x00b0b0b0                    ; 13 = 1101 = white 3
+    .long 0x00d0d0d0                    ; 14 = 1110 = white 4
+    .long 0x00f0f0f0                    ; 15 = 1111 = white 5
 
 palette_red_blue:
     .long 0x00000000                    ; 00 = 0000 = black
-    .long 0x00000077                    ; 01 = 0001 = red 1
-    .long 0x00770000                    ; 02 = 0010 = blue 1
-    .long 0x00770077                    ; 03 = 0011 = magenta 1
-    .long 0x00000099                    ; 04 = 0100 = red 2
-    .long 0x000000bb                    ; 05 = 0101 = red 3
-    .long 0x000000dd                    ; 06 = 0110 = red 4
-    .long 0x000000ff                    ; 07 = 0111 = red 5
-    .long 0x00990000                    ; 08 = 1000 = blue 2
-    .long 0x00bb0000                    ; 09 = 1001 = blue 3
-    .long 0x00dd0000                    ; 10 = 1010 = blue 4
-    .long 0x00ff0000                    ; 11 = 1011 = blue 5
-    .long 0x00990099                    ; 12 = 1100 = magenta 2
-    .long 0x00bb00bb                    ; 13 = 1101 = magenta 3
-    .long 0x00dd00dd                    ; 14 = 1110 = magenta 4
-    .long 0x00ff00ff                    ; 15 = 1111 = magenta 5
+    .long 0x00000070                    ; 01 = 0001 = red 1
+    .long 0x00700000                    ; 02 = 0010 = blue 1
+    .long 0x00700070                    ; 03 = 0011 = magenta 1
+    .long 0x00000090                    ; 04 = 0100 = red 2
+    .long 0x000000b0                    ; 05 = 0101 = red 3
+    .long 0x000000d0                    ; 06 = 0110 = red 4
+    .long 0x000000f0                    ; 07 = 0111 = red 5
+    .long 0x00900000                    ; 08 = 1000 = blue 2
+    .long 0x00b00000                    ; 09 = 1001 = blue 3
+    .long 0x00d00000                    ; 10 = 1010 = blue 4
+    .long 0x00f00000                    ; 11 = 1011 = blue 5
+    .long 0x00900090                    ; 12 = 1100 = magenta 2
+    .long 0x00b000b0                    ; 13 = 1101 = magenta 3
+    .long 0x00d000d0                    ; 14 = 1110 = magenta 4
+    .long 0x00f000f0                    ; 15 = 1111 = magenta 5
 
 ; ============================================================================
 ; DATA Segment
