@@ -9,6 +9,9 @@
 starfield_t:
     .long 0
 
+starfield_speed:
+    .long 1
+
 starfield_x_p:
     .long starfield_x_no_adr
 
@@ -45,7 +48,8 @@ bits_mask:
 
 starfield_update:
     ldr r11, starfield_t
-    add r11, r11, #1
+    ldr r0, starfield_speed
+    add r11, r11, r0
     cmp r11, #Starfield_Total
     movge r11, #0
     str r11, starfield_t
@@ -175,7 +179,6 @@ starfield_draw:
 
 ; ============================================================================
 
-; TODO: Share with dot_tunnel?
 starfield_recip_z:
 .set dz, 40.0               ; distance to start of tunnel.
                             ; zero parallax plane at dz=80.0

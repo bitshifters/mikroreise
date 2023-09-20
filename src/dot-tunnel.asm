@@ -9,25 +9,22 @@
 dot_tunnel_t:
     .long 0
 
+dot_tunnel_speed:
+    .long 1
+
 ;    -- offset to add movement to the tunnel
 ;    oa=(i+t*2)/50
 ;    ox=(math.sin(oa)*z*amp)
 ;    oy=(math.cos(oa/2)*z*amp)
-dot_tunnel_offset_x:
-    .long dot_tunnel_offset_x_no_adr
-
-dot_tunnel_offset_y:
-    .long dot_tunnel_offset_y_no_adr
+dot_tunnel_offset_xy:
+    .long dot_tunnel_offset_xy_no_adr
 
 ;    angle=i+t*3.01 -- decimal gives some rotation
 ;    x=math.sin(angle)*r
 ;    y=math.cos(angle)*r
 
-dot_tunnel_x:
-    .long dot_tunnel_x_no_adr
-
-dot_tunnel_y:
-    .long dot_tunnel_y_no_adr
+dot_tunnel_xy:
+    .long dot_tunnel_xy_no_adr
 
 ; plot dot tunnel.
 ; for each dot
@@ -39,9 +36,10 @@ dot_tunnel_y:
 
 dot_tunnel_update:
     ldr r11, dot_tunnel_t
-    add r11, r11, #1
+    ldr r0, dot_tunnel_speed
+    add r11, r11, r0
     cmp r11, #DotTunnel_Total
-    movge r11, #0
+    subge r11, r11, #DotTunnel_Total
     str r11, dot_tunnel_t
     mov pc, lr
 
@@ -68,41 +66,74 @@ dot_tunnel_draw_anaglyph_spiral:
 tunnel_skew_offset:
     .long 0
 
+dot_tunnel_patch_to_straight:
+    adr r0, dot_tunnel_patch_straight
+dot_tunnel_do_patch:
+    ldmia r0!, {r1-r4}
+    str r1, dot_tunnel_draw_spiral_patch_1+0
+    str r2, dot_tunnel_draw_spiral_patch_1+4
+    str r3, dot_tunnel_draw_spiral_patch_2+0
+    str r4, dot_tunnel_draw_spiral_patch_2+4
+    mov pc, lr
+
+dot_tunnel_patch_straight:
+    mov r5, #0
+    mov r6, #0
+    mov r3, r3
+    mov r4, r4
+
+dot_tunnel_patch_to_curved:
+    adr r0, dot_tunnel_patch_curved
+    b dot_tunnel_do_patch
+
+dot_tunnel_patch_curved:
+    mov r5, r5
+    mov r6, r6
+    add r3, r0, r3                  ; x+ox
+    add r4, r1, r4                  ; y+oy
+
+
 ; R0=eye offset.
 ; R4=colour index.
 ; R12=screen addr
 dot_tunnel_draw_spiral:
     str lr, [sp, #-4]!
 
-    strb r4, .3                     ; SELF-MOD!!
+    mov r10, r4                     ; colour
     ldr r11, dot_tunnel_t           ; t
 
-    ldr r9, dot_tunnel_x
-    ldr r10, dot_tunnel_y
-
-    ldr r7, dot_tunnel_offset_x
-    ldr r8, dot_tunnel_offset_y
+    ldr r9, dot_tunnel_xy
+    add r9, r9, r11, lsl #3
+    ldr r7, dot_tunnel_offset_xy
+    add r7, r7, r11, lsl #3
 
     adr r14, dot_tunnel_recip_z
 
-    ldr r5, [r7, r11, lsl #2]       ; cx=ox[t]
-    mov r5, #0                      ; TEMP: Force camera to (0,0) 
+    ldmia r7, {r5,r6}               ; cx=ox[t]
+                                    ; cy=oy[t]
+
+dot_tunnel_draw_spiral_patch_1:
+    mov r5, r5
+    mov r6, r6
+
     add r5, r5, r0                  ; eye offset.
+    mov r5, r5, asl #1              ; *2
     str r0, tunnel_skew_offset      ; TODO: Not needed if camera is forced to (0,0)
-    ldr r6, [r8, r11, lsl #2]       ; cy=oy[t]
-    mov r6, #0                      ; TEMP: Force camera to (0,0) 
 
-.1:
+    ldr r11, dot_tunnel_xy
+    mov r8, #0
+dot_tunnel_draw_spiral_loop:
     ldr r2, [r14], #4               ; 80/z [7.16]
-    ldr r3, [r9, r11, lsl #2]       ; x[i+t] [s8.16]
-    ldr r4, [r10, r11, lsl #2]      ; y[i+t] [s8.16]
 
-    ldr r0, [r7, r11, lsl #2]       ; ox[i+t]
-    ldr r1, [r8, r11, lsl #2]       ; oy[i+t]
+    ldmia r9!, {r3,r4}              ; x[i+t] [s8.16]
+                                    ; y[i+t] [s8.16]
 
-    ; TEMP: Remove tunnel offset.
-    ;add r3, r0, r3                  ; x+ox
-    ;add r4, r1, r4                  ; y+oy
+    ldmia r7!, {r0,r1}              ; ox[i+t]
+                                    ; oy[i+t]
+
+dot_tunnel_draw_spiral_patch_2:
+    add r3, r0, r3                  ; x+ox
+    add r4, r1, r4                  ; y+oy
 
     sub r3, r3, r5                  ; x+ox-cx
     sub r4, r4, r6                  ; y+oy-cy
@@ -116,8 +147,7 @@ dot_tunnel_draw_spiral:
     ldrb r3, Anaglyph_Enable_Skew
     cmp r3, #0
     ldrne r5, tunnel_skew_offset
-    movne r3, r5, asl #1
-    addne r0, r0, r3
+    addne r0, r0, r5
 
     mov r0, r0, asr #16             ; [s15.0]
     mov r1, r1, asr #16             ; [s15.0]
@@ -149,28 +179,34 @@ dot_tunnel_draw_spiral:
     add r3, r3, r1, lsl #5
 	add r3, r3, r0, lsr #1	; r10 += startx DIV 2
 
-    .3:
-    mov r4, #0xf                ; SELF-MOD!
+    ;.3:
+    ;mov r4, #0xf                ; SELF-MOD!
 
 	ldrb r2, [r3]				; load screen byte
 	tst r0, #1					; odd or even pixel?
-	orreq r2, r2, r4			; mask in colour as left hand pixel
-	orrne r2, r2, r4, lsl #4	; mask in colour as right hand pixel
+	orreq r2, r2, r10			; mask in colour as left hand pixel
+	orrne r2, r2, r10, lsl #4	; mask in colour as right hand pixel
 	strb r2, [r3]				; store screen byte
     .endif
 
 .2:
-    add r11, r11, #1
-    cmp r11, #DotTunnel_Total
-    movge r11, #0
+    cmp r7, r11
+    movge r9, r11
+    ldrge r7, dot_tunnel_offset_xy
+
+    add r8, r8, #1
+    cmp r8, #DotTunnel_Total/4
+    subge r10, r10, #1
+    movge r8, #0
 
     adr r0, dot_tunnel_recip_z_end
     cmp r14, r0
-    blt .1
+    blt dot_tunnel_draw_spiral_loop
 
     ldr pc, [sp], #4
 
 
+.if 0
 .equ Dot_Circle_Gap, 32
 .equ Dot_Circle_Max_Z, 1024
 
@@ -262,7 +298,6 @@ dot_tunnel_draw_spiral:
     DOT_CIRCLE_PLOT_1 rsbs, r1, rsbs, r0, clip_8_\angle
 .endm
 
-.if 0
 ; Circles every Z units.
 ; R12=screen addr
 dot_tunnel_draw_circles:
@@ -325,7 +360,6 @@ dot_tunnel_draw_circles_loop:
     ldr pc, [sp], #4
 .endif
 
-; TODO: Share with starfield?
 dot_tunnel_recip_z:
 .set z, 64.0                ; distance to start of tunnel.
 .rept DotTunnel_Total

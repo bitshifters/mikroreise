@@ -27,6 +27,9 @@ file4 = io.open("data/dot_tunnel_y_offset.bin", "wb")
 file5 = io.open("data/dot_tunnel_x_octant.bin", "wb")
 file6 = io.open("data/dot_tunnel_y_octant.bin", "wb")
 
+file7 = io.open("data/dot_tunnel_xy.bin", "wb")
+file8 = io.open("data/dot_tunnel_xy_offset.bin", "wb")
+
 sin=math.sin
 cos=math.cos
 pi=math.pi
@@ -63,8 +66,15 @@ for i=1,steps do
     
     writeFixedPoint(file1, x)
     writeFixedPoint(file2, y)
+
+    writeFixedPoint(file7, x)
+    writeFixedPoint(file7, y)
+
     writeFixedPoint(file3, ox)
     writeFixedPoint(file4, oy)
+
+    writeFixedPoint(file8, ox)
+    writeFixedPoint(file8, oy)
 
     writeShortPoint(file6, ox)
     writeShortPoint(file6, oy)

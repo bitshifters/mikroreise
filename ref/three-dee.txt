@@ -245,20 +245,22 @@ TODO
 - Update Bitshifters logo from Spiny
 - Add Torment logo, add credits / greets
 - Starfield fade colour with depth - DONE
-- Dot tunnel add second variant
+- Dot tunnel add second variant - DONE
 - Wire cube ease bounce back
 - 2D scene add star shape
 - Solid cube set colour per face
-- Wire cube add background?
+- Wire cube add background? OR INVERT?
 - Y Sine dots add second variant
 - Circles change shape to circles
 - Bake in Skew code when not in _DEBUG.
+- Palette fade call is super expensive!!!
 
 MOAR BONUS
 ~~~
-- Accelerate starfield.
-- Reveal starfield.
-- Twist starfield.
+- Accelerate starfield (needs more pace).
+- Reveal starfield?
+- Twist starfield!
+- Accelerate dot tunnel (needs more pace).
 
 
 Need to go from brightness 1-5 to colour value.

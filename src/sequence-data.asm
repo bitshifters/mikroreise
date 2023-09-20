@@ -27,25 +27,18 @@
     on_pattern 4, seq_fade_up_3d_palette_medium
     on_pattern 4, seq_do_dot_tunnel_1
     on_pattern 6, seq_fade_up_3d_palette_medium
-    on_pattern 6, seq_do_dot_tunnel_1   ; number 2?
+    on_pattern 6, seq_do_dot_tunnel_2
     on_pattern 8, seq_do_floating_cube
     on_pattern 10, seq_do_square_twist
     on_pattern 12, seq_do_solid_beat_cube
     on_pattern 14, seq_do_wire_beat_cube
     on_pattern 16, seq_do_sine_dots_1
     on_pattern 20, seq_do_floating_circles
-    on_pattern 24, seq_do_starfield_with_fade_out
+    on_pattern 24, seq_do_starfield_fast
     on_pattern 26, seq_do_sine_dots_1 ; variation 2!
 
     ; THE END.
     end_script
-
-    ; Pattern 0.
-
-;    write_addr object_rot_speed+4, MATHS_CONST_1
-;    write_addr object_rot_speed+8, MATHS_CONST_1
-;    write_addr object_dir_z, MATHS_CONST_1
-;    wait_secs PatternLength_Secs
 
 ; ============================================================================
 
@@ -91,7 +84,20 @@ seq_do_starfield_with_fade_out:
     call_3 fx_set_layer_fns, 2, palette_update_fade_to_black,  0
     end_script
 
+seq_do_starfield_fast:
+    write_addr starfield_speed, 4
+    call_3 fx_set_layer_fns, 1, starfield_update,    starfield_draw_anaglyph
+    end_script
+
 seq_do_dot_tunnel_1:
+    call_0 dot_tunnel_patch_to_straight
+    write_addr dot_tunnel_speed, 1
+    call_3 fx_set_layer_fns, 1, dot_tunnel_update,   dot_tunnel_draw_anaglyph_spiral
+    end_script
+
+seq_do_dot_tunnel_2:
+    call_0 dot_tunnel_patch_to_curved
+    write_addr dot_tunnel_speed, 4
     call_3 fx_set_layer_fns, 1, dot_tunnel_update,   dot_tunnel_draw_anaglyph_spiral
     end_script
 
@@ -118,6 +124,7 @@ seq_do_cobra:
 
 seq_do_floating_cube:
     gosub seq_set_cube_model
+    write_addr object_dir_z, 2.736*MATHS_CONST_1
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_wire
     end_script
 
