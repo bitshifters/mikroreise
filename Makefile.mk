@@ -56,7 +56,7 @@ seq: ./build/seq.bin
 build:
 	$(MKDIR_P) "./build"
 
-./build/assets.txt: build ./build/logo.lz4 ./build/big-font.bin ./build/icon.bin ./build/bs-logo.bin
+./build/assets.txt: build ./build/icon.bin ./build/bs-logo.bin ./build/tmt-logo.bin
 	echo done > $@
 
 ./build/seq.bin: build ./build/seq.o link_script2.txt
@@ -93,7 +93,10 @@ clean:
 ./build/icon.bin: ./data/gfx/icon001.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC_SPRITE) --name !django02 -o $@ $< 9
 
-./build/bs-logo.bin: ./data/gfx/bitshifter-modded005-new-16.png $(PNG2ARC_DEPS)
+./build/bs-logo.bin: ./data/gfx/bitshifters-isometric-anaglyph-colours-320x256x16-really-fixed-this-time.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
+
+./build/tmt-logo.bin: ./data/gfx/torment-albumcover-anaglyph-colours-320x256x16.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
 
 ##########################################################################

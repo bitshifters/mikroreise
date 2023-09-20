@@ -22,6 +22,7 @@
 
     ; This macro has to be front loaded at time 0.
     on_pattern 0, seq_do_bitshifters_with_fade_out
+    on_pattern 1, seq_do_torment_with_fade_out
     on_pattern 2, seq_fade_up_3d_palette_very_slow
     on_pattern 2, seq_do_starfield_with_fade_out
     on_pattern 4, seq_fade_up_3d_palette_medium
@@ -48,10 +49,28 @@ seq_do_bitshifters_with_fade_out:
     write_addr static_palette_p, bs_logo_pal_no_adr
     write_addr static_screen_p, bs_logo_screen_no_adr
 
-    wait PatternLength_Frames*2-(16*Fade_Med)
+    wait PatternLength_Frames-(16*Fade_Med)
 
     ; Initialise fade out.
     call_3 palette_init_fade_to_black, 0, Fade_Med, bs_logo_pal_no_adr
+    call_3 fx_set_layer_fns, 1, palette_update_fade_to_black,  static_copy_screen
+    end_script
+
+seq_do_torment_with_fade_out:
+    ; Static screen.
+    call_3 palette_init_fade_from_black, 0, Fade_Med, tmt_logo_pal_no_adr
+
+    call_3 fx_set_layer_fns, 1, palette_update_fade_from_black,  static_copy_screen
+    write_addr static_palette_p, tmt_logo_pal_no_adr
+    write_addr static_screen_p, tmt_logo_screen_no_adr
+
+    wait 16*Fade_Med
+    call_3 fx_set_layer_fns, 1, static_set_palette,  static_copy_screen
+
+    wait PatternLength_Frames-(2*16*Fade_Med)
+
+    ; Initialise fade out.
+    call_3 palette_init_fade_to_black, 0, Fade_Med, tmt_logo_pal_no_adr
     call_3 fx_set_layer_fns, 1, palette_update_fade_to_black,  static_copy_screen
     end_script
 

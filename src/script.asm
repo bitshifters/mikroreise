@@ -20,7 +20,7 @@
 .equ ScriptContext_LR, 8            ; Link Register. NOTE: we don't have a stack!!
 
 .equ Script_ContextSize, 12
-.equ Script_MaxScripts, 16
+.equ Script_MaxScripts, 24
 
 script_contexts:
     .skip Script_ContextSize*Script_MaxScripts

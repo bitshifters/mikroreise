@@ -242,16 +242,18 @@ Patterns
 TODO
 ~~~
 - Global fade - DONE
-- Update Bitshifters logo from Spiny
-- Add Torment logo, add credits / greets
 - Starfield fade colour with depth - DONE
-- Dot tunnel add second variant - DONE
+- Dot tunnel fade colour with depth - DONE
+- Dot tunnell add second variant - DONE
+- Update Bitshifters logo from Spiny - DONE
+- Add Torment logo - DONE, add credits / greets
 - Wire cube ease bounce back
 - 2D scene add star shape
 - Solid cube set colour per face
 - Wire cube add background? OR INVERT?
 - Y Sine dots add second variant
-- Circles change shape to circles
+- Vector balls change shape to circle
+
 - Bake in Skew code when not in _DEBUG.
 - Palette fade call is super expensive!!!
 
@@ -261,6 +263,8 @@ MOAR BONUS
 - Reveal starfield?
 - Twist starfield!
 - Accelerate dot tunnel (needs more pace).
+- Morph vector balls?
+- Put Torment logo after first starfield.
 
 
 Need to go from brightness 1-5 to colour value.
