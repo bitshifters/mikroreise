@@ -241,10 +241,10 @@ Patterns
 
 TODO
 ~~~
-- Global fade - done.
+- Global fade - DONE
 - Update Bitshifters logo from Spiny
 - Add Torment logo, add credits / greets
-- Starfield fade colour with depth
+- Starfield fade colour with depth - DONE
 - Dot tunnel add second variant
 - Wire cube ease bounce back
 - 2D scene add star shape
@@ -252,3 +252,35 @@ TODO
 - Wire cube add background?
 - Y Sine dots add second variant
 - Circles change shape to circles
+- Bake in Skew code when not in _DEBUG.
+
+MOAR BONUS
+~~~
+- Accelerate starfield.
+- Reveal starfield.
+- Twist starfield.
+
+
+Need to go from brightness 1-5 to colour value.
+; 00 = 0000 = black
+; 01 = 0001 = red 1
+; 02 = 0010 = cyan 1
+; 03 = 0011 = white 1
+; 04 = 0100 = red 2
+; 05 = 0101 = red 3
+; 06 = 0110 = red 4
+; 07 = 0111 = red 5
+; 08 = 1000 = cyan 2
+; 09 = 1001 = cyan 3
+; 10 = 1010 = cyan 4
+; 11 = 1011 = cyan 5
+; 12 = 1100 = white 2
+; 13 = 1101 = white 3
+; 14 = 1110 = white 4
+; 15 = 1111 = white 5
+
+right colour=white & 0b1011
+if right==0 then right=white & 0b1010
+
+left colour=white & 0b0111
+if left==0 then left=white & 0b001

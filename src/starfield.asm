@@ -46,7 +46,7 @@ bits_mask:
 starfield_update:
     ldr r11, starfield_t
     add r11, r11, #1
-    cmp r11, #DotTunnel_Total
+    cmp r11, #Starfield_Total
     movge r11, #0
     str r11, starfield_t
     mov pc, lr
@@ -81,8 +81,8 @@ starfield_skew_offset:
 starfield_draw:
     str lr, [sp, #-4]!
 
-    strb r4, .3                     ; SELF-MOD!!
-    ldr r11, starfield_t           ; t
+    mov r7, r4                      ; colour
+    ldr r11, starfield_t            ; t
 
     ldr r9, starfield_x_p
     ldr r10, starfield_y_p
@@ -95,6 +95,7 @@ starfield_draw:
     str r0, tunnel_skew_offset      ; TODO: Not needed if camera is forced to (0,0)
     mov r6, #0                      ; TEMP: Force camera to (0,0) 
 
+    mov r8, #0
 .1:
     ldr r2, [r14], #4               ; 80/z [7.16]
     ldr r3, [r9, r11, lsl #2]       ; x[i+t] [s8.16]
@@ -147,21 +148,25 @@ starfield_draw:
     add r3, r3, r1, lsl #5
 	add r3, r3, r0, lsr #1	; r10 += startx DIV 2
 
-    .3:
-    mov r4, #0xf                ; SELF-MOD!
-
 	ldrb r2, [r3]				; load screen byte
 	tst r0, #1					; odd or even pixel?
-	orreq r2, r2, r4			; mask in colour as left hand pixel
-	orrne r2, r2, r4, lsl #4	; mask in colour as right hand pixel
+	orreq r2, r2, r7			; mask in colour as left hand pixel
+	orrne r2, r2, r7, lsl #4	; mask in colour as right hand pixel
 	strb r2, [r3]				; store screen byte
     .endif
 
 .2:
     add r11, r11, #1
-    cmp r11, #DotTunnel_Total
+    cmp r11, #Starfield_Total
     movge r11, #0
 
+    ; Fade colour with distance.
+    add r8, r8, #1
+    cmp r8, #Starfield_Total/4
+    subge r7, r7, #1
+    movge r8, #0
+
+    ; Could probably terminate based on colour bits.
     adr r0, starfield_recip_z_end
     cmp r14, r0
     blt .1

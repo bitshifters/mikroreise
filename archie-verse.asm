@@ -38,6 +38,9 @@
 .equ StereoPos_Ch3, +32                 ; off centre R
 .equ StereoPos_Ch4, -32                 ; off centre L
 
+.equ Anaglyph_Default_Skew_Setting, 1   ; on
+.equ EyeDistance_Default_Setting,   4   ; eye separation=4.8 pixels at z=0
+
 .equ _WIDESCREEN, 0
 
 .ifndef _DO_SEQUENCE
@@ -789,7 +792,7 @@ RightEye_X_Pos:
     FLOAT_TO_FP 0.0
 
 Anaglyph_Enable_Skew:
-    .byte 1
+    .byte Anaglyph_Default_Skew_Setting
 
 Anaglyph_Eye_setting:
     .byte EyeDistance_Default_Setting
@@ -821,38 +824,38 @@ music_table:
 ; For anaglpyh want CRcr
 palette_red_cyan:
     .long 0x00000000                    ; 00 = 0000 = black
-    .long 0x00000070                    ; 01 = 0001 = red 1
-    .long 0x00707000                    ; 02 = 0010 = cyan 1
-    .long 0x00707070                    ; 03 = 0011 = white 1
-    .long 0x00000090                    ; 04 = 0100 = red 2
-    .long 0x000000b0                    ; 05 = 0101 = red 3
-    .long 0x000000d0                    ; 06 = 0110 = red 4
+    .long 0x00000030                    ; 01 = 0001 = red 1
+    .long 0x00303000                    ; 02 = 0010 = cyan 1
+    .long 0x00303030                    ; 03 = 0011 = white 1
+    .long 0x00000060                    ; 04 = 0100 = red 2
+    .long 0x00000090                    ; 05 = 0101 = red 3
+    .long 0x000000c0                    ; 06 = 0110 = red 4
     .long 0x000000f0                    ; 07 = 0111 = red 5
-    .long 0x00909000                    ; 08 = 1000 = cyan 2
-    .long 0x00b0b000                    ; 09 = 1001 = cyan 3
-    .long 0x00d0d000                    ; 10 = 1010 = cyan 4
+    .long 0x00606000                    ; 08 = 1000 = cyan 2
+    .long 0x00909000                    ; 09 = 1001 = cyan 3
+    .long 0x00c0c000                    ; 10 = 1010 = cyan 4
     .long 0x00f0f000                    ; 11 = 1011 = cyan 5
-    .long 0x00909090                    ; 12 = 1100 = white 2
-    .long 0x00b0b0b0                    ; 13 = 1101 = white 3
-    .long 0x00d0d0d0                    ; 14 = 1110 = white 4
+    .long 0x00606060                    ; 12 = 1100 = white 2
+    .long 0x00909090                    ; 13 = 1101 = white 3
+    .long 0x00c0c0c0                    ; 14 = 1110 = white 4
     .long 0x00f0f0f0                    ; 15 = 1111 = white 5
 
 palette_red_blue:
     .long 0x00000000                    ; 00 = 0000 = black
-    .long 0x00000070                    ; 01 = 0001 = red 1
-    .long 0x00700000                    ; 02 = 0010 = blue 1
-    .long 0x00700070                    ; 03 = 0011 = magenta 1
-    .long 0x00000090                    ; 04 = 0100 = red 2
-    .long 0x000000b0                    ; 05 = 0101 = red 3
-    .long 0x000000d0                    ; 06 = 0110 = red 4
+    .long 0x00000030                    ; 01 = 0001 = red 1
+    .long 0x00300000                    ; 02 = 0010 = blue 1
+    .long 0x00300030                    ; 03 = 0011 = magenta 1
+    .long 0x00000060                    ; 04 = 0100 = red 2
+    .long 0x00000090                    ; 05 = 0101 = red 3
+    .long 0x000000c0                    ; 06 = 0110 = red 4
     .long 0x000000f0                    ; 07 = 0111 = red 5
-    .long 0x00900000                    ; 08 = 1000 = blue 2
-    .long 0x00b00000                    ; 09 = 1001 = blue 3
-    .long 0x00d00000                    ; 10 = 1010 = blue 4
+    .long 0x00600000                    ; 08 = 1000 = blue 2
+    .long 0x00900000                    ; 09 = 1001 = blue 3
+    .long 0x00c00000                    ; 10 = 1010 = blue 4
     .long 0x00f00000                    ; 11 = 1011 = blue 5
-    .long 0x00900090                    ; 12 = 1100 = magenta 2
-    .long 0x00b000b0                    ; 13 = 1101 = magenta 3
-    .long 0x00d000d0                    ; 14 = 1110 = magenta 4
+    .long 0x00600060                    ; 12 = 1100 = magenta 2
+    .long 0x00900090                    ; 13 = 1101 = magenta 3
+    .long 0x00c000c0                    ; 14 = 1110 = magenta 4
     .long 0x00f000f0                    ; 15 = 1111 = magenta 5
 
 ; ============================================================================

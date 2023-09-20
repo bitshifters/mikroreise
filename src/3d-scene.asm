@@ -19,8 +19,6 @@
 .equ VIEWPORT_CENTRE_X, 160 * PRECISION_MULTIPLIER
 .equ VIEWPORT_CENTRE_Y, 128 * PRECISION_MULTIPLIER
 
-.equ EyeDistance_Default_Setting,   4
-
 ; ============================================================================
 ; Scene data.
 ; ============================================================================
