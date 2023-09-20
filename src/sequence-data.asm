@@ -77,6 +77,7 @@ seq_do_sine_dots_1:
     end_script
 
 seq_do_starfield_with_fade_out:
+    write_addr starfield_speed, 1
     call_3 fx_set_layer_fns, 1, starfield_update,    starfield_draw_anaglyph
 
     wait PatternLength_Frames*2-(16*Fade_Med)
@@ -124,7 +125,7 @@ seq_do_cobra:
 
 seq_do_floating_cube:
     gosub seq_set_cube_model
-    write_addr object_dir_z, 2.736*MATHS_CONST_1
+;   write_addr object_dir_z, MATHS_CONST_1*2.736
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_wire
     end_script
 
