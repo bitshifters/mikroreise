@@ -11,6 +11,10 @@
 .equ Model_Cobra_Num_Verts, 22
 .equ Model_Cobra_Num_Faces, 13
 
+.equ Model_Circle_Num_Verts, 8
+.equ Model_Circle_Num_Faces, 0
+.equ Model_Circle_Radius, 48
+
 ; The camera viewport is assumed to be [-1,+1] across its widest axis.
 ; Therefore we multiply all projected coordinates by the screen width/2
 ; in order to map the viewport onto the entire screen.
@@ -139,7 +143,33 @@ init_3d_scene:
 
     bl set_palette_for_3d_scene
 
+    ; Make circle object.
+    ldr r8, circle_verts_p 
+    mov r10, #Model_Circle_Num_Verts-1     ; count.
+    mov r11, #0     ; brads.
+.1:
+    mov r0, r11
+    bl sin_cos
+    ; R0=sin(a)
+    ; R1=cos(a)
+
+    mov r3, #Model_Circle_Radius    ; radius
+    mul r0, r3, r0          ; x=radius*sin(a)
+    mul r1, r3, r1          ; y=radius*cos(a)
+    mov r2, #0              ; z=0
+
+    stmia r8!, {r0-r2}
+
+    ; Increment brad.
+    add r11, r11, #PRECISION_MULTIPLIER*256/Model_Circle_Num_Verts
+
+    subs r10, r10, #1
+    bpl .1
+
     ldr pc, [sp], #4
+
+circle_verts_p:
+    .long model_circle_verts
 
 set_palette_for_3d_scene:
     ldr r2, palette_p
@@ -774,6 +804,8 @@ draw_3d_object_as_circles:
     ; TODO: Would ultimately need to sort by Z.
     ; TODO: A fixed number of sprites with radius [1,16] would be faster, i.e. vector balls!
 
+    ; TODO: Compute screen_radius alongside projected X,Y.
+
     .2:
     ; screen_radius = VP_SCALE * world_radius / (z-cz)
     mov r0, #VIEWPORT_SCALE
@@ -795,5 +827,4 @@ draw_3d_object_as_circles:
     ldr pc, [sp], #4
 
 ; ============================================================================
-; Scene data.
 ; ============================================================================

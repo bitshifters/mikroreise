@@ -139,17 +139,31 @@ seq_do_wire_beat_cube:
 
 seq_do_cobra:
     gosub seq_set_cobra_model
+    write_addr object_rot_speed+0, MATHS_CONST_HALF
+    write_addr object_rot_speed+4, MATHS_CONST_HALF
+    write_addr object_rot_speed+8, MATHS_CONST_HALF
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_wire
     end_script
 
 seq_do_floating_cube:
+    call_0 set_palette_for_3d_scene
     gosub seq_set_cube_model
 ;   write_addr object_dir_z, MATHS_CONST_1*2.736
+    write_addr object_rot_speed+0, MATHS_CONST_HALF
+    write_addr object_rot_speed+4, MATHS_CONST_HALF
+    write_addr object_rot_speed+8, MATHS_CONST_HALF
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_wire
     end_script
 
 seq_do_floating_circles:
-    gosub seq_set_cube_model
+    call_0 set_palette_for_3d_scene
+    gosub seq_set_circle_model
+    write_addr object_dir_z, 0
+    write_addr object_pos+8, 32
+    write_addr object_rot_speed+0, MATHS_CONST_1*2
+    write_addr object_rot_speed+4, -MATHS_CONST_1
+    write_addr object_rot_speed+8, MATHS_CONST_1*1.5
+
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_circles
     end_script
 
@@ -175,5 +189,16 @@ seq_set_cobra_model:
     write_addr object_edge_list_per_face_p, model_cobra_edges_per_face
     write_addr object_edge_indices_p, model_cobra_edge_indices
     end_script
+
+seq_set_circle_model:
+    write_addr object_scale, MATHS_CONST_1
+    write_addr object_num_verts, Model_Circle_Num_Verts
+    write_addr object_num_faces, Model_Circle_Num_Faces
+    write_addr object_verts_p, model_circle_verts
+    write_addr object_face_indices_p, 0
+    write_addr object_edge_list_per_face_p, 0
+    write_addr object_edge_indices_p, 0
+    end_script
+
 
 ; ============================================================================
