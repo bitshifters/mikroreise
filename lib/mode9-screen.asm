@@ -5,16 +5,19 @@
 ; R12 = screen address
 ; trashes r0-r9
 screen_cls:
-	add r9, r12, #Screen_Bytes
-	mov r0, #0
-	mov r1, #0
-	mov r2, #0
-	mov r3, #0
-	mov r4, #0
-	mov r5, #0
-	mov r6, #0
-	mov r7, #0
+    mov r0, #0
+
+; R0 = word to fill screen.
+screen_cls_with_word:
+	mov r1, r0
+	mov r2, r0
+	mov r3, r0
+	mov r4, r0
+	mov r5, r0
+	mov r6, r0
+	mov r7, r0
 .if 0
+	add r9, r12, #Screen_Bytes
 .1:
 	.rept Screen_Stride / 32
 	stmia r12!, {r0-r7}
@@ -27,6 +30,10 @@ screen_cls:
     .endr
 .endif
 	mov pc, lr
+
+screen_cls_to_white:
+    mov r0, #-1
+    b screen_cls_with_word
 
 .if 0
 ; R12 = screen address

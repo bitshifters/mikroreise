@@ -46,6 +46,9 @@ model_cube_face_indices:
     .byte 4, 0, 3, 7
     .byte 2, 3, 7, 6
 
+model_cube_colour_per_face:
+    .byte 1,2,5,3,4,5,0,0
+
 ; TODO: Determine this from model_cube_face_indices.
 ; TODO: Could also calculate face normals from these...
 ; TODO: Handle more than 32 total edges.
@@ -138,6 +141,9 @@ model_cobra_face_indices:
     .byte 5,3,4,5
     .byte 4,3,0,4
     .byte 4,10,5,4
+
+model_cobra_colour_per_face:
+    .byte 1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,0
 
 model_cobra_edges_per_face:
     .long 0x00000007    ; 3

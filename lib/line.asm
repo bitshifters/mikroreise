@@ -2,9 +2,15 @@
 ; Line drawing routines.
 ; ============================================================================
 
+.equ LibLine_IncludeMode_9, 1
+.equ LibLine_IncludeMode_12, 0
+.equ LibLine_IncludeBatch, 0
+
 line_reciprocal_table_p:
     .long reciprocal_table_no_adr
 
+.if LibLine_IncludeMode_12
+.if LibLine_IncludeBatch
 ; Plot a batch of lines.
 ; Parameters:
 ;  R0=number of lines
@@ -33,10 +39,12 @@ mode12_drawline_batch:
     bne .1
 
     ldr pc, [sp], #4
+.endif
+.endif
 
+.if LibLine_IncludeMode_9
 ; R0=startx, R1=starty, R2=endx, R3=endy, R4=colour, R12=screen_addr
 ; Trashes r5-r9
-
 mode9_drawline_with_clip:
     ldr r9, line_reciprocal_table_p
     cmp r1, r3                  ; starty>endy?
@@ -261,7 +269,7 @@ mode9_drawline_orr:
 	add r14, r12, r3, lsl #7	; 
 	add r3, r14, r3, lsl #5	    ; replace endy with end_y_ptr
 
-.1:
+mode9_drawline_loop:
 	cmp r0, r2					; x0 == x1?
 	cmpeq r1, r3				; y0 == y1?
     ldreq pc, [sp], #4          ; rts
@@ -269,15 +277,13 @@ mode9_drawline_orr:
 	ldrb r14, [r1, r0, lsr #1]	; load screen byte
 
 	tst r0, #1					; odd or even pixel?
-	;andeq r10, r10, #0xF0		; mask out left hand pixel
-	orreq r14, r14, r4			; mask in colour as left hand pixel
 
-	;andne r10, r10, #0x0F		; mask out right hand pixel
+mode9_drawline_patch:
+	orreq r14, r14, r4			; mask in colour as left hand pixel
 	orrne r14, r14, r4, lsl #4	; mask in colour as right hand pixel
 
 	strb r14, [r1, r0, lsr #1]	; store screen byte
 
-.2:
 	mov r14, r9, lsl #1			; r10 = err * 2
 	cmp r14, r6					; e2 >= dy?
 	addge r9, r9, r6			; err += dy
@@ -287,7 +293,27 @@ mode9_drawline_orr:
 	addle r9, r9, r5			; err += dx
 	addle r1, r1, r8			; y0 += stride_y
 
-	b .1
+	b mode9_drawline_loop
+
+drawline_set_to_orr:
+    adr r0, drawline_patch_orr
+drawline_do_patch:
+    ldmia r0, {r1-r2}
+    str r1, mode9_drawline_patch+0
+    str r2, mode9_drawline_patch+4
+    mov pc, lr
+
+drawline_patch_orr:
+	orreq r14, r14, r4			; mask in colour as left hand pixel
+	orrne r14, r14, r4, lsl #4	; mask in colour as right hand pixel
+
+drawline_set_to_bic:
+    adr r0, drawline_patch_bic
+    b drawline_do_patch
+
+drawline_patch_bic:
+	biceq r14, r14, r4			; mask out olour as left hand pixel
+	bicne r14, r14, r4, lsl #4	; mask out colour as right hand pixel
 
 .if _DEBUG
     errneedclip: ;The error block
@@ -297,6 +323,7 @@ mode9_drawline_orr:
 	.long 0
 .endif
 
+.if 0
 ; R0=x, R1=y, R4=colour, R12=screen_addr, trashes r10, r11
 mode9_plot_pixel:
 	; ptr = screen_addr + starty * screen_stride + startx DIV 2
@@ -315,7 +342,10 @@ mode9_plot_pixel:
 
 	strb r11, [r10]				; store screen byte
 	mov pc, lr
+.endif
+.endif
 
+.if LibLine_IncludeMode_12
 ; R0=startx, R1=starty, R2=endx, R3=endy, R4=colour, R12=screen_addr
 ; Trashes r5-r10
 mode12_drawline:
@@ -379,3 +409,4 @@ mode12_drawline:
 ;         Compute number of loop iterations (max(dx,dy))
 ;         Poke in a return instruction after N iterations.
 ;         Restore original instruction upon completion.
+.endif

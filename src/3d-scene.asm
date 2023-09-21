@@ -92,6 +92,9 @@ object_edge_list_per_face_p:
 object_edge_indices_p:
     .long model_cobra_edge_indices
 
+object_colour_p:
+    .long model_cobra_colour_per_face
+ 
 ; ============================================================================
 
 transformed_verts_p:
@@ -411,7 +414,8 @@ anaglyph_draw_3d_scene_as_wire:             ; TODO: Dedupe this code!
     str r0, camera_pos+0        ; camera_pos_x
 
     ; Subtract blue & green.
-    mov r4, #7                  ; brightest red
+    ;mov r4, #7                 ; brightest red
+    mov r4, #8                  ; bic 0b1000
     bl draw_3d_scene_wire
 
     ; Right eye.
@@ -419,7 +423,8 @@ anaglyph_draw_3d_scene_as_wire:             ; TODO: Dedupe this code!
     str r0, camera_pos+0        ; camera_pos_x
 
     ; Subtract red.
-    mov r4, #11                 ; brightest cyan
+    ;mov r4, #11                ; brightest cyan
+    mov r4, #4                  ; bic 0b0100
     bl draw_3d_scene_wire
 
     ldr pc, [sp], #4
@@ -434,6 +439,7 @@ anaglyph_draw_3d_scene_as_solid:             ; TODO: Dedupe this code!
 
     ; Subtract blue & green.
     mov r4, #7                  ; brightest red
+    adr r4, colour_lookup_red
     bl draw_3d_scene_solid
 
     ; Right eye.
@@ -442,6 +448,7 @@ anaglyph_draw_3d_scene_as_solid:             ; TODO: Dedupe this code!
 
     ; Subtract red.
     mov r4, #11                 ; brightest cyan
+    adr r4, colour_lookup_cyan
     bl draw_3d_scene_solid
 
     ldr pc, [sp], #4
@@ -588,12 +595,16 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     stmfd sp!, {r11,r12}
 
     ; TODO: Sort out a colour per face scheme.
-    ldr r4, object_colour_index
-    and r0, r11, #3
-    sub r4, r4, r0                  ; quick hack to make faces different shades.
-    ; TODO: Use fast poly plot if we're going to do this.
-    ;bl polygon_plot_quad_indexed
-    bl triangle_plot_quad_indexed
+    ldr r4, object_colour_p
+    ldrb r4, [r4, r11]
+    ldr r0, object_colour_index     ; actually colour lookup
+    ldrb r4, [r0, r4]
+
+    ;  R12=screen addr
+    ;  R2=ptr to projected vertex array (x,y) in screen coords [16.0]
+    ;  R3=4x vertex indices for quad
+    ;  R4=colour index
+    bl triangle_plot_quad_indexed   ; faster than polygon_plot_quad_indexed.
     ldmfd sp!, {r11,r12}
 
     .3:
@@ -601,6 +612,12 @@ draw_3d_scene_solid:             ; TODO: Dedupe this code!
     bpl .2
 
     ldr pc, [sp], #4
+
+colour_lookup_red:
+    .byte 0,1,4,5,6,7,7,7
+
+colour_lookup_cyan:
+    .byte 0,2,8,9,10,11,11,11
 
 ; R4=colour index
 ; R12=screen addr
@@ -647,7 +664,6 @@ draw_3d_scene_wire:             ; TODO: Dedupe this code!
     sub r4, r4, r7
     sub r5, r5, r8
 
-; TODO: Backface culling needs to subtract camera pos from vertex!
     bl vector_dot_product_load_B ; trashes r3-r8
     cmp r0, #0                  
     bpl .3                      ; normal facing away from the view direction.

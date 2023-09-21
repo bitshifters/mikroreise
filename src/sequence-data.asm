@@ -145,9 +145,16 @@ seq_do_solid_beat_cube:
     end_script
 
 seq_do_wire_beat_cube:
+    call_3 fx_set_layer_fns, 0, 0,                   screen_cls_to_white
+    call_0 drawline_set_to_bic
+
     gosub seq_set_cube_model
     write_addr object_pos+8, MATHS_CONST_1*36      ; object_pos_z = 16.0
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
+
+    wait_secs PatternLength_Secs*2
+    call_3 fx_set_layer_fns, 0, 0,                   screen_cls
+    call_0 drawline_set_to_orr
     end_script
 
 seq_do_cobra:
@@ -160,12 +167,23 @@ seq_do_cobra:
 
 seq_do_floating_cube:
     call_0 set_palette_for_3d_scene
+
+    ; INVERT COLOURS TO BLACK ON WHITE.
+    ; DOES THIS WORK ?????
+    call_3 fx_set_layer_fns, 0, 0,                   screen_cls_to_white
+    call_0 drawline_set_to_bic
+
     gosub seq_set_cube_model
-;   write_addr object_dir_z, MATHS_CONST_1*2.736
+    write_addr object_dir_z, MATHS_CONST_1*2
     write_addr object_rot_speed+0, MATHS_CONST_HALF
     write_addr object_rot_speed+4, MATHS_CONST_HALF
     write_addr object_rot_speed+8, MATHS_CONST_HALF
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_wire
+
+    wait_secs PatternLength_Secs*2
+    call_3 fx_set_layer_fns, 0, 0,                   screen_cls
+    call_0 drawline_set_to_orr
+
     end_script
 
 seq_do_floating_circles:
@@ -191,6 +209,7 @@ seq_set_cube_model:
     write_addr object_face_indices_p, model_cube_face_indices
     write_addr object_edge_list_per_face_p, model_cube_edges_per_face
     write_addr object_edge_indices_p, model_cube_edge_indices
+    write_addr object_colour_p, model_cube_colour_per_face
     end_script
 
 seq_set_cobra_model:

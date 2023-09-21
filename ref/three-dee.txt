@@ -244,28 +244,40 @@ TODO
 - Global fade - DONE
 - Starfield fade colour with depth - DONE
 - Dot tunnel fade colour with depth - DONE
-- Dot tunnell add second variant - DONE
+- Dot tunnel add second variant - DONE
 - Update Bitshifters logo from Spiny - DONE
-- Add Torment logo - DONE, add credits / greets
+- Add Torment logo - DONE
+- Solid cube set colour per face - DONE
+- Make sync cube less energetic => DOES THIS FX ACTUALLY WORK?
+- Wire cube add background? OR INVERT? - DONE INVERT.
+- Y Sine dots add second variant - DONE
+- Vector balls change shape to circle - DONE
+- Add credits / greets => Vector font?
 - Wire cube ease bounce back
 - 2D scene add star shape
-- Solid cube set colour per face
-- Wire cube add background? OR INVERT?
-- Y Sine dots add second variant
-- Vector balls change shape to circle - DONE
 
+- Put Torment logo after first starfield?
+- Accelerate starfield (needs more pace but not too much!)
+- Accelerate dot tunnel (needs more pace but not too much!)
+
+
+Tech
+~~~
 - Bake in Skew code when not in _DEBUG.
-- Palette fade call is super expensive!!!
+- Compress final exe w/ Shrinkler and add loader.
 
 MOAR BONUS
 ~~~
-- Accelerate starfield (needs more pace).
+- Vector font!!
 - Reveal starfield?
 - Twist starfield!
-- Accelerate dot tunnel (needs more pace).
+- Path through starfield...
 - Morph vector balls?
-- Put Torment logo after first starfield.
+- Morph starfield into tunnel...
+
+- Palette fade call is super expensive!!!
 - Generate Sine Dot Code from X table :S
+
 
 Need to go from brightness 1-5 to colour value.
 ; 00 = 0000 = black

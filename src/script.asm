@@ -130,8 +130,6 @@ script_add_program_with_wait:
     adr r0, error_outofscripts
     swi OS_GenerateError
     .endif
-
-    ; TODO: Assert ran out of contexts.
     mov pc, lr
 
 .if _DEBUG

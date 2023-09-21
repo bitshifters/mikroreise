@@ -56,7 +56,7 @@ starfield_update:
     mov pc, lr
 
 ; R12=screen addr
-; TODO: Dedupe from starfield_draw_anaglyph_spiral?
+; TODO: Dedupe from dot_tunnel_draw_anaglyph_spiral?
 starfield_draw_anaglyph:
     str lr, [sp, #-4]!
 
