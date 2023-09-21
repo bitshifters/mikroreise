@@ -35,8 +35,8 @@
     on_pattern 14, seq_do_wire_beat_cube
     on_pattern 16, seq_do_sine_dots_1
     on_pattern 20, seq_do_floating_circles
-    on_pattern 24, seq_do_starfield_fast
-    on_pattern 26, seq_do_sine_dots_1 ; variation 2!
+    on_pattern 23, seq_do_starfield_fast
+    on_pattern 25, seq_do_sine_dots_2
 
     ; THE END.
     end_script
@@ -92,6 +92,19 @@ seq_fade_up_3d_palette_medium:
 
 seq_do_sine_dots_1:
     write_addr dots_visible, 0
+    write_addr dots_y_t, 0
+    write_addr dots_y_table_1_p, dots_y_table_1_no_adr
+    write_addr dots_y_table_2_p, dots_y_table_2_no_adr
+    write_addr dots_code_p, dots_gen_code_a
+    call_3 fx_set_layer_fns, 1, dots_tick,           dots_draw_all
+    end_script
+
+seq_do_sine_dots_2:
+    write_addr dots_visible, 0
+    write_addr dots_y_t, Dots_Total/2
+    write_addr dots_y_table_1_p, dots_y_table_1_b_no_adr
+    write_addr dots_y_table_2_p, dots_y_table_2_b_no_adr
+    write_addr dots_code_p, dots_gen_code_b
     call_3 fx_set_layer_fns, 1, dots_tick,           dots_draw_all
     end_script
 

@@ -120,6 +120,9 @@ Start:
 stack_p:
 	.long stack_base_no_adr
 
+music_mod_p:
+	.long three_dee_mod_no_adr		; 14
+
 ; ============================================================================
 ; Main
 ; ============================================================================
@@ -231,9 +234,8 @@ main:
     swi QTM_Stereo
 
 	; Load the music.
-	mov r0, #-1					; load from address and copy to RMA.
-	adr r1, music_table
-	ldr r1, [r1, #0]
+	mov r0, #0              ; load from address, don't copy to RMA.
+    ldr r1, music_mod_p
 	swi QTM_Load
 
 	; LATE INITALISATION HERE!
@@ -817,9 +819,6 @@ rnd_seed:
 vdu_screen_disable_cursor:
 .byte 22, Vdu_Mode, 23,1,0,0,0,0,0,0,0,0
 .p2align 2
-
-music_table:
-	.long changing_waves_mod_no_adr		; 14
 
 ; For anaglpyh want CRcr
 palette_red_cyan:

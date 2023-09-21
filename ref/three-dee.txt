@@ -252,7 +252,7 @@ TODO
 - Solid cube set colour per face
 - Wire cube add background? OR INVERT?
 - Y Sine dots add second variant
-- Vector balls change shape to circle
+- Vector balls change shape to circle - DONE
 
 - Bake in Skew code when not in _DEBUG.
 - Palette fade call is super expensive!!!
@@ -265,7 +265,7 @@ MOAR BONUS
 - Accelerate dot tunnel (needs more pace).
 - Morph vector balls?
 - Put Torment logo after first starfield.
-
+- Generate Sine Dot Code from X table :S
 
 Need to go from brightness 1-5 to colour value.
 ; 00 = 0000 = black

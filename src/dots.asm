@@ -20,6 +20,9 @@ dots_total:
 dots_screen_1_addr:
     .long 0x01ff2000                    ; 0x02000000 - 40K (MODE 9)
 
+dots_code_p:
+    .long dots_gen_code_a
+
 .if _DOTS_ENABLE_REVEAL
 dots_visible:
     .long 0
@@ -57,7 +60,7 @@ dots_draw_all:
 
 .if _DOTS_ENABLE_REVEAL
     ldr r0, dots_visible
-    adr r1, dots_gen_code               ; 49 instructions per block 
+    ldr r1, dots_code_p                 ; 49 instructions per block 
     add r1, r1, r0, lsl #7              ; =n*128
     add r1, r1, r0, lsl #6              ; +n*64
     add r1, r1, r0, lsl #2              ; +n*4
@@ -90,7 +93,10 @@ dots_draw_all:
     ; Subtract red for right eye.
     mov r8, #11                 ; brightest cyan
 
-    bl dots_gen_code
+    ;bl dots_gen_code
+    adr lr, .1
+    ldr pc, dots_code_p         ; does this work?
+    .1:
 
 .if _DOTS_ENABLE_REVEAL
     ldr r0, dots_visible
@@ -99,7 +105,7 @@ dots_draw_all:
     cmp r0, r1
     ldrge pc, [sp], #4
 
-    adr r1, dots_gen_code               ; 49 instructions per block
+    ldr r1, dots_code_p                 ; 49 instructions per block
     add r1, r1, r0, lsl #7              ; =n*128
     add r1, r1, r0, lsl #6              ; +n*64
     add r1, r1, r0, lsl #2              ; +n*4
@@ -110,7 +116,14 @@ dots_draw_all:
     ldr pc, [sp], #4
 
 ; Generated code with X values and Y mirroring baked in.
-dots_gen_code:
+dots_gen_code_a:
     .include "src/dot_plot_generated.asm"
     ; TODO: Generate code at init time from X table.
     mov pc, lr
+
+; Generated code with X values and Y mirroring baked in.
+dots_gen_code_b:
+    .include "src/dot_plot_generated_b.asm"
+    ; TODO: Generate code at init time from X table.
+    mov pc, lr
+

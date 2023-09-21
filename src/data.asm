@@ -14,18 +14,6 @@
 
 .if 0
 .p2align 2
-logo_data_no_adr:
-.incbin "build/logo.bin"
-
-.p2align 2
-logo_mask_no_adr:
-.incbin "build/logo.bin.mask"
-.endif
-
-; ============================================================================
-
-.if 0
-.p2align 2
 scroller_font_data_no_adr:
 .incbin "build/big-font.bin"
 .endif
@@ -33,7 +21,7 @@ scroller_font_data_no_adr:
 ; ============================================================================
 
 .p2align 2
-changing_waves_mod_no_adr:
+three_dee_mod_no_adr:
 .incbin "build/three-dee.mod"
 
 ; ============================================================================
@@ -61,6 +49,17 @@ dots_y_table_2_no_adr:
 .incbin "data/dots_y_table_2.bin"
 dots_y_table_2_end_no_adr:
 .incbin "data/dots_y_table_2.bin"
+
+.p2align 6
+dots_y_table_1_b_no_adr:
+.incbin "data/dots_y_table_1_b.bin"
+dots_y_table_1_b_end_no_adr:
+.incbin "data/dots_y_table_1_b.bin"
+
+dots_y_table_2_b_no_adr:
+.incbin "data/dots_y_table_2_b.bin"
+dots_y_table_2_b_end_no_adr:
+.incbin "data/dots_y_table_2_b.bin"
 .endif
 
 ; ============================================================================

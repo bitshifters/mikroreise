@@ -12,10 +12,10 @@ function writeLong(handle, long)
     handle:write(string.format("%c%c%c%c",byte0,byte1,byte2,byte3))
 end
 
-file1 = io.open("data/dots_x_table.bin", "wb")
-file2 = io.open("data/dots_y_table_1.bin", "wb")
-file3 = io.open("data/dots_y_table_2.bin", "wb")
-file4 = io.open("src/dot_plot_generated.asm", "w")
+file1 = io.open("data/dots_x_table_b.bin", "wb")
+file2 = io.open("data/dots_y_table_1_b.bin", "wb")
+file3 = io.open("data/dots_y_table_2_b.bin", "wb")
+file4 = io.open("src/dot_plot_generated_b.asm", "w")
 file5 = io.open("build/dots.txt", "w")
 
 t=0
@@ -55,11 +55,11 @@ screen_height=256
 stride=160
 
 centre_x=screen_width/2
-centre_y=20 + screen_height/2
+centre_y=-1+screen_height/2 -- was 20+ for var 1.
 vp_scale=160.0
 
 scale_x=40
-scale_y=40
+scale_y=38          -- was 40 for var 1.
 depth=40
 eye_dist=1.2        -- must match final choice in 3d-scene.asm!
 left_eye_pos=-eye_dist
@@ -80,11 +80,27 @@ for i=1,tot do
     -- y = map(cos(a)*100+10*sin(4.2*a), -110, 110, 0, height)
 
     angle = map(i, 0, tot, 0, pi);
- 
-    freqX = 13
-    freqY = 11
+
+    -- Good values! Variant #1.
+    -- freqX = 13
+    -- freqY = 11
+    -- freqZ = 2
+    -- phi = 97
+
+    -- modFreqX = 1
+    -- modFreqY = 3
+    -- modFreqZ = 2
+
+    -- modFreq2X = 11
+    -- modFreq2Y = 17
+    -- modFreq2Z = 1
+    -- modFreq2Strength = 0.0
+
+    -- OK values. Variant #2 for now.
+    freqX = 11
+    freqY = 13
     freqZ = 2
-    phi = 97
+    phi = -49
 
     modFreqX = 1
     modFreqY = 3
