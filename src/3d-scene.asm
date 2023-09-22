@@ -2,7 +2,7 @@
 ; 3D Scene.
 ; ============================================================================
 
-.equ OBJ_MAX_VERTS, 32
+.equ OBJ_MAX_VERTS, 128;32
 .equ OBJ_MAX_FACES, 16
 
 .equ Model_Cube_Num_Verts, 8
@@ -79,6 +79,9 @@ object_num_verts:
 
 object_num_faces:
     .long Model_Cobra_Num_Faces
+
+object_num_edges:
+    .long 0
 
 object_verts_p:
     .long model_cobra_verts
@@ -430,6 +433,30 @@ anaglyph_draw_3d_scene_as_wire:             ; TODO: Dedupe this code!
     ldr pc, [sp], #4
 
 ; R12=screen addr
+anaglyph_draw_3d_scene_as_outline:             ; TODO: Dedupe this code!
+    str lr, [sp, #-4]!
+
+    ; Left eye.
+    ldr r0, LeftEye_X_Pos
+    str r0, camera_pos+0        ; camera_pos_x
+
+    ; Subtract blue & green.
+    mov r4, #7                 ; brightest red
+    ;mov r4, #8                  ; bic 0b1000
+    bl draw_3d_scene_outline
+
+    ; Right eye.
+    ldr r0, RightEye_X_Pos
+    str r0, camera_pos+0        ; camera_pos_x
+
+    ; Subtract red.
+    mov r4, #11                ; brightest cyan
+    ;mov r4, #4                  ; bic 0b0100
+    bl draw_3d_scene_outline
+
+    ldr pc, [sp], #4
+
+; R12=screen addr
 anaglyph_draw_3d_scene_as_solid:             ; TODO: Dedupe this code!
     str lr, [sp, #-4]!
 
@@ -746,6 +773,48 @@ plot_face_edge_list:
 
 .3:
     str r11, edge_plot_cache
+    ldr pc, [sp], #4
+
+
+; R4=colour index
+; R12=screen addr
+draw_3d_scene_outline:             ; TODO: Dedupe this code!
+    str lr, [sp, #-4]!
+    str r4, object_colour_index
+
+    ; Project world space verts to screen space.
+    bl project_3d_scene
+
+    ldr r8, object_num_edges
+    sub r8, r8, #1              ; edge no.
+
+    ; OUTLINE
+    .1:
+    ldr r4, object_colour_index
+    ldr r5, object_edge_indices_p
+    ldr r6, projected_verts_p   ; projected vertex array.
+
+    ; Look up vertex indices for edge.
+    ldr r0, [r5, r8, lsl #1]    ; misaligned read!
+    mov r2, r0, lsr #8          ; end index
+    and r0, r0, #0xff           ; start index
+    and r2, r2, #0xff
+
+    ; Load (x,y) for start vertex
+    add r9, r6, r0, lsl #3      ; projected_verts[start_index]
+    ldmia r9, {r0,r1}           ; start_x, start_y
+
+    ; Load (x,y) for end vertex
+    add r9, r6, r2, lsl #3      ; projected_verts[start_index]
+    ldmia r9, {r2,r3}           ; end_x, end_y
+
+    stmfd sp!, {r8}
+    bl mode9_drawline_with_clip       ; trashes r5-r9
+    ldmfd sp!, {r8}
+
+    subs r8, r8, #1
+    bpl .1
+
     ldr pc, [sp], #4
 
 

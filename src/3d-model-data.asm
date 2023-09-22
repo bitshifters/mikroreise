@@ -201,3 +201,9 @@ model_circle_verts:
     .skip VECTOR3_SIZE*Model_Circle_Num_Verts
 
 ; ============================================================================
+
+.macro LINE a, b
+    .byte \a, \b
+.endm
+
+.include "src/rab.asm"

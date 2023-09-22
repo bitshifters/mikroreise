@@ -32,7 +32,7 @@
     on_pattern 4, seq_fade_up_3d_palette_medium
     on_pattern 4, seq_do_dot_tunnel_1
     on_pattern 6, seq_fade_up_3d_palette_medium
-    on_pattern 6, seq_do_dot_tunnel_2           ; <= DEMO NAME?
+    on_pattern 6, seq_do_rab                   ; <= DEMO NAME?
     
     ; 6,7,6,7 = bass kick added, short melody     => we're off!
     on_pattern 8, seq_do_square_twist
@@ -49,14 +49,13 @@
     on_pattern 20, seq_do_floating_circles
 
     ; 18,19,18,19 = both melodies                 => full intensity
-    on_pattern 24, seq_do_starfield_fast        ; <= GREETS HERE!
+    on_pattern 24, seq_do_rab                    ; <= GREETS HERE!
 
     ; 20,21,20,21 = both melodies w/ highlights   => full intensity (show off)
     on_pattern 28, seq_do_square_twist
 
     ; 22,23,24,25 = percusion drops out           => the end
     on_pattern 32, seq_do_sine_dots_2
-    on_pattern 35, seq_do_starfield_fast        ; <= CREDITS HERE!
 
     ; THE END.
     end_script
@@ -207,6 +206,19 @@ seq_do_floating_circles:
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_circles
     end_script
 
+seq_do_rab:
+    call_0 set_palette_for_3d_scene
+    gosub seq_set_rab_model
+    write_fp object_dir_z, 2.0
+    write_fp object_pos+8, 0.0
+    write_fp object_rot_speed+0, 0.0
+    write_fp object_rot_speed+4, 0.5
+    write_fp object_rot_speed+8, 0.5
+
+    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_outline
+    end_script
+
+
 
 ; ============================================================================
 
@@ -239,6 +251,18 @@ seq_set_circle_model:
     write_addr object_face_indices_p, 0
     write_addr object_edge_list_per_face_p, 0
     write_addr object_edge_indices_p, 0
+    end_script
+
+seq_set_rab_model:
+    write_fp object_scale, 8.0
+    write_fp object_rot+0, 128
+    write_addr object_num_verts, Rab_Num_Verts
+    write_addr object_num_faces, 0
+    write_addr object_num_edges, Rab_Num_Lines
+    write_addr object_verts_p, model_rab_verts
+    write_addr object_face_indices_p, 0
+    write_addr object_edge_list_per_face_p, 0
+    write_addr object_edge_indices_p, model_rab_edge_indices
     end_script
 
 seq_set_square_tunnel:
