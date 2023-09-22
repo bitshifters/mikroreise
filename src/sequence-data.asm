@@ -223,7 +223,11 @@ seq_do_credits_1:
     write_fp object_dir_max_z, 256.0
 
     ; 1. Rab
-    gosub seq_set_rab_model
+    write_addr object_num_verts, Rab_Num_Verts
+    write_addr object_num_edges, Rab_Num_Lines
+    write_addr object_verts_p, model_rab_verts
+    write_addr object_edge_indices_p, model_rab_edge_indices
+
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
@@ -242,50 +246,74 @@ seq_do_credits_1:
     write_vec3 object_rot_speed, 0.0, 0.03, -0.02
     wait 111
 
-    ; 3. Rab
-    gosub seq_set_rab_model
+    ; 3. Dsr
+    write_addr object_num_verts, Dsr_Num_Verts
+    write_addr object_num_edges, Dsr_Num_Lines
+    write_addr object_verts_p, model_dsr_verts
+    write_addr object_edge_indices_p, model_dsr_edge_indices
+
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.0, 0.1
     wait 111
 
-    ; 4. Rab
-    gosub seq_set_rab_model
+    ; 4. Lgc
+    write_addr object_num_verts, Lgc_Num_Verts
+    write_addr object_num_edges, Lgc_Num_Lines
+    write_addr object_verts_p, model_lgc_verts
+    write_addr object_edge_indices_p, model_lgc_edge_indices
+
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
-    write_vec3 object_rot, 0.0, 0.0, 0.0
+    write_vec3 object_rot, 20.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.5, 0.0, 0.0
     wait 111
 
-    ; 5. Rab
-    gosub seq_set_rab_model
+    ; 5. Prx
+    write_addr object_num_verts, Prx_Num_Verts
+    write_addr object_num_edges, Prx_Num_Lines
+    write_addr object_verts_p, model_prx_verts
+    write_addr object_edge_indices_p, model_prx_edge_indices
+
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 128.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.5, 0.0
     wait 111
 
-    ; 6. Rab
-    gosub seq_set_rab_model
+    ; 6. Rft
+    write_addr object_num_verts, Rft_Num_Verts
+    write_addr object_num_edges, Rft_Num_Lines
+    write_addr object_verts_p, model_rft_verts
+    write_addr object_edge_indices_p, model_rft_edge_indices
+
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.01, 0.01, 0.0
     wait 111
 
-    ; 7. Rab
-    gosub seq_set_rab_model
+    ; 7. Nva
+    write_addr object_num_verts, Nva_Num_Verts
+    write_addr object_num_edges, Nva_Num_Lines
+    write_addr object_verts_p, model_nva_verts
+    write_addr object_edge_indices_p, model_nva_edge_indices
+
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, -0.02, 0.0, -0.02
     wait 111
 
-    ; 8. Rab
-    gosub seq_set_rab_model
-    write_fp object_pos+8, 172.0
-    write_fp object_dir_z, -2.0
+    ; 8. Dln
+    write_addr object_num_verts, Dln_Num_Verts
+    write_addr object_num_edges, Dln_Num_Lines
+    write_addr object_verts_p, model_dln_verts
+    write_addr object_edge_indices_p, model_dln_edge_indices
+
+    write_fp object_pos+8, -32.0
+    write_fp object_dir_z, -0.02
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, -0.02, 0.0, -0.02
     wait 112

@@ -117,13 +117,15 @@ dots_draw_all:
 
 ; Generated code with X values and Y mirroring baked in.
 dots_gen_code_a:
-    .include "src/dot_plot_generated.asm"
+    ;.include "src/dot_plot_generated.asm"
+    .incbin "build/dot_gen_code_a.bin"
     ; TODO: Generate code at init time from X table.
     mov pc, lr
 
 ; Generated code with X values and Y mirroring baked in.
 dots_gen_code_b:
-    .include "src/dot_plot_generated_b.asm"
+    ;.include "src/dot_plot_generated_b.asm"
+    .incbin "build/dot_gen_code_b.bin"
     ; TODO: Generate code at init time from X table.
     mov pc, lr
 

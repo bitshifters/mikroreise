@@ -206,7 +206,13 @@ model_circle_verts:
     .byte \a, \b
 .endm
 
-.include "src/rab.asm"
-.include "src/slp.asm"
+.include "src/obj/rab.asm"
+.include "src/obj/slp.asm"
+.include "src/obj/rft.asm"
+.include "src/obj/prx.asm"
+.include "src/obj/nva.asm"
+.include "src/obj/lgc.asm"
+.include "src/obj/dsr.asm"
+.include "src/obj/dln.asm"
 
 ; ============================================================================

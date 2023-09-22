@@ -507,8 +507,10 @@ project_3d_scene:
 
     .if _DEBUG
     cmp r5, #0
+    bgt .2
     adrle r0,errbehindcamera    ; and flag an error
     swile OS_GenerateError      ; when necessary
+    .2:
     ; TODO: Probably just cull these objects?
 
     ; Limited precision.
