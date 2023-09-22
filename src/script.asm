@@ -259,6 +259,11 @@ script_write_addr:
     .long script_write_addr, \address, \value
 .endm
 
+.macro write_fp address, fp_value
+    write_addr \address, MATHS_CONST_1*\fp_value
+.endm
+
+
 ; NOTE: Forked program not guaranteed to be executed on this frame as the PC
 ;       is inserted into the first free slot in the program list. If this is
 ;       before the currently running program then it won't get around until

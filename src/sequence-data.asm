@@ -35,8 +35,8 @@
     on_pattern 6, seq_do_dot_tunnel_2           ; <= DEMO NAME?
     
     ; 6,7,6,7 = bass kick added, short melody     => we're off!
-    on_pattern 8, seq_do_floating_cube
-    on_pattern 10, seq_do_square_twist
+    on_pattern 8, seq_do_square_twist
+    ;on_pattern 10, seq_do_square_twist_2
 
     ; 9,8,9,8 = percusion added                   => more energy
     on_pattern 12, seq_do_solid_beat_cube
@@ -52,10 +52,11 @@
     on_pattern 24, seq_do_starfield_fast        ; <= GREETS HERE!
 
     ; 20,21,20,21 = both melodies w/ highlights   => full intensity (show off)
-    on_pattern 28, seq_do_sine_dots_2
+    on_pattern 28, seq_do_square_twist
 
     ; 22,23,24,25 = percusion drops out           => the end
-    on_pattern 32, seq_do_starfield_fast        ; <= CREDITS HERE!
+    on_pattern 32, seq_do_sine_dots_2
+    on_pattern 35, seq_do_starfield_fast        ; <= CREDITS HERE!
 
     ; THE END.
     end_script
@@ -143,7 +144,7 @@ seq_do_starfield_fast:
 
 seq_do_dot_tunnel_1:
     call_0 dot_tunnel_patch_to_straight
-    write_addr dot_tunnel_speed, 1
+    write_addr dot_tunnel_speed, 2
     call_3 fx_set_layer_fns, 1, dot_tunnel_update,   dot_tunnel_draw_anaglyph_spiral
     end_script
 
@@ -154,18 +155,24 @@ seq_do_dot_tunnel_2:
     end_script
 
 seq_do_square_twist:
+    gosub seq_set_square_tunnel
+    call_3 fx_set_layer_fns, 1, scene2d_update,      scene2d_draw_anaglyph
+    end_script
+
+seq_do_square_twist_2:
+    gosub seq_set_square_tunnel_2
     call_3 fx_set_layer_fns, 1, scene2d_update,      scene2d_draw_anaglyph
     end_script
 
 seq_do_solid_beat_cube:
     gosub seq_set_cube_model
-    write_addr object_pos+8, MATHS_CONST_1*36      ; object_pos_z = 16.0
+    write_fp object_pos+8, 36.0      ; object_pos_z = 36.0
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
     end_script
 
 seq_do_wire_beat_cube:
     gosub seq_set_cube_model
-    write_addr object_pos+8, MATHS_CONST_1*36      ; object_pos_z = 16.0
+    write_fp object_pos+8, 36.0      ; object_pos_z = 36.0
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
     end_script
 
@@ -234,5 +241,29 @@ seq_set_circle_model:
     write_addr object_edge_indices_p, 0
     end_script
 
+seq_set_square_tunnel:
+    write_addr scene2d_object_vert_p, model_square_verts
+    write_addr scene2d_object_num_verts, 4
+    write_addr scene2d_object_num, 6            ; for ARM2
+    write_fp scene2d_object_z_speed, 1.152      ; z-=speed
+    write_fp scene2d_object_rot_speed, 0.5      ; brads/frame
+    write_fp scene2d_object_twist, 16           ; brads/square
+    write_fp scene2d_object_gap, 32             ; z-=gap
+    write_fp scene2d_object_spawn_z, 128        ; in z
+    write_fp scene2d_object_spawn_adjust_rot, (32*0.5)  ; rot*gap
+    end_script
+
+seq_set_square_tunnel_2:
+    ; TODO: None of these numbers look good!
+    write_addr scene2d_object_vert_p, model_square_verts
+    write_addr scene2d_object_num_verts, 4
+    write_addr scene2d_object_num, 6
+    write_fp scene2d_object_z_speed, 1.152      ; z-=speed => gap/beat_frames = 32/27.7777
+    write_fp scene2d_object_rot_speed, 1.0      ; brads/frame
+    write_fp scene2d_object_twist, 8           ; brads/square
+    write_fp scene2d_object_gap, 24             ; z-=gap
+    write_fp scene2d_object_spawn_z, 128        ; in z
+    write_fp scene2d_object_spawn_adjust_rot, (8*1.0)  ; rot*gap
+    end_script
 
 ; ============================================================================

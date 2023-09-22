@@ -48,11 +48,32 @@ scene2d_object_pos:
 scene2d_object_rot:
     .long 0
 
-scene2d_object_speed:
+scene2d_object_vert_p:
+    .long model_square_verts
+
+scene2d_object_num_verts:
+    .long 4
+
+scene2d_object_z_speed:
     FLOAT_TO_FP SQ_SPEED
 
-scene2d_object_adjust:
+scene2d_object_rot_speed:
+    FLOAT_TO_FP SQ_ROT
+
+scene2d_object_spawn_adjust_rot:
     FLOAT_TO_FP SQ_ROT*SQ_GAP;/SQ_SPEED)
+
+scene2d_object_num:
+    .long SQ_NUM
+
+scene2d_object_twist:
+    FLOAT_TO_FP SQ_TWIST
+
+scene2d_object_gap:
+    FLOAT_TO_FP SQ_GAP
+
+scene2d_object_spawn_z:
+    FLOAT_TO_FP SQ_BACK
 
 ; TODO: Move camera, spawn objects, move objects etc.
 scene2d_update:
@@ -62,7 +83,10 @@ scene2d_update:
     ldr r0, scene2d_object_buffer_p
     str r0, scene2d_object_list_p
 
-    mov r11, #SQ_NUM    ; num objects.
+    ldr r0, scene2d_object_pos+8    ; object_pos_z
+    str r0, [sp, #-4]!              ; stash this on stack.
+
+    ldr r11, scene2d_object_num
     ldr r1, scene2d_object_rot
 .1:
 
@@ -73,8 +97,8 @@ scene2d_update:
     ; R5=Object scale.
 
     adr r0, scene2d_object_pos
-    adr r2, model_square_verts
-    mov r3, #4
+    ldr r2, scene2d_object_vert_p
+    ldr r3, scene2d_object_num_verts
     mov r5, #MATHS_CONST_1*SQ_SCALE
 
     stmfd sp!, {r1,r11}
@@ -82,12 +106,14 @@ scene2d_update:
     ldmfd sp!, {r1,r11}
 
     ; Twist.
-    sub r1, r1, #SQ_TWIST*MATHS_CONST_1
+    ldr r2, scene2d_object_twist
+    sub r1, r1, r2
     bic r1, r1, #0xff000000         ; brads
 
     ; Step forward.
+    ldr r2, scene2d_object_gap
     ldr r0, scene2d_object_pos+8    ; object_pos_z
-    sub r0, r0, #SQ_GAP*MATHS_CONST_1
+    sub r0, r0, r2
     str r0, scene2d_object_pos+8    ; object_pos_z
 
     subs r11, r11, #1
@@ -102,18 +128,23 @@ scene2d_update:
     ldr r1, scene2d_object_rot
     
     ; TODO: Move remaining params to vars and bulk load.
-    ldr r2, scene2d_object_speed
-    ldr r3, scene2d_object_adjust
+    ldr r2, scene2d_object_z_speed
+    ldr r4, scene2d_object_rot_speed
+    ldr r5, scene2d_object_spawn_z
+    ldr r6, scene2d_object_gap
 
-    ldr r0, scene2d_object_pos+8    ; object_pos_z
-    add r0, r0, #SQ_NUM*SQ_GAP*MATHS_CONST_1
-    sub r0, r0, r2
-    cmp r0, #MATHS_CONST_1*(SQ_BACK-SQ_GAP)
-    movle r0, #SQ_BACK*MATHS_CONST_1
-    addle r1, r1, r3
+    ldr r0, [sp], #4                ; pull object_pos_z from stack.
+    sub r0, r0, r2                  ; object_z_speed
+
+    sub r7, r5, r0                  ; object_pos_z - object_spawn_z
+    cmp r7, r6                      ; distance travelled >= gap?
+    ; Respawn at spawn_z and adjust spawn rotation.
+    movge r0, r5
+    ldrge r3, scene2d_object_spawn_adjust_rot
+    addge r1, r1, r3
     str r0, scene2d_object_pos+8    ; object_pos_z
 
-    add r1, r1, #SQ_ROT*MATHS_CONST_1
+    add r1, r1, r4                  ; object_rot_speed
     bic r1, r1, #0xff000000         ; brads
     str r1, scene2d_object_rot
 
