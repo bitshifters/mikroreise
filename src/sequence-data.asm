@@ -33,7 +33,7 @@
     on_pattern 4, seq_fade_up_3d_palette_medium
     on_pattern 4, seq_do_dot_tunnel_1
     on_pattern 6, seq_fade_up_3d_palette_medium
-    on_pattern 6, seq_do_dot_tunnel_2           ; <= DEMO NAME?
+    on_pattern 6, seq_do_demologo                  ; <= DEMO NAME?
     
     ; 6,7,6,7 = bass kick added, short melody     => we're off!
     on_pattern 8, seq_do_square_twist
@@ -41,7 +41,13 @@
 
     ; 9,8,9,8 = percusion added                   => more energy
     on_pattern 12, seq_do_solid_beat_cube
-    on_pattern 14, seq_do_wire_beat_cube
+    on_pattern 12.5, seq_do_wire_beat_cube
+    on_pattern 13, seq_do_solid_beat_cube
+    on_pattern 13.5, seq_do_wire_beat_cube
+    on_pattern 14, seq_do_solid_beat_cube
+    on_pattern 14.5, seq_do_wire_beat_cube
+    on_pattern 15, seq_do_solid_beat_cube
+    on_pattern 15.5, seq_do_wire_beat_cube
 
     ; 10,11,12,11 = short melody drops out        => slow down
     on_pattern 16, seq_do_sine_dots_1
@@ -217,6 +223,40 @@ seq_do_floating_circles:
     write_addr object_rot_speed+8, MATHS_CONST_1*1.5
 
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_circles
+    end_script
+
+seq_do_demologo:
+    call_3 fx_set_layer_fns, 1, update_3d_scene_move_in_z,     anaglyph_draw_3d_scene_as_outline
+    call_3 fx_set_layer_fns, 0, update_3d_scene_from_vars,     screen_cls
+
+    gosub seq_set_2d_model
+    write_fp object_dir_min_z, -50.0
+    write_fp object_dir_max_z, 256.0
+
+    write_addr object_num_verts, Mik_Num_Verts
+    write_addr object_num_edges, Mik_Num_Lines
+    write_addr object_verts_p, model_mik_verts
+    write_addr object_edge_indices_p, model_mik_edge_indices
+
+    write_fp object_pos+8, -32.0
+    write_fp object_dir_z, -0.05
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.02
+
+    wait_secs PatternLength_Secs*0.5
+    write_vec3 object_rot_speed, 0.0, 0.0, -0.02
+
+    wait_secs PatternLength_Secs*0.5
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.02
+
+    wait_secs PatternLength_Secs*0.5
+    write_vec3 object_rot_speed, 0.0, 0.0, -0.02
+
+    call_3 palette_init_fade_to_black, 0, Fade_Med, palette_red_cyan
+    call_3 fx_set_layer_fns, 2, palette_update_fade_to_black,  0
+
+    wait_secs PatternLength_Secs*0.5
+    call_3 fx_set_layer_fns, 0, 0,     screen_cls
     end_script
 
 seq_do_deadline:

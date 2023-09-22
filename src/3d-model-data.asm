@@ -226,5 +226,6 @@ model_circle_verts:
 .include "src/obj/crt.asm"
 .include "src/obj/mst.asm"
 .include "src/obj/iph.asm"
+.include "src/obj/mik.asm"
 
 ; ============================================================================
