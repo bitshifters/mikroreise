@@ -75,6 +75,63 @@ scene2d_object_gap:
 scene2d_object_spawn_z:
     FLOAT_TO_FP SQ_BACK
 
+; ============================================================================
+
+; R3=radius [not fp!]
+; R7=number of sides.
+; R8=ptr to VECTOR3 buffer.
+make_2d_object:
+    str lr, [sp, #-4]!
+
+    ldr r9, scene3d_reciprocal_table_p
+    ldr r12, [r9, r7, lsl #2+LibDivide_Reciprocal_s]  ; 1/num
+    mov r12, r12, asl #8        ; 256/num
+
+    mov r10, #0     ; count.
+    mov r11, #0     ; brads.
+.1:
+    mov r0, r11
+    bl sin_cos
+    ; R0=sin(a)
+    ; R1=cos(a)
+
+    mul r0, r3, r0          ; x=radius*sin(a)
+    mul r1, r3, r1          ; y=radius*cos(a)
+    mov r2, #0              ; z=0
+
+    stmia r8!, {r0-r2}
+
+    ; Increment brad.
+    add r11, r11, r12
+
+    add r10, r10, #1
+    cmp r10, r7
+    blt .1
+
+    ldr pc, [sp], #4
+
+scene2d_init:
+    str lr, [sp, #-4]!
+
+    mov r3, #16
+    mov r7, #3
+    adr r8, model_triangle_verts
+    bl make_2d_object
+
+    mov r3, #16
+    mov r7, #5
+    adr r8, model_pentagon_verts
+    bl make_2d_object
+
+    mov r3, #16
+    mov r7, #6
+    adr r8, model_hexagon_verts
+    bl make_2d_object
+
+    ldr pc, [sp], #4
+
+; ============================================================================
+
 ; TODO: Move camera, spawn objects, move objects etc.
 scene2d_update:
     str lr, [sp, #-4]!
@@ -382,6 +439,15 @@ model_square_verts:
     VECTOR3  16.0,  16.0, 0.0
     VECTOR3  16.0, -16.0, 0.0
     VECTOR3 -16.0, -16.0, 0.0
+
+model_triangle_verts:
+    .skip 3*VECTOR3_SIZE
+
+model_pentagon_verts:
+    .skip 5*VECTOR3_SIZE
+
+model_hexagon_verts:
+    .skip 6*VECTOR3_SIZE
 
 ; ============================================================================
 ; TODO: Model data for: triangle, pentagon, hexagon, stars, seagull etc.

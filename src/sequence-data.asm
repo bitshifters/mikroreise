@@ -16,6 +16,7 @@
     ; Init FX modules.
     call_0 init_3d_scene            ; sets 3D palette.
     call_0 starfield_init
+    call_0 scene2d_init
 
 	; Setup layers of FX.
     call_3 fx_set_layer_fns, 0, 0,                   screen_cls
@@ -36,7 +37,7 @@
     
     ; 6,7,6,7 = bass kick added, short melody     => we're off!
     on_pattern 8, seq_do_square_twist
-    ;on_pattern 10, seq_do_square_twist_2
+    on_pattern 10, seq_do_square_twist_2
 
     ; 9,8,9,8 = percusion added                   => more energy
     on_pattern 12, seq_do_solid_beat_cube
@@ -46,13 +47,13 @@
     on_pattern 16, seq_do_sine_dots_1
 
     ; 16,17,15,14 = long melody w/ percusion      => high intensity 
-    on_pattern 20, seq_do_rab                    ; <= GREETS HERE!
+    on_pattern 20, seq_do_credits_1                    ; <= GREETS HERE!
 
     ; 18,19,18,19 = both melodies                 => full intensity
     on_pattern 24, seq_do_floating_circles
 
     ; 20,21,20,21 = both melodies w/ highlights   => full intensity (show off)
-    on_pattern 28, seq_do_rab                    ; <= GREETS HERE!
+    on_pattern 28, seq_do_credits_2                   ; <= GREETS HERE!
 
     ; 22,23,24,25 = percusion drops out           => the end
     on_pattern 32, seq_do_sine_dots_2
@@ -146,13 +147,13 @@ seq_do_starfield_fast:
 
 seq_do_dot_tunnel_1:
     call_0 dot_tunnel_patch_to_straight
-    write_addr dot_tunnel_speed, 2
+    write_addr dot_tunnel_speed, 1
     call_3 fx_set_layer_fns, 1, dot_tunnel_update,   dot_tunnel_draw_anaglyph_spiral
     end_script
 
 seq_do_dot_tunnel_2:
     call_0 dot_tunnel_patch_to_curved
-    write_addr dot_tunnel_speed, 4
+    write_addr dot_tunnel_speed, 2
     call_3 fx_set_layer_fns, 1, dot_tunnel_update,   dot_tunnel_draw_anaglyph_spiral
     end_script
 
@@ -212,7 +213,7 @@ seq_do_floating_circles:
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_circles
     end_script
 
-seq_do_rab:
+seq_do_credits_1:
     call_0 set_palette_for_3d_scene
     call_3 fx_set_layer_fns, 1, update_3d_scene_move_in_z,     anaglyph_draw_3d_scene_as_outline
     call_3 fx_set_layer_fns, 2, update_3d_scene_from_vars,     0
@@ -248,7 +249,7 @@ seq_do_rab:
     gosub seq_set_rab_model
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
-    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot, 0.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.5, 0.0, 0.0
     wait 111
 
@@ -256,7 +257,7 @@ seq_do_rab:
     gosub seq_set_rab_model
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
-    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot, 128.0, 128.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.5, 0.0
     wait 111
 
@@ -288,6 +289,81 @@ seq_do_rab:
 
     end_script
 
+seq_do_credits_2:
+    call_0 set_palette_for_3d_scene
+    call_3 fx_set_layer_fns, 1, update_3d_scene_move_in_z,     anaglyph_draw_3d_scene_as_outline
+    call_3 fx_set_layer_fns, 2, update_3d_scene_from_vars,     0
+
+    write_fp object_dir_min_z, -50.0
+    write_fp object_dir_max_z, 256.0
+
+    ; 1. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, -50.0
+    write_fp object_dir_z, 2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.0, -0.03, 0.02
+    wait 111
+
+    ; 2. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, -50.0
+    write_fp object_dir_z, 2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.0, 0.03, -0.02
+    wait 111
+
+    ; 3. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, -50.0
+    write_fp object_dir_z, 2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.1
+    wait 111
+
+    ; 4. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, -50.0
+    write_fp object_dir_z, 2.0
+    write_vec3 object_rot, 0.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.5, 0.0, 0.0
+    wait 111
+
+    ; 5. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, -50.0
+    write_fp object_dir_z, 2.0
+    write_vec3 object_rot, 128.0, 128.0, 0.0
+    write_vec3 object_rot_speed, 0.0, 0.5, 0.0
+    wait 111
+
+    ; 6. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, -50.0
+    write_fp object_dir_z, 2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.01, 0.01, 0.0
+    wait 111
+
+    ; 7. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, -50.0
+    write_fp object_dir_z, 2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, -0.02, 0.0, -0.02
+    wait 111
+
+    ; 8. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, -50.0
+    write_fp object_dir_z, 2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, -0.02, 0.0, -0.02
+    wait 112
+
+    call_3 fx_set_layer_fns, 2, 0,                             0
+
+    end_script
 
 
 ; ============================================================================
@@ -348,16 +424,16 @@ seq_set_square_tunnel:
     end_script
 
 seq_set_square_tunnel_2:
-    ; TODO: None of these numbers look good!
-    write_addr scene2d_object_vert_p, model_square_verts
-    write_addr scene2d_object_num_verts, 4
-    write_addr scene2d_object_num, 6
-    write_fp scene2d_object_z_speed, 1.152      ; z-=speed => gap/beat_frames = 32/27.7777
-    write_fp scene2d_object_rot_speed, 1.0      ; brads/frame
-    write_fp scene2d_object_twist, 8           ; brads/square
-    write_fp scene2d_object_gap, 24             ; z-=gap
+    ; TODO: These numbers are the same as above!
+    write_addr scene2d_object_vert_p, model_triangle_verts
+    write_addr scene2d_object_num_verts, 3
+    write_addr scene2d_object_num, 6            ; for ARM2
+    write_fp scene2d_object_z_speed, 1.152      ; z-=speed
+    write_fp scene2d_object_rot_speed, 0.5      ; brads/frame
+    write_fp scene2d_object_twist, 16           ; brads/square
+    write_fp scene2d_object_gap, 32             ; z-=gap
     write_fp scene2d_object_spawn_z, 128        ; in z
-    write_fp scene2d_object_spawn_adjust_rot, (8*1.0)  ; rot*gap
+    write_fp scene2d_object_spawn_adjust_rot, (32*0.5)  ; rot*gap
     end_script
 
 ; ============================================================================

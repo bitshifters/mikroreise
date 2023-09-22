@@ -146,7 +146,6 @@ set_eye_distance:
     str r0, LeftEye_X_Pos
     mov pc, lr
 
-
 init_3d_scene:
     str lr, [sp, #-4]!
 
@@ -156,27 +155,10 @@ init_3d_scene:
     bl set_palette_for_3d_scene
 
     ; Make circle object.
+    mov r3, #Model_Circle_Radius
+    mov r7, #Model_Circle_Num_Verts
     ldr r8, circle_verts_p 
-    mov r10, #Model_Circle_Num_Verts-1     ; count.
-    mov r11, #0     ; brads.
-.1:
-    mov r0, r11
-    bl sin_cos
-    ; R0=sin(a)
-    ; R1=cos(a)
-
-    mov r3, #Model_Circle_Radius    ; radius
-    mul r0, r3, r0          ; x=radius*sin(a)
-    mul r1, r3, r1          ; y=radius*cos(a)
-    mov r2, #0              ; z=0
-
-    stmia r8!, {r0-r2}
-
-    ; Increment brad.
-    add r11, r11, #PRECISION_MULTIPLIER*256/Model_Circle_Num_Verts
-
-    subs r10, r10, #1
-    bpl .1
+    bl make_2d_object
 
     ldr pc, [sp], #4
 
@@ -503,7 +485,7 @@ project_3d_scene:
 
     ; Project vertices to screen.
     ldr r2, transformed_verts_p
-    ldr r9, scene2d_reciprocal_table_p
+    ldr r9, scene3d_reciprocal_table_p
     ldr r1, object_num_verts
     ldr r10, projected_verts_p
     .1:
