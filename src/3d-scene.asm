@@ -69,6 +69,12 @@ object_scale:
 object_dir_z:
     FLOAT_TO_FP 1.0
 
+object_dir_max_z:
+    FLOAT_TO_FP 128.0
+
+object_dir_min_z:
+    FLOAT_TO_FP -24.0
+
 object_rot_speed:
     VECTOR3 0.5, 0.5, 0.5
 
@@ -298,6 +304,24 @@ transform_3d_scene:
 
     ldr pc, [sp], #4
 
+update_3d_scene_move_in_z:
+    ldr r0, object_pos+8            ; POSTION_Z
+    ldr r1, object_dir_z
+    add r0, r0, r1
+
+    ; TODO: Easing functions when close to min/max.
+
+    ldr r2, object_dir_max_z
+    ldr r3, object_dir_min_z
+    cmp r0, r2
+    mvnge r1, r1                    ; invert dir
+    cmp r0, r3
+    mvnle r1, r1                    ; invert dir
+
+    str r0, object_pos+8
+    str r1, object_dir_z
+
+
 update_3d_scene_from_vars:
     str lr, [sp, #-4]!
 
@@ -319,17 +343,6 @@ update_3d_scene_from_vars:
     add r0, r0, r1
     bic r0, r0, #0xff000000         ; brads
     str r0, object_rot+8
-
-
-    ldr r0, object_pos+8            ; POSTION_Z
-    ldr r1, object_dir_z
-    add r0, r0, r1
-    cmp r0, #128.0*PRECISION_MULTIPLIER
-    mvnge r1, r1                    ; invert dir
-    cmp r0, #-24.0*PRECISION_MULTIPLIER
-    mvnle r1, r1                    ; invert dir
-    str r0, object_pos+8
-    str r1, object_dir_z
 
     ; Transform the object into world space.
     bl transform_3d_scene

@@ -263,6 +263,12 @@ script_write_addr:
     write_addr \address, MATHS_CONST_1*\fp_value
 .endm
 
+.macro write_vec3 address, x, y, z
+    write_addr 0+\address, MATHS_CONST_1*\x
+    write_addr 4+\address, MATHS_CONST_1*\y
+    write_addr 8+\address, MATHS_CONST_1*\z
+.endm
+
 
 ; NOTE: Forked program not guaranteed to be executed on this frame as the PC
 ;       is inserted into the first free slot in the program list. If this is

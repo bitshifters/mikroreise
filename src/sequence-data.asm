@@ -32,7 +32,7 @@
     on_pattern 4, seq_fade_up_3d_palette_medium
     on_pattern 4, seq_do_dot_tunnel_1
     on_pattern 6, seq_fade_up_3d_palette_medium
-    on_pattern 6, seq_do_rab                   ; <= DEMO NAME?
+    on_pattern 6, seq_do_dot_tunnel_2           ; <= DEMO NAME?
     
     ; 6,7,6,7 = bass kick added, short melody     => we're off!
     on_pattern 8, seq_do_square_twist
@@ -46,16 +46,17 @@
     on_pattern 16, seq_do_sine_dots_1
 
     ; 16,17,15,14 = long melody w/ percusion      => high intensity 
-    on_pattern 20, seq_do_floating_circles
+    on_pattern 20, seq_do_rab                    ; <= GREETS HERE!
 
     ; 18,19,18,19 = both melodies                 => full intensity
-    on_pattern 24, seq_do_rab                    ; <= GREETS HERE!
+    on_pattern 24, seq_do_floating_circles
 
     ; 20,21,20,21 = both melodies w/ highlights   => full intensity (show off)
-    on_pattern 28, seq_do_square_twist
+    on_pattern 28, seq_do_rab                    ; <= GREETS HERE!
 
     ; 22,23,24,25 = percusion drops out           => the end
     on_pattern 32, seq_do_sine_dots_2
+    on_pattern 36, seq_do_bitshifters_with_fade_out ; <= CREDITS
 
     ; THE END.
     end_script
@@ -110,6 +111,7 @@ seq_fade_up_3d_palette_medium:
     end_script
 
 seq_do_sine_dots_1:
+    call_0 set_palette_for_3d_scene
     write_addr dots_visible, 0
     write_addr dots_y_t, 0
     write_addr dots_y_table_1_p, dots_y_table_1_no_adr
@@ -119,6 +121,7 @@ seq_do_sine_dots_1:
     end_script
 
 seq_do_sine_dots_2:
+    call_0 set_palette_for_3d_scene
     write_addr dots_visible, 0
     write_addr dots_y_t, Dots_Total/2
     write_addr dots_y_table_1_p, dots_y_table_1_b_no_adr
@@ -154,6 +157,7 @@ seq_do_dot_tunnel_2:
     end_script
 
 seq_do_square_twist:
+    call_0 set_palette_for_3d_scene
     gosub seq_set_square_tunnel
     call_3 fx_set_layer_fns, 1, scene2d_update,      scene2d_draw_anaglyph
     end_script
@@ -164,12 +168,14 @@ seq_do_square_twist_2:
     end_script
 
 seq_do_solid_beat_cube:
+    call_0 set_palette_for_3d_scene
     gosub seq_set_cube_model
     write_fp object_pos+8, 36.0      ; object_pos_z = 36.0
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
     end_script
 
 seq_do_wire_beat_cube:
+    call_0 set_palette_for_3d_scene
     gosub seq_set_cube_model
     write_fp object_pos+8, 36.0      ; object_pos_z = 36.0
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
@@ -208,14 +214,78 @@ seq_do_floating_circles:
 
 seq_do_rab:
     call_0 set_palette_for_3d_scene
-    gosub seq_set_rab_model
-    write_fp object_dir_z, 2.0
-    write_fp object_pos+8, 0.0
-    write_fp object_rot_speed+0, 0.0
-    write_fp object_rot_speed+4, 0.5
-    write_fp object_rot_speed+8, 0.5
+    call_3 fx_set_layer_fns, 1, update_3d_scene_move_in_z,     anaglyph_draw_3d_scene_as_outline
+    call_3 fx_set_layer_fns, 2, update_3d_scene_from_vars,     0
 
-    call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_outline
+    write_fp object_dir_min_z, -50.0
+    write_fp object_dir_max_z, 256.0
+
+    ; 1. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, 172.0
+    write_fp object_dir_z, -2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.0, -0.03, 0.02
+    wait 111
+
+    ; 2. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, 172.0
+    write_fp object_dir_z, -2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.0, 0.03, -0.02
+    wait 111
+
+    ; 3. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, 172.0
+    write_fp object_dir_z, -2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.1
+    wait 111
+
+    ; 4. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, 172.0
+    write_fp object_dir_z, -2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.5, 0.0, 0.0
+    wait 111
+
+    ; 5. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, 172.0
+    write_fp object_dir_z, -2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.0, 0.5, 0.0
+    wait 111
+
+    ; 6. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, 172.0
+    write_fp object_dir_z, -2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.01, 0.01, 0.0
+    wait 111
+
+    ; 7. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, 172.0
+    write_fp object_dir_z, -2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, -0.02, 0.0, -0.02
+    wait 111
+
+    ; 8. Rab
+    gosub seq_set_rab_model
+    write_fp object_pos+8, 172.0
+    write_fp object_dir_z, -2.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, -0.02, 0.0, -0.02
+    wait 112
+
+    call_3 fx_set_layer_fns, 2, 0,                             0
+
     end_script
 
 
