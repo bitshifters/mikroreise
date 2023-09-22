@@ -21,22 +21,41 @@
     call_3 fx_set_layer_fns, 0, 0,                   screen_cls
 
     ; This macro has to be front loaded at time 0.
+
+    ; 0,1,2,3 = long melody alone                 => slow build up
     on_pattern 0, seq_do_bitshifters_with_fade_out
     on_pattern 1, seq_do_torment_with_fade_out
     on_pattern 2, seq_fade_up_3d_palette_very_slow
     on_pattern 2, seq_do_starfield_with_fade_out
+
+    ; 4,5,4,5 = wobbly bass added                 => some movement added
     on_pattern 4, seq_fade_up_3d_palette_medium
     on_pattern 4, seq_do_dot_tunnel_1
     on_pattern 6, seq_fade_up_3d_palette_medium
-    on_pattern 6, seq_do_dot_tunnel_2
+    on_pattern 6, seq_do_dot_tunnel_2           ; <= DEMO NAME?
+    
+    ; 6,7,6,7 = bass kick added, short melody     => we're off!
     on_pattern 8, seq_do_floating_cube
     on_pattern 10, seq_do_square_twist
+
+    ; 9,8,9,8 = percusion added                   => more energy
     on_pattern 12, seq_do_solid_beat_cube
     on_pattern 14, seq_do_wire_beat_cube
+
+    ; 10,11,12,11 = short melody drops out        => slow down
     on_pattern 16, seq_do_sine_dots_1
+
+    ; 16,17,15,14 = long melody w/ percusion      => high intensity 
     on_pattern 20, seq_do_floating_circles
-    on_pattern 23, seq_do_starfield_fast
-    on_pattern 25, seq_do_sine_dots_2
+
+    ; 18,19,18,19 = both melodies                 => full intensity
+    on_pattern 24, seq_do_starfield_fast        ; <= GREETS HERE!
+
+    ; 20,21,20,21 = both melodies w/ highlights   => full intensity (show off)
+    on_pattern 28, seq_do_sine_dots_2
+
+    ; 22,23,24,25 = percusion drops out           => the end
+    on_pattern 32, seq_do_starfield_fast        ; <= CREDITS HERE!
 
     ; THE END.
     end_script
@@ -145,16 +164,9 @@ seq_do_solid_beat_cube:
     end_script
 
 seq_do_wire_beat_cube:
-    call_3 fx_set_layer_fns, 0, 0,                   screen_cls_to_white
-    call_0 drawline_set_to_bic
-
     gosub seq_set_cube_model
     write_addr object_pos+8, MATHS_CONST_1*36      ; object_pos_z = 16.0
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
-
-    wait_secs PatternLength_Secs*2
-    call_3 fx_set_layer_fns, 0, 0,                   screen_cls
-    call_0 drawline_set_to_orr
     end_script
 
 seq_do_cobra:
@@ -168,22 +180,12 @@ seq_do_cobra:
 seq_do_floating_cube:
     call_0 set_palette_for_3d_scene
 
-    ; INVERT COLOURS TO BLACK ON WHITE.
-    ; DOES THIS WORK ?????
-    call_3 fx_set_layer_fns, 0, 0,                   screen_cls_to_white
-    call_0 drawline_set_to_bic
-
     gosub seq_set_cube_model
     write_addr object_dir_z, MATHS_CONST_1*2
     write_addr object_rot_speed+0, MATHS_CONST_HALF
     write_addr object_rot_speed+4, MATHS_CONST_HALF
     write_addr object_rot_speed+8, MATHS_CONST_HALF
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_wire
-
-    wait_secs PatternLength_Secs*2
-    call_3 fx_set_layer_fns, 0, 0,                   screen_cls
-    call_0 drawline_set_to_orr
-
     end_script
 
 seq_do_floating_circles:

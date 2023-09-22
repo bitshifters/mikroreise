@@ -93,16 +93,16 @@ clean:
 ./build/icon.bin: ./data/gfx/icon001.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC_SPRITE) --name !django02 -o $@ $< 9
 
-./build/bs-logo.bin: ./data/gfx/bitshifters-isometric-anaglyph-colours-320x256x16-really-fixed-this-time.png $(PNG2ARC_DEPS)
+./build/bs-logo.bin: ./data/gfx/BITSHIFERS-logo-anaglyph.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
 
-./build/tmt-logo.bin: ./data/gfx/torment-albumcover-anaglyph-colours-320x256x16.png $(PNG2ARC_DEPS)
+./build/tmt-logo.bin: ./data/gfx/TORMENT-logo-anaglyph.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
 
 ##########################################################################
 ##########################################################################
 
-./build/three-dee.mod: ./data/music2/three-dee-V1.mod
+./build/three-dee.mod: ./data/music2/three-dee-V2.mod
 	$(COPY) $(subst /,\\,$+) $(subst /,\\,$@)
 
 ##########################################################################

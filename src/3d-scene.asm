@@ -414,8 +414,8 @@ anaglyph_draw_3d_scene_as_wire:             ; TODO: Dedupe this code!
     str r0, camera_pos+0        ; camera_pos_x
 
     ; Subtract blue & green.
-    ;mov r4, #7                 ; brightest red
-    mov r4, #8                  ; bic 0b1000
+    mov r4, #7                 ; brightest red
+    ;mov r4, #8                  ; bic 0b1000
     bl draw_3d_scene_wire
 
     ; Right eye.
@@ -423,8 +423,8 @@ anaglyph_draw_3d_scene_as_wire:             ; TODO: Dedupe this code!
     str r0, camera_pos+0        ; camera_pos_x
 
     ; Subtract red.
-    ;mov r4, #11                ; brightest cyan
-    mov r4, #4                  ; bic 0b0100
+    mov r4, #11                ; brightest cyan
+    ;mov r4, #4                  ; bic 0b0100
     bl draw_3d_scene_wire
 
     ldr pc, [sp], #4

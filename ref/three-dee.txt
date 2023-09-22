@@ -237,7 +237,10 @@ Patterns
 6,7,6,7 = bass kick added, short melody     => we're off!
 9,8,9,8 = percusion added                   => more energy
 10,11,12,11 = short melody drops out        => slow down
-15,14,13,14,13.. = long melody w/ all       => full intensity
+16,17,15,14 = long melody w/ percusion      => high intensity
+18,19,18,19 = both melodies                 => full intensity
+20,21,20,21 = both melodies w/ highlights   => full intensity (show off)
+22,23,24,25 = percusion drops out           => the end
 
 TODO
 ~~~
@@ -265,6 +268,9 @@ Tech
 ~~~
 - Bake in Skew code when not in _DEBUG.
 - Compress final exe w/ Shrinkler and add loader.
+- Remove unused IRQ handler?
+- Change app name and icon.
+
 
 MOAR BONUS
 ~~~
