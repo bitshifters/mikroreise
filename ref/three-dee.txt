@@ -255,11 +255,11 @@ TODO
 - Wire cube add background? OR INVERT? - DONE INVERT.
 - Y Sine dots add second variant - DONE
 - Vector balls change shape to circle - DONE
-- Add credits / greets => Vector font?
-- Wire cube ease bounce back
-- 2D scene add star shape
+- Add credits / greets => Vector font? - STARTED!
+- Wire cube ease bounce back / combine with beat cube - TODO
+- 2D scene add star shape?
+- Add credits screen.
 
-- Put Torment logo after first starfield?
 - Accelerate starfield (needs more pace but not too much!)
 - Accelerate dot tunnel (needs more pace but not too much!)
 
