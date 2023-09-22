@@ -2,7 +2,7 @@
 ; 3D Scene.
 ; ============================================================================
 
-.equ OBJ_MAX_VERTS, 128;32
+.equ OBJ_MAX_VERTS, 164
 .equ OBJ_MAX_FACES, 16
 
 .equ Model_Cube_Num_Verts, 8
@@ -338,9 +338,11 @@ update_3d_scene_from_vu_bars:
 	; R0 = word containing 1 byte per channel 1-4 VU bar heights 0-64
     ; TODO: Finalise mapping of vu levels to scale & rotation deltas.
   	mov r10, r0, lsr #24            ; channel 4 = scale
-	and r10, r10, #0xff
-    mov r1, #MATHS_CONST_1
-    add r1, r1, r10, asl #10         ; scale maps [1, 2]
+	ands r10, r10, #0xff
+    ldreq r1, object_scale
+    subeq r1, r1, #MATHS_CONST_1*0.01
+    movne r1, #MATHS_CONST_1
+    addne r1, r1, r10, asl #10         ; scale maps [1, 2]
     str r1, object_scale
 
     ; TODO: Make this code more compact?

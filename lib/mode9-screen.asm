@@ -31,8 +31,11 @@ screen_cls_with_word:
 .endif
 	mov pc, lr
 
-screen_cls_to_white:
-    mov r0, #-1
+screen_cls_grey:
+    .long 0x33333333
+
+screen_cls_to_grey:
+    ldr r0, screen_cls_grey
     b screen_cls_with_word
 
 .if 0

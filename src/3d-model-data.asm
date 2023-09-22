@@ -49,6 +49,9 @@ model_cube_face_indices:
 model_cube_colour_per_face:
     .byte 1,2,5,3,4,5,0,0
 
+model_cube_black_per_face:
+    .byte 0,0,0,0,0,0,0,0
+
 ; TODO: Determine this from model_cube_face_indices.
 ; TODO: Could also calculate face normals from these...
 ; TODO: Handle more than 32 total edges.
@@ -214,5 +217,14 @@ model_circle_verts:
 .include "src/obj/lgc.asm"
 .include "src/obj/dsr.asm"
 .include "src/obj/dln.asm"
+.include "src/obj/ate.asm"
+.include "src/obj/ymr.asm"
+.include "src/obj/smf.asm"
+.include "src/obj/pro.asm"
+.include "src/obj/hoo.asm"
+.include "src/obj/far.asm"
+.include "src/obj/crt.asm"
+.include "src/obj/mst.asm"
+.include "src/obj/iph.asm"
 
 ; ============================================================================

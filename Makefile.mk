@@ -68,8 +68,14 @@ build:
 ./build/archie-verse.bin: build ./build/archie-verse.o ./build/seq.o link_script.txt
 	$(VLINK) -T link_script.txt -b rawbin1 -o $@ build/archie-verse.o -Mbuild/linker.txt
 
+./build/dot_gen_code_a.bin: ./src/dot_plot_generated.asm
+	$(VASM) -L build/dot_a.txt -m250 -Fbin -opt-adr -o $@ $<
+
+./build/dot_gen_code_b.bin: ./src/dot_plot_generated_b.asm
+	$(VASM) -L build/dot_b.txt -m250 -Fbin -opt-adr -o $@ $<
+
 .PHONY:./build/archie-verse.o
-./build/archie-verse.o: build archie-verse.asm ./build/three-dee.mod ./build/assets.txt
+./build/archie-verse.o: build archie-verse.asm ./build/three-dee.mod ./build/assets.txt ./build/dot_gen_code_a.bin ./build/dot_gen_code_b.bin
 	$(VASM) -L build/compile.txt -m250 -Fvobj -opt-adr -o build/archie-verse.o archie-verse.asm
 
 ##########################################################################

@@ -195,10 +195,19 @@ scene2d_update:
 
     sub r7, r5, r0                  ; object_pos_z - object_spawn_z
     cmp r7, r6                      ; distance travelled >= gap?
+    blt .2
+
     ; Respawn at spawn_z and adjust spawn rotation.
-    movge r0, r5
-    ldrge r3, scene2d_object_spawn_adjust_rot
-    addge r1, r1, r3
+    mov r0, r5
+    ldr r3, scene2d_object_spawn_adjust_rot
+    add r1, r1, r3
+
+    ldr r11, scene2d_object_num
+    cmp r11, #SQ_NUM
+    addlt r11, r11, #1
+    str r11, scene2d_object_num
+    
+    .2:
     str r0, scene2d_object_pos+8    ; object_pos_z
 
     add r1, r1, r4                  ; object_rot_speed

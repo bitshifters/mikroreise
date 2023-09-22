@@ -76,4 +76,16 @@ debug_pattern_to_frame:
     frame_for_pattern 25
     frame_for_pattern 26
     frame_for_pattern 27
+    frame_for_pattern 28
+    frame_for_pattern 29
+    frame_for_pattern 30
+    frame_for_pattern 31
+    frame_for_pattern 32
+    frame_for_pattern 33
+    frame_for_pattern 34
+    frame_for_pattern 35
+    frame_for_pattern 36
+    frame_for_pattern 37
+    frame_for_pattern 38
+    frame_for_pattern 39
 .endif

@@ -171,14 +171,14 @@ seq_do_square_twist_2:
 seq_do_solid_beat_cube:
     call_0 set_palette_for_3d_scene
     gosub seq_set_cube_model
-    write_fp object_pos+8, 36.0      ; object_pos_z = 36.0
+    write_fp object_pos+8, 16.0
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
     end_script
 
 seq_do_wire_beat_cube:
     call_0 set_palette_for_3d_scene
     gosub seq_set_cube_model
-    write_fp object_pos+8, 36.0      ; object_pos_z = 36.0
+    write_fp object_pos+8, 16.0
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_wire
     end_script
 
@@ -278,7 +278,7 @@ seq_do_credits_1:
 
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
-    write_vec3 object_rot, 128.0, 128.0, 0.0
+    write_vec3 object_rot, 128.0, 148.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.5, 0.0
     wait 111
 
@@ -306,14 +306,14 @@ seq_do_credits_1:
     write_vec3 object_rot_speed, -0.02, 0.0, -0.02
     wait 111
 
-    ; 8. Dln
-    write_addr object_num_verts, Dln_Num_Verts
-    write_addr object_num_edges, Dln_Num_Lines
-    write_addr object_verts_p, model_dln_verts
-    write_addr object_edge_indices_p, model_dln_edge_indices
+    ; 8. Iph
+    write_addr object_num_verts, Iph_Num_Verts
+    write_addr object_num_edges, Iph_Num_Lines
+    write_addr object_verts_p, model_iph_verts
+    write_addr object_edge_indices_p, model_iph_edge_indices
 
-    write_fp object_pos+8, -32.0
-    write_fp object_dir_z, -0.02
+    write_fp object_pos+8, 172.0
+    write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, -0.02, 0.0, -0.02
     wait 112
@@ -331,64 +331,96 @@ seq_do_credits_2:
     write_fp object_dir_min_z, -50.0
     write_fp object_dir_max_z, 256.0
 
-    ; 1. Rab
-    gosub seq_set_rab_model
+    ; 1. Ate
+    write_addr object_num_verts, Ate_Num_Verts
+    write_addr object_num_edges, Ate_Num_Lines
+    write_addr object_verts_p, model_ate_verts
+    write_addr object_edge_indices_p, model_ate_edge_indices
+
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, -0.03, 0.02
     wait 111
 
-    ; 2. Rab
-    gosub seq_set_rab_model
+    ; 2. Ymr
+    write_addr object_num_verts, Ymr_Num_Verts
+    write_addr object_num_edges, Ymr_Num_Lines
+    write_addr object_verts_p, model_ymr_verts
+    write_addr object_edge_indices_p, model_ymr_edge_indices
+
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.03, -0.02
     wait 111
 
-    ; 3. Rab
-    gosub seq_set_rab_model
+    ; 3. Smf
+    write_addr object_num_verts, Smf_Num_Verts
+    write_addr object_num_edges, Smf_Num_Lines
+    write_addr object_verts_p, model_smf_verts
+    write_addr object_edge_indices_p, model_smf_edge_indices
+
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.0, 0.1
     wait 111
 
-    ; 4. Rab
-    gosub seq_set_rab_model
+    ; 4. Pro
+    write_addr object_num_verts, Pro_Num_Verts
+    write_addr object_num_edges, Pro_Num_Lines
+    write_addr object_verts_p, model_pro_verts
+    write_addr object_edge_indices_p, model_pro_edge_indices
+
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 0.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.5, 0.0, 0.0
     wait 111
 
-    ; 5. Rab
-    gosub seq_set_rab_model
+    ; 5. Mst
+    write_addr object_num_verts, Mst_Num_Verts
+    write_addr object_num_edges, Mst_Num_Lines
+    write_addr object_verts_p, model_mst_verts
+    write_addr object_edge_indices_p, model_mst_edge_indices
+
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 128.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.5, 0.0
     wait 111
 
-    ; 6. Rab
-    gosub seq_set_rab_model
+    ; 6. Hoo
+    write_addr object_num_verts, Hoo_Num_Verts
+    write_addr object_num_edges, Hoo_Num_Lines
+    write_addr object_verts_p, model_hoo_verts
+    write_addr object_edge_indices_p, model_hoo_edge_indices
+
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.01, 0.01, 0.0
     wait 111
 
-    ; 7. Rab
-    gosub seq_set_rab_model
+    ; 7. Far
+    write_addr object_num_verts, Far_Num_Verts
+    write_addr object_num_edges, Far_Num_Lines
+    write_addr object_verts_p, model_far_verts
+    write_addr object_edge_indices_p, model_far_edge_indices
+
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, -0.02, 0.0, -0.02
     wait 111
 
-    ; 8. Rab
-    gosub seq_set_rab_model
+    ; 8. Crt
+    write_addr object_num_verts, Crt_Num_Verts
+    write_addr object_num_edges, Crt_Num_Lines
+    write_addr object_verts_p, model_crt_verts
+    write_addr object_edge_indices_p, model_crt_edge_indices
+
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
@@ -440,17 +472,10 @@ seq_set_2d_model:
     write_addr object_edge_list_per_face_p, 0
     end_script
 
-seq_set_rab_model:
-    write_addr object_num_verts, Rab_Num_Verts
-    write_addr object_num_edges, Rab_Num_Lines
-    write_addr object_verts_p, model_rab_verts
-    write_addr object_edge_indices_p, model_rab_edge_indices
-    end_script
-
 seq_set_square_tunnel:
     write_addr scene2d_object_vert_p, model_square_verts
     write_addr scene2d_object_num_verts, 4
-    write_addr scene2d_object_num, 6            ; for ARM2
+    write_addr scene2d_object_num, 1            ; for ARM2
     write_fp scene2d_object_z_speed, 1.152      ; z-=speed
     write_fp scene2d_object_rot_speed, 0.5      ; brads/frame
     write_fp scene2d_object_twist, 16           ; brads/square
@@ -461,9 +486,9 @@ seq_set_square_tunnel:
 
 seq_set_square_tunnel_2:
     ; TODO: These numbers are the same as above!
-    write_addr scene2d_object_vert_p, model_triangle_verts
+    write_addr scene2d_object_vert_p, model_hexagon_verts
     write_addr scene2d_object_num_verts, 3
-    write_addr scene2d_object_num, 6            ; for ARM2
+    write_addr scene2d_object_num, 1            ; for ARM2
     write_fp scene2d_object_z_speed, 1.152      ; z-=speed
     write_fp scene2d_object_rot_speed, 0.5      ; brads/frame
     write_fp scene2d_object_twist, 16           ; brads/square
