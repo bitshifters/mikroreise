@@ -207,3 +207,6 @@ model_circle_verts:
 .endm
 
 .include "src/rab.asm"
+.include "src/slp.asm"
+
+; ============================================================================

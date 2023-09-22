@@ -218,6 +218,7 @@ seq_do_credits_1:
     call_3 fx_set_layer_fns, 1, update_3d_scene_move_in_z,     anaglyph_draw_3d_scene_as_outline
     call_3 fx_set_layer_fns, 2, update_3d_scene_from_vars,     0
 
+    gosub seq_set_2d_model
     write_fp object_dir_min_z, -50.0
     write_fp object_dir_max_z, 256.0
 
@@ -229,8 +230,12 @@ seq_do_credits_1:
     write_vec3 object_rot_speed, 0.0, -0.03, 0.02
     wait 111
 
-    ; 2. Rab
-    gosub seq_set_rab_model
+    ; 2. Slp
+    write_addr object_num_verts, Slp_Num_Verts
+    write_addr object_num_edges, Slp_Num_Lines
+    write_addr object_verts_p, model_slp_verts
+    write_addr object_edge_indices_p, model_slp_edge_indices
+
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
@@ -294,13 +299,14 @@ seq_do_credits_2:
     call_3 fx_set_layer_fns, 1, update_3d_scene_move_in_z,     anaglyph_draw_3d_scene_as_outline
     call_3 fx_set_layer_fns, 2, update_3d_scene_from_vars,     0
 
+    gosub seq_set_2d_model
     write_fp object_dir_min_z, -50.0
     write_fp object_dir_max_z, 256.0
 
     ; 1. Rab
     gosub seq_set_rab_model
     write_fp object_pos+8, -50.0
-    write_fp object_dir_z, 2.0
+    write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, -0.03, 0.02
     wait 111
@@ -308,7 +314,7 @@ seq_do_credits_2:
     ; 2. Rab
     gosub seq_set_rab_model
     write_fp object_pos+8, -50.0
-    write_fp object_dir_z, 2.0
+    write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.03, -0.02
     wait 111
@@ -316,7 +322,7 @@ seq_do_credits_2:
     ; 3. Rab
     gosub seq_set_rab_model
     write_fp object_pos+8, -50.0
-    write_fp object_dir_z, 2.0
+    write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.0, 0.1
     wait 111
@@ -324,7 +330,7 @@ seq_do_credits_2:
     ; 4. Rab
     gosub seq_set_rab_model
     write_fp object_pos+8, -50.0
-    write_fp object_dir_z, 2.0
+    write_fp object_dir_z, 1.0
     write_vec3 object_rot, 0.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.5, 0.0, 0.0
     wait 111
@@ -332,7 +338,7 @@ seq_do_credits_2:
     ; 5. Rab
     gosub seq_set_rab_model
     write_fp object_pos+8, -50.0
-    write_fp object_dir_z, 2.0
+    write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 128.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.5, 0.0
     wait 111
@@ -340,7 +346,7 @@ seq_do_credits_2:
     ; 6. Rab
     gosub seq_set_rab_model
     write_fp object_pos+8, -50.0
-    write_fp object_dir_z, 2.0
+    write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.01, 0.01, 0.0
     wait 111
@@ -348,7 +354,7 @@ seq_do_credits_2:
     ; 7. Rab
     gosub seq_set_rab_model
     write_fp object_pos+8, -50.0
-    write_fp object_dir_z, 2.0
+    write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, -0.02, 0.0, -0.02
     wait 111
@@ -356,7 +362,7 @@ seq_do_credits_2:
     ; 8. Rab
     gosub seq_set_rab_model
     write_fp object_pos+8, -50.0
-    write_fp object_dir_z, 2.0
+    write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, -0.02, 0.0, -0.02
     wait 112
@@ -399,15 +405,17 @@ seq_set_circle_model:
     write_addr object_edge_indices_p, 0
     end_script
 
-seq_set_rab_model:
+seq_set_2d_model:
     write_fp object_scale, 8.0
-    write_fp object_rot+0, 128
-    write_addr object_num_verts, Rab_Num_Verts
     write_addr object_num_faces, 0
-    write_addr object_num_edges, Rab_Num_Lines
-    write_addr object_verts_p, model_rab_verts
     write_addr object_face_indices_p, 0
     write_addr object_edge_list_per_face_p, 0
+    end_script
+
+seq_set_rab_model:
+    write_addr object_num_verts, Rab_Num_Verts
+    write_addr object_num_edges, Rab_Num_Lines
+    write_addr object_verts_p, model_rab_verts
     write_addr object_edge_indices_p, model_rab_edge_indices
     end_script
 
