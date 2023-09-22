@@ -240,7 +240,9 @@ Patterns
 16,17,15,14 = long melody w/ percusion      => high intensity
 18,19,18,19 = both melodies                 => full intensity
 20,21,20,21 = both melodies w/ highlights   => full intensity (show off)
-22,23,24,25 = percusion drops out           => the end
+22,23,24,27 = percusion drops out           => the end
+29,1 = very minimal
+28 = end
 
 TODO
 ~~~
@@ -257,8 +259,9 @@ TODO
 - Vector balls change shape to circle - DONE
 - Add credits / greets => Vector font? - STARTED!
 - Wire cube ease bounce back / combine with beat cube - TODO
-- 2D scene add star shape?
-- Add credits screen.
+- 2D scene add star shape? - DONE TRIANGLE
+- Add credits screen. - WAITING ON PNG
+- Set QTM to not loop tune if compiled to not loop.
 
 - Accelerate starfield (needs more pace but not too much!)
 - Accelerate dot tunnel (needs more pace but not too much!)
@@ -274,7 +277,7 @@ Tech
 
 MOAR BONUS
 ~~~
-- Vector font!!
+- Vector font!! - DONE
 - Reveal starfield?
 - Twist starfield!
 - Path through starfield...

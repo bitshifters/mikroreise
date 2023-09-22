@@ -55,9 +55,15 @@
     ; 20,21,20,21 = both melodies w/ highlights   => full intensity (show off)
     on_pattern 28, seq_do_credits_2                   ; <= GREETS HERE!
 
-    ; 22,23,24,25 = percusion drops out           => the end
+    ; 22,23,24,25 = percusion drops out           => last part
     on_pattern 32, seq_do_sine_dots_2
+
+    ; 29,1 = very minimal                         => nearly there.
     on_pattern 36, seq_do_bitshifters_with_fade_out ; <= CREDITS
+
+    ; 28 = the end
+    on_pattern 37, seq_fade_up_3d_palette_very_slow
+    on_pattern 37, seq_do_deadline
 
     ; THE END.
     end_script
@@ -211,6 +217,40 @@ seq_do_floating_circles:
     write_addr object_rot_speed+8, MATHS_CONST_1*1.5
 
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vars,     anaglyph_draw_3d_scene_as_circles
+    end_script
+
+seq_do_deadline:
+    call_3 fx_set_layer_fns, 1, update_3d_scene_move_in_z,     anaglyph_draw_3d_scene_as_outline
+    call_3 fx_set_layer_fns, 0, update_3d_scene_from_vars,     screen_cls
+
+    gosub seq_set_2d_model
+    write_fp object_dir_min_z, -50.0
+    write_fp object_dir_max_z, 256.0
+
+    write_addr object_num_verts, Dln_Num_Verts
+    write_addr object_num_edges, Dln_Num_Lines
+    write_addr object_verts_p, model_dln_verts
+    write_addr object_edge_indices_p, model_dln_edge_indices
+
+    write_fp object_pos+8, -32.0
+    write_fp object_dir_z, -0.05
+    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.02
+
+    wait_secs PatternLength_Secs*0.5
+    write_vec3 object_rot_speed, 0.0, 0.0, -0.02
+
+    wait_secs PatternLength_Secs*0.5
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.02
+
+    wait_secs PatternLength_Secs*0.5
+    write_vec3 object_rot_speed, 0.0, 0.0, -0.02
+
+    call_3 palette_init_fade_to_black, 0, Fade_Med, palette_red_cyan
+    call_3 fx_set_layer_fns, 2, palette_update_fade_to_black,  0
+
+    wait_secs PatternLength_Secs*0.5
+    call_3 fx_set_layer_fns, 0, 0,     screen_cls
     end_script
 
 seq_do_credits_1:
@@ -387,7 +427,7 @@ seq_do_credits_2:
 
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
-    write_vec3 object_rot, 128.0, 128.0, 0.0
+    write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.5, 0.0
     wait 111
 
@@ -476,6 +516,7 @@ seq_set_square_tunnel:
     write_addr scene2d_object_vert_p, model_square_verts
     write_addr scene2d_object_num_verts, 4
     write_addr scene2d_object_num, 1            ; for ARM2
+    write_addr scene2d_object_max, 6            ; for ARM2
     write_fp scene2d_object_z_speed, 1.152      ; z-=speed
     write_fp scene2d_object_rot_speed, 0.5      ; brads/frame
     write_fp scene2d_object_twist, 16           ; brads/square
@@ -489,12 +530,13 @@ seq_set_square_tunnel_2:
     write_addr scene2d_object_vert_p, model_hexagon_verts
     write_addr scene2d_object_num_verts, 3
     write_addr scene2d_object_num, 1            ; for ARM2
-    write_fp scene2d_object_z_speed, 1.152      ; z-=speed
+    write_addr scene2d_object_max, 12            ; for ARM2
+    write_fp scene2d_object_z_speed, 0.576      ; z-=speed
     write_fp scene2d_object_rot_speed, 0.5      ; brads/frame
     write_fp scene2d_object_twist, 16           ; brads/square
-    write_fp scene2d_object_gap, 32             ; z-=gap
+    write_fp scene2d_object_gap, 16             ; z-=gap
     write_fp scene2d_object_spawn_z, 128        ; in z
-    write_fp scene2d_object_spawn_adjust_rot, (32*0.5)  ; rot*gap
+    write_fp scene2d_object_spawn_adjust_rot, (16)  ; rot*gap
     end_script
 
 ; ============================================================================

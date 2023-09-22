@@ -66,6 +66,9 @@ scene2d_object_spawn_adjust_rot:
 scene2d_object_num:
     .long SQ_NUM
 
+scene2d_object_max:
+    .long SQ_NUM
+
 scene2d_object_twist:
     FLOAT_TO_FP SQ_TWIST
 
@@ -203,7 +206,8 @@ scene2d_update:
     add r1, r1, r3
 
     ldr r11, scene2d_object_num
-    cmp r11, #SQ_NUM
+    ldr r10, scene2d_object_max
+    cmp r11, r10
     addlt r11, r11, #1
     str r11, scene2d_object_num
     
