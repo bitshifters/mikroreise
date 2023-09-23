@@ -20,6 +20,8 @@
 
 	; Setup layers of FX.
     call_3 fx_set_layer_fns, 0, 0,                   screen_cls
+    call_3 fx_set_layer_fns, 1, 0,                   0
+    call_3 fx_set_layer_fns, 2, 0,                   0
 
     ; This macro has to be front loaded at time 0.
 
@@ -40,14 +42,15 @@
     on_pattern 10, seq_do_square_twist_2
 
     ; 9,8,9,8 = percusion added                   => more energy
+    on_pattern 12, seq_do_background_square
     on_pattern 12, seq_do_solid_beat_cube
-    on_pattern 12.5, seq_do_wire_beat_cube
-    on_pattern 13, seq_do_solid_beat_cube
-    on_pattern 13.5, seq_do_wire_beat_cube
-    on_pattern 14, seq_do_solid_beat_cube
-    on_pattern 14.5, seq_do_wire_beat_cube
-    on_pattern 15, seq_do_solid_beat_cube
-    on_pattern 15.5, seq_do_wire_beat_cube
+    on_pattern 12.51, seq_do_wire_beat_cube
+    on_pattern 13.01, seq_do_solid_beat_cube
+    on_pattern 13.51, seq_do_wire_beat_cube
+    on_pattern 14.01, seq_do_solid_beat_cube
+    on_pattern 14.51, seq_do_wire_beat_cube
+    on_pattern 15.01, seq_do_solid_beat_cube
+    on_pattern 15.51, seq_do_wire_beat_cube
 
     ; 10,11,12,11 = short melody drops out        => slow down
     on_pattern 16, seq_do_sine_dots_1
@@ -205,6 +208,14 @@ seq_do_solid_beat_cube:
     call_3 fx_set_layer_fns, 1, update_3d_scene_from_vu_bars,     anaglyph_draw_3d_scene_as_solid
     end_script
 
+seq_do_background_square:
+    gosub seq_set_one_square
+    write_fp scene2d_object_rot 2.5
+    call_3 fx_set_layer_fns, 2, scene2d_update,      scene2d_draw_anaglyph
+    wait PatternLength_Frames*4
+    call_3 fx_set_layer_fns, 2, 0, 0
+    end_script
+
 seq_do_wire_beat_cube:
     call_0 set_palette_for_3d_scene
     gosub seq_set_cube_model
@@ -312,8 +323,8 @@ seq_do_credits_1:
     write_addr object_verts_p, model_rab_verts
     write_addr object_edge_indices_p, model_rab_edge_indices
 
-    write_fp object_pos+8, 172.0
-    write_fp object_dir_z, -2.0
+    write_fp object_pos+8, 61.0
+    write_fp object_dir_z, -1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, -0.03, 0.02
     wait 111
@@ -324,8 +335,8 @@ seq_do_credits_1:
     write_addr object_verts_p, model_slp_verts
     write_addr object_edge_indices_p, model_slp_edge_indices
 
-    write_fp object_pos+8, 172.0
-    write_fp object_dir_z, -2.0
+    write_fp object_pos+8, 61.0
+    write_fp object_dir_z, -1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.03, -0.02
     wait 111
@@ -336,8 +347,8 @@ seq_do_credits_1:
     write_addr object_verts_p, model_dsr_verts
     write_addr object_edge_indices_p, model_dsr_edge_indices
 
-    write_fp object_pos+8, 172.0
-    write_fp object_dir_z, -2.0
+    write_fp object_pos+8, 61.0
+    write_fp object_dir_z, -1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.0, 0.05
     wait 111
@@ -348,8 +359,8 @@ seq_do_credits_1:
     write_addr object_verts_p, model_lgc_verts
     write_addr object_edge_indices_p, model_lgc_edge_indices
 
-    write_fp object_pos+8, 172.0
-    write_fp object_dir_z, -2.0
+    write_fp object_pos+8, 61.0
+    write_fp object_dir_z, -1.0
     write_vec3 object_rot, 20.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.5, 0.0, 0.0
     wait 111
@@ -360,8 +371,8 @@ seq_do_credits_1:
     write_addr object_verts_p, model_prx_verts
     write_addr object_edge_indices_p, model_prx_edge_indices
 
-    write_fp object_pos+8, 172.0
-    write_fp object_dir_z, -2.0
+    write_fp object_pos+8, 61.0
+    write_fp object_dir_z, -1.0
     write_vec3 object_rot, 128.0, 148.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.5, 0.0
     wait 111
@@ -372,8 +383,8 @@ seq_do_credits_1:
     write_addr object_verts_p, model_rft_verts
     write_addr object_edge_indices_p, model_rft_edge_indices
 
-    write_fp object_pos+8, 172.0
-    write_fp object_dir_z, -2.0
+    write_fp object_pos+8, 61.0
+    write_fp object_dir_z, -1.0
     write_vec3 object_rot, 128.0, 0.0, 148.0
     write_vec3 object_rot_speed, 0.0, 0.0, 0.5
     wait 111
@@ -384,8 +395,8 @@ seq_do_credits_1:
     write_addr object_verts_p, model_nva_verts
     write_addr object_edge_indices_p, model_nva_edge_indices
 
-    write_fp object_pos+8, 172.0
-    write_fp object_dir_z, -2.0
+    write_fp object_pos+8, 61.0
+    write_fp object_dir_z, -1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, -0.02, 0.0, -0.03
     wait 111
@@ -396,8 +407,8 @@ seq_do_credits_1:
     write_addr object_verts_p, model_iph_verts
     write_addr object_edge_indices_p, model_iph_edge_indices
 
-    write_fp object_pos+8, 200.0
-    write_fp object_dir_z, -2.0
+    write_fp object_pos+8, 89.0
+    write_fp object_dir_z, -1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.02, 0.0, 0.03
     wait 112
@@ -556,11 +567,26 @@ seq_set_2d_model:
     write_addr object_edge_list_per_face_p, 0
     end_script
 
+seq_set_one_square:
+    write_addr scene2d_object_vert_p, model_hexagon_verts
+    write_addr scene2d_object_num_verts, 6
+    write_addr scene2d_object_num, 1            ; for ARM2
+    write_addr scene2d_object_max, 1            ; for ARM2
+    write_fp scene2d_object_scale, 8.0
+    write_fp scene2d_object_z_speed, 0.0      ; z-=speed
+    write_fp scene2d_object_rot_speed, -0.1      ; brads/frame
+    write_fp scene2d_object_twist, 0           ; brads/square
+    write_fp scene2d_object_gap, 24             ; z-=gap
+    write_fp scene2d_object_spawn_z, 48.0        ; in z
+    write_fp scene2d_object_spawn_adjust_rot, (32*0.5)  ; rot*gap
+    end_script
+
 seq_set_square_tunnel:
     write_addr scene2d_object_vert_p, model_square_verts
     write_addr scene2d_object_num_verts, 4
     write_addr scene2d_object_num, 1            ; for ARM2
     write_addr scene2d_object_max, 6            ; for ARM2
+    write_fp scene2d_object_scale, 1.0
     write_fp scene2d_object_z_speed, 1.152      ; z-=speed
     write_fp scene2d_object_rot_speed, 0.5      ; brads/frame
     write_fp scene2d_object_twist, 16           ; brads/square
@@ -575,6 +601,7 @@ seq_set_square_tunnel_2:
     write_addr scene2d_object_num_verts, 3
     write_addr scene2d_object_num, 1            ; for ARM2
     write_addr scene2d_object_max, 12            ; for ARM2
+    write_fp scene2d_object_scale, 1.5
     write_fp scene2d_object_z_speed, 0.576      ; z-=speed
     write_fp scene2d_object_rot_speed, 0.5      ; brads/frame
     write_fp scene2d_object_twist, 16           ; brads/square

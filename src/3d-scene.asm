@@ -339,10 +339,16 @@ update_3d_scene_from_vu_bars:
     ; TODO: Finalise mapping of vu levels to scale & rotation deltas.
   	mov r10, r0, lsr #24            ; channel 4 = scale
 	ands r10, r10, #0xff
-    ldreq r1, object_scale
-    subeq r1, r1, #MATHS_CONST_1*0.01
-    movne r1, #MATHS_CONST_1
-    addne r1, r1, r10, asl #10         ; scale maps [1, 2]
+    bne .1
+    ldr r1, object_scale
+    cmp r1, #MATHS_CONST_HALF
+    subgt r1, r1, #MATHS_CONST_1*0.01
+    b .2
+    
+    .1:
+    mov r1, #MATHS_CONST_1
+    add r1, r1, r10, asl #10         ; scale maps [1, 2]
+    .2:
     str r1, object_scale
 
     ; TODO: Make this code more compact?

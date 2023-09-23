@@ -260,9 +260,10 @@ TODO
 - Add credits / greets => Vector font? - STARTED!
 - Wire cube ease bounce back / combine with beat cube - TODO
 - 2D scene add star shape? - DONE TRIANGLE
-- Add credits screen. - WAITING ON PNG
-- Set QTM to not loop tune if compiled to not loop.
+- Add credits screen. - DONE
+- Set QTM to not loop tune if compiled to not loop. - DONE
 
+- Add square behind beat cube?
 - Accelerate starfield (needs more pace but not too much!)
 - Accelerate dot tunnel (needs more pace but not too much!)
 
@@ -270,9 +271,9 @@ TODO
 Tech
 ~~~
 - Bake in Skew code when not in _DEBUG.
-- Compress final exe w/ Shrinkler and add loader.
+- Compress final exe w/ Shrinkler and add loader. - DONE
 - Remove unused IRQ handler?
-- Change app name and icon.
+- Change app name and icon. - DONE ICON.
 
 
 MOAR BONUS

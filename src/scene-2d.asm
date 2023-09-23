@@ -48,6 +48,9 @@ scene2d_object_pos:
 scene2d_object_rot:
     .long 0
 
+scene2d_object_scale:
+    FLOAT_TO_FP SQ_SCALE
+
 scene2d_object_vert_p:
     .long model_square_verts
 
@@ -159,7 +162,7 @@ scene2d_update:
     adr r0, scene2d_object_pos
     ldr r2, scene2d_object_vert_p
     ldr r3, scene2d_object_num_verts
-    mov r5, #MATHS_CONST_1*SQ_SCALE
+    ldr r5, scene2d_object_scale
 
     stmfd sp!, {r1,r11}
     bl scene2d_transform_object
