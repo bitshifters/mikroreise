@@ -39,13 +39,14 @@ deploy: $(FOLDER)
 	$(MKDIR_P) "$(HOSTFS)\$(FOLDER)"
 	$(COPY) "$(FOLDER)\*.*" "$(HOSTFS)\$(FOLDER)\*.*"
 
-$(FOLDER): build ./build/archie-verse.bin ./build/seq.bin ./build/!run.txt ./build/icon.bin
+$(FOLDER): build ./build/archie-verse.bin ./build/seq.bin ./build/!run.txt ./build/icon.bin ./build/three-dee.mod
 	$(RM_RF) $(FOLDER)
 	$(MKDIR_P) $(FOLDER)
 	$(COPY) .\folder\*.* "$(FOLDER)\*.*"
 	$(COPY) .\build\!run.txt "$(FOLDER)\!Run,feb"
 	$(COPY) .\build\icon.bin "$(FOLDER)\!Sprites,ff9"
 	$(COPY) .\build\archie-verse.bin "$(FOLDER)\!RunImage,ff8"
+	$(COPY) .\build\three-dee.mod "$(FOLDER)\Music,001"
 	$(COPY) .\build\seq.bin  "$(FOLDER)\Seq,ffd"
 
 .PHONY:seq
@@ -53,11 +54,35 @@ seq: ./build/seq.bin
 	$(COPY) .\build\seq.bin  "$(FOLDER)\Seq,ffd"
 	$(COPY) "$(FOLDER)\Seq,ffd" "$(HOSTFS)\$(FOLDER)"
 
+.PHONY:compress
+compress: shrink
+	$(RM_RF) "$(HOSTFS)\$(FOLDER)"
+	$(MKDIR_P) "$(HOSTFS)\$(FOLDER)"
+	$(COPY) "$(FOLDER)\*.*" "$(HOSTFS)\$(FOLDER)\*.*"
+
+.PHONY:shrink
+shrink: build ./build/archie-verse.shri ./build/seq.bin ./build/!run.txt ./build/icon.bin ./build/loader.bin ./build/three-dee.mod
+	$(RM_RF) $(FOLDER)
+	$(MKDIR_P) $(FOLDER)
+	$(COPY) .\folder\*.* "$(FOLDER)\*.*"
+	$(COPY) .\build\!run.txt "$(FOLDER)\!Run,feb"
+	$(COPY) .\build\icon.bin "$(FOLDER)\!Sprites,ff9"
+	$(COPY) .\build\loader.bin "$(FOLDER)\!RunImage,ff8"
+	$(COPY) .\build\three-dee.mod "$(FOLDER)\Music,001"
+	$(COPY) .\build\archie-verse.shri "$(FOLDER)\Demo,ffd"
+	$(COPY) .\build\seq.bin  "$(FOLDER)\Seq,ffd"
+
 build:
 	$(MKDIR_P) "./build"
 
 ./build/assets.txt: build ./build/icon.bin ./build/bs-logo.bin ./build/tmt-logo.bin
 	echo done > $@
+
+./build/archie-verse.shri: build ./build/archie-verse.bin
+	$(SHRINKLER) -b -d -p -z -1 ./build/archie-verse.bin $@
+
+./build/loader.bin: build ./src/loader.asm
+	$(VASM) -L build\loader.txt -m250 -Fbin -opt-adr -D_USE_SHRINKLER=1 -o $@ ./src/loader.asm
 
 ./build/seq.bin: build ./build/seq.o link_script2.txt
 	$(VLINK) -T link_script2.txt -b rawbin1 -o $@ build/seq.o -Mbuild/linker2.txt

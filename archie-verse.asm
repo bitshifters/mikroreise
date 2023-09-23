@@ -22,6 +22,8 @@
 .equ Sample_Speed_SlowCPU, 48		    ; ideally get this down for ARM2
 .equ Sample_Speed_FastCPU, 16		    ; ideally 16us for ARM250+
 
+.equ _MUSIC_LOAD_LOOSE, 1
+
 .equ _ENABLE_LOOP, 0
 .equ _MaxFrames, 8667   ; 222.222 frames per pattern.
 .equ _MaxPatterns, 39   ; TODO: Some standard prod defs.
@@ -120,8 +122,14 @@ Start:
 stack_p:
 	.long stack_base_no_adr
 
+.if _MUSIC_LOAD_LOOSE
+music_filename:
+	.byte "<Demo$Dir>.Music",0
+	.p2align 2
+.else
 music_mod_p:
 	.long three_dee_mod_no_adr		; 14
+.endif
 
 ; ============================================================================
 ; Main
@@ -193,6 +201,7 @@ main:
 	; EARLY INIT / LOAD STUFF HERE! 
 	bl lib_init
 	; R12=top of RAM used.
+    str r12, [sp, #-4]!
 
 	; Bootstrap the main sequence.
     bl sequence_init
@@ -200,7 +209,7 @@ main:
     ; Tick script once for module init.
     bl script_tick_all
 
-.if 0
+.if 1
 	; Count how long the init takes as a very rough estimate of CPU speed.
 	ldr r1, vsync_count
 	cmp r1, #80		; ARM3~=20, ARM250~=70, ARM2~=108
@@ -234,8 +243,14 @@ main:
     swi QTM_Stereo
 
 	; Load the music.
+    .if _MUSIC_LOAD_LOOSE
+    adr r0, music_filename
+    ldr r1, [sp], #4        ; HIMEM
+    ;mov r1, #0
+    .else
 	mov r0, #0              ; load from address, don't copy to RMA.
     ldr r1, music_mod_p
+    .endif
 	swi QTM_Load
 
 	; LATE INITALISATION HERE!

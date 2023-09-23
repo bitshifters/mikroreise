@@ -20,9 +20,11 @@ scroller_font_data_no_adr:
 
 ; ============================================================================
 
+.if !_MUSIC_LOAD_LOOSE
 .p2align 2
 three_dee_mod_no_adr:
 .incbin "build/three-dee.mod"
+.endif
 
 ; ============================================================================
 

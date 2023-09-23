@@ -45,10 +45,13 @@ script_tick_context:
     ldr r11, [r10], #4                  ; load program ptr.
     str r10, [r12, #ScriptContext_PC]
 
-    ; TODO: Push R12 on the stack?
-
-    adr lr, .2
+    ; Push R12 on the stack in case somebody uses it (ahem)...
+    str r12, [sp, #-4]!
+    adr lr, .3
     mov pc, r11                         ; jump to fn.
+    .3:
+    ldr r12, [sp], #4
+    b .2
 
 script_tick_all:
     str lr, [sp, #-4]!
