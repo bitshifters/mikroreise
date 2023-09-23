@@ -20,11 +20,12 @@
 .equ _DEBUG_DEFAULT_SHOW_INFO, 0		; slow so off by default.
 
 .equ Sample_Speed_SlowCPU, 48		    ; ideally get this down for ARM2
-.equ Sample_Speed_FastCPU, 16		    ; ideally 16us for ARM250+
+.equ Sample_Speed_FastCPU, 24		    ; ideally 16us for ARM250+
 
+.equ _DYNAMIC_SAMPLE_SPEED, 0
 .equ _MUSIC_LOAD_LOOSE, 1
-
 .equ _ENABLE_LOOP, 0
+
 .equ _MaxFrames, 8667   ; 222.222 frames per pattern.
 .equ _MaxPatterns, 39   ; TODO: Some standard prod defs.
 
@@ -209,7 +210,7 @@ main:
     ; Tick script once for module init.
     bl script_tick_all
 
-.if 1
+.if _DYNAMIC_SAMPLE_SPEED
 	; Count how long the init takes as a very rough estimate of CPU speed.
 	ldr r1, vsync_count
 	cmp r1, #80		; ARM3~=20, ARM250~=70, ARM2~=108
@@ -241,6 +242,12 @@ main:
     mov r0, #4
     mov r1, #StereoPos_Ch4
     swi QTM_Stereo
+
+    .if !_ENABLE_LOOP
+    mov r0, #0b0010
+    mov r1, #0b0010         ; stop song on end.
+    swi QTM_MusicOptions
+    .endif
 
 	; Load the music.
     .if _MUSIC_LOAD_LOOSE

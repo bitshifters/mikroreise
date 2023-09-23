@@ -26,14 +26,14 @@
     ; 0,1,2,3 = long melody alone                 => slow build up
     on_pattern 0, seq_do_bitshifters_with_fade_out
     on_pattern 1, seq_do_torment_with_fade_out
-    on_pattern 2, seq_fade_up_3d_palette_very_slow
-    on_pattern 2, seq_do_starfield_with_fade_out
+    on_pattern 2, seq_fade_up_3d_palette_medium
+    on_pattern 2, seq_do_demologo                  ; <= DEMO NAME?
 
     ; 4,5,4,5 = wobbly bass added                 => some movement added
-    on_pattern 4, seq_fade_up_3d_palette_medium
-    on_pattern 4, seq_do_dot_tunnel_1
+    on_pattern 4, seq_fade_up_3d_palette_very_slow
+    on_pattern 4, seq_do_starfield_with_fade_out
     on_pattern 6, seq_fade_up_3d_palette_medium
-    on_pattern 6, seq_do_demologo                  ; <= DEMO NAME?
+    on_pattern 6, seq_do_dot_tunnel_1
     
     ; 6,7,6,7 = bass kick added, short melody     => we're off!
     on_pattern 8, seq_do_square_twist
@@ -65,7 +65,7 @@
     on_pattern 32, seq_do_sine_dots_2
 
     ; 29,1 = very minimal                         => nearly there.
-    on_pattern 36, seq_do_bitshifters_with_fade_out ; <= CREDITS
+    on_pattern 36, seq_do_credits_with_fade_out ; <= CREDITS
 
     ; 28 = the end
     on_pattern 37, seq_fade_up_3d_palette_very_slow
@@ -86,6 +86,24 @@ seq_do_bitshifters_with_fade_out:
 
     ; Initialise fade out.
     call_3 palette_init_fade_to_black, 0, Fade_Med, bs_logo_pal_no_adr
+    call_3 fx_set_layer_fns, 1, palette_update_fade_to_black,  static_copy_screen
+    end_script
+
+seq_do_credits_with_fade_out:
+    call_3 palette_init_fade_from_black, 0, Fade_Med, credits_pal_no_adr
+
+    ; Static screen.
+    call_3 fx_set_layer_fns, 1, palette_update_fade_from_black,  static_copy_screen
+    write_addr static_palette_p, credits_pal_no_adr
+    write_addr static_screen_p, credits_screen_no_adr
+
+    wait 16*Fade_Med
+    call_3 fx_set_layer_fns, 1, static_set_palette,  static_copy_screen
+
+    wait PatternLength_Frames-(2*16*Fade_Med)
+
+    ; Initialise fade out.
+    call_3 palette_init_fade_to_black, 0, Fade_Med, credits_pal_no_adr
     call_3 fx_set_layer_fns, 1, palette_update_fade_to_black,  static_copy_screen
     end_script
 
@@ -230,7 +248,7 @@ seq_do_demologo:
     call_3 fx_set_layer_fns, 0, update_3d_scene_from_vars,     screen_cls
 
     gosub seq_set_2d_model
-    write_fp object_dir_min_z, -50.0
+    write_fp object_dir_min_z, -40.0
     write_fp object_dir_max_z, 256.0
 
     write_addr object_num_verts, Mik_Num_Verts
@@ -238,25 +256,18 @@ seq_do_demologo:
     write_addr object_verts_p, model_mik_verts
     write_addr object_edge_indices_p, model_mik_edge_indices
 
-    write_fp object_pos+8, -32.0
+    write_fp object_pos+8, -30.0
     write_fp object_dir_z, -0.05
-    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot, 128.0, 0.0, 230
     write_vec3 object_rot_speed, 0.0, 0.0, 0.02
 
-    wait_secs PatternLength_Secs*0.5
-    write_vec3 object_rot_speed, 0.0, 0.0, -0.02
-
-    wait_secs PatternLength_Secs*0.5
-    write_vec3 object_rot_speed, 0.0, 0.0, 0.02
-
-    wait_secs PatternLength_Secs*0.5
-    write_vec3 object_rot_speed, 0.0, 0.0, -0.02
-
+    wait PatternLength_Frames*2-(16*Fade_Med)
     call_3 palette_init_fade_to_black, 0, Fade_Med, palette_red_cyan
     call_3 fx_set_layer_fns, 2, palette_update_fade_to_black,  0
 
-    wait_secs PatternLength_Secs*0.5
+    wait 16*Fade_Med
     call_3 fx_set_layer_fns, 0, 0,     screen_cls
+    call_3 fx_set_layer_fns, 2, 0,  0
     end_script
 
 seq_do_deadline:
@@ -272,25 +283,18 @@ seq_do_deadline:
     write_addr object_verts_p, model_dln_verts
     write_addr object_edge_indices_p, model_dln_edge_indices
 
-    write_fp object_pos+8, -32.0
+    write_fp object_pos+8, -25.0
     write_fp object_dir_z, -0.05
-    write_vec3 object_rot, 128.0, 0.0, 0.0
-    write_vec3 object_rot_speed, 0.0, 0.0, 0.02
-
-    wait_secs PatternLength_Secs*0.5
+    write_vec3 object_rot, 128.0, 0.0, 10.0
     write_vec3 object_rot_speed, 0.0, 0.0, -0.02
 
-    wait_secs PatternLength_Secs*0.5
-    write_vec3 object_rot_speed, 0.0, 0.0, 0.02
-
-    wait_secs PatternLength_Secs*0.5
-    write_vec3 object_rot_speed, 0.0, 0.0, -0.02
-
-    call_3 palette_init_fade_to_black, 0, Fade_Med, palette_red_cyan
+    wait PatternLength_Frames*1.2
+    call_3 palette_init_fade_to_black, 0, Fade_VerySlow, palette_red_cyan
     call_3 fx_set_layer_fns, 2, palette_update_fade_to_black,  0
 
-    wait_secs PatternLength_Secs*0.5
+    wait PatternLength_Frames*0.8
     call_3 fx_set_layer_fns, 0, 0,     screen_cls
+    call_3 fx_set_layer_fns, 2, 0,  0
     end_script
 
 seq_do_credits_1:
@@ -335,7 +339,7 @@ seq_do_credits_1:
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
-    write_vec3 object_rot_speed, 0.0, 0.0, 0.1
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.05
     wait 111
 
     ; 4. Lgc
@@ -370,8 +374,8 @@ seq_do_credits_1:
 
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
-    write_vec3 object_rot, 128.0, 0.0, 0.0
-    write_vec3 object_rot_speed, 0.01, 0.01, 0.0
+    write_vec3 object_rot, 128.0, 0.0, 148.0
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.5
     wait 111
 
     ; 7. Nva
@@ -383,7 +387,7 @@ seq_do_credits_1:
     write_fp object_pos+8, 172.0
     write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
-    write_vec3 object_rot_speed, -0.02, 0.0, -0.02
+    write_vec3 object_rot_speed, -0.02, 0.0, -0.03
     wait 111
 
     ; 8. Iph
@@ -392,10 +396,10 @@ seq_do_credits_1:
     write_addr object_verts_p, model_iph_verts
     write_addr object_edge_indices_p, model_iph_edge_indices
 
-    write_fp object_pos+8, 172.0
+    write_fp object_pos+8, 200.0
     write_fp object_dir_z, -2.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
-    write_vec3 object_rot_speed, -0.02, 0.0, -0.02
+    write_vec3 object_rot_speed, 0.02, 0.0, 0.03
     wait 112
 
     call_3 fx_set_layer_fns, 2, 0,                             0
@@ -444,7 +448,7 @@ seq_do_credits_2:
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
-    write_vec3 object_rot_speed, 0.0, 0.0, 0.1
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.2
     wait 111
 
     ; 4. Pro
@@ -455,7 +459,7 @@ seq_do_credits_2:
 
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
-    write_vec3 object_rot, 0.0, 0.0, 0.0
+    write_vec3 object_rot, 80.0, 0.0, 0.0
     write_vec3 object_rot_speed, 0.5, 0.0, 0.0
     wait 111
 
@@ -467,7 +471,7 @@ seq_do_credits_2:
 
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
-    write_vec3 object_rot, 128.0, 0.0, 0.0
+    write_vec3 object_rot, 128.0, 210.0, 0.0
     write_vec3 object_rot_speed, 0.0, 0.5, 0.0
     wait 111
 
@@ -477,10 +481,10 @@ seq_do_credits_2:
     write_addr object_verts_p, model_hoo_verts
     write_addr object_edge_indices_p, model_hoo_edge_indices
 
-    write_fp object_pos+8, -50.0
+    write_fp object_pos+8, -40.0
     write_fp object_dir_z, 1.0
-    write_vec3 object_rot, 128.0, 0.0, 0.0
-    write_vec3 object_rot_speed, 0.01, 0.01, 0.0
+    write_vec3 object_rot, 128.0, 0.0, 20.0
+    write_vec3 object_rot_speed, 0.0, 0.0, -0.5
     wait 111
 
     ; 7. Far
@@ -504,7 +508,7 @@ seq_do_credits_2:
     write_fp object_pos+8, -50.0
     write_fp object_dir_z, 1.0
     write_vec3 object_rot, 128.0, 0.0, 0.0
-    write_vec3 object_rot_speed, -0.02, 0.0, -0.02
+    write_vec3 object_rot_speed, 0.02, 0.0, 0.03
     wait 112
 
     call_3 fx_set_layer_fns, 2, 0,                             0

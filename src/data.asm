@@ -89,6 +89,12 @@ tmt_logo_screen_no_adr:
 tmt_logo_pal_no_adr:
     .incbin "build/tmt-logo.bin.pal"
 
+credits_screen_no_adr:
+    .incbin "build/credits.bin"
+
+credits_pal_no_adr:
+    .incbin "build/credits.bin.pal"
+
 ; ============================================================================
 
 .include "src/3d-model-data.asm"

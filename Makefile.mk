@@ -75,7 +75,7 @@ shrink: build ./build/archie-verse.shri ./build/seq.bin ./build/!run.txt ./build
 build:
 	$(MKDIR_P) "./build"
 
-./build/assets.txt: build ./build/icon.bin ./build/bs-logo.bin ./build/tmt-logo.bin
+./build/assets.txt: build ./build/icon.bin ./build/bs-logo.bin ./build/tmt-logo.bin ./build/credits.bin
 	echo done > $@
 
 ./build/archie-verse.shri: build ./build/archie-verse.bin
@@ -121,8 +121,8 @@ clean:
 ./build/big-font.bin: ./data/font/font-big-finalFINAL.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC_FONT) -o $@ --glyph-dim 16 16 $< 9
 
-./build/icon.bin: ./data/gfx/icon001.png $(PNG2ARC_DEPS)
-	$(PYTHON2) $(PNG2ARC_SPRITE) --name !django02 -o $@ $< 9
+./build/icon.bin: ./data/gfx/mikroreise_icon.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC_SPRITE) --name !verse -o $@ $< 9
 
 ./build/bs-logo.bin: ./data/gfx/BITSHIFERS-logo-anaglyph.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
@@ -130,10 +130,13 @@ clean:
 ./build/tmt-logo.bin: ./data/gfx/TORMENT-logo-anaglyph.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
 
+./build/credits.bin: ./data/gfx/crew-credits2.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
+
 ##########################################################################
 ##########################################################################
 
-./build/three-dee.mod: ./data/music2/three-dee-V3.mod
+./build/three-dee.mod: ./data/music2/mikroreise.mod
 	$(COPY) $(subst /,\\,$+) $(subst /,\\,$@)
 
 ##########################################################################
