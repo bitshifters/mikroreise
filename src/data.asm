@@ -104,9 +104,5 @@ credits_pal_no_adr:
 .p2align 6
 .rodata
 seq_main_program:
-.if _DO_SEQUENCE
 .include "src/sequence-data.asm"
-.else
-.long 0         ; end sequence.
-.endif
-.p2align 14     ; 16K
+.p2align 13     ; 8K

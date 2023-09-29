@@ -3,3 +3,4 @@ loader.txt
 build/
 \!Verse/
 *.pyc
+\!Reise/

@@ -262,18 +262,18 @@ TODO
 - 2D scene add star shape? - DONE TRIANGLE
 - Add credits screen. - DONE
 - Set QTM to not loop tune if compiled to not loop. - DONE
-
-- Add square behind beat cube?
-- Accelerate starfield (needs more pace but not too much!)
-- Accelerate dot tunnel (needs more pace but not too much!)
+- Add square behind beat cube? - DONE
 
 
 Tech
 ~~~
-- Bake in Skew code when not in _DEBUG.
 - Compress final exe w/ Shrinkler and add loader. - DONE
 - Remove unused IRQ handler?
-- Change app name and icon. - DONE ICON.
+- Change app name and icon. - DONE.
+
+- Bake in Skew code when not in _DEBUG.
+- Palette fade call is super expensive!!!
+- Tweaks to get higher sample rate for music on ARM250.
 
 
 MOAR BONUS
@@ -284,8 +284,6 @@ MOAR BONUS
 - Path through starfield...
 - Morph vector balls?
 - Morph starfield into tunnel...
-
-- Palette fade call is super expensive!!!
 - Generate Sine Dot Code from X table :S
 
 

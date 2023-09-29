@@ -267,10 +267,10 @@ seq_do_demologo:
     write_addr object_verts_p, model_mik_verts
     write_addr object_edge_indices_p, model_mik_edge_indices
 
-    write_fp object_pos+8, -30.0
+    write_fp object_pos+8, -18.0
     write_fp object_dir_z, -0.05
-    write_vec3 object_rot, 128.0, 0.0, 230
-    write_vec3 object_rot_speed, 0.0, 0.0, 0.02
+    write_vec3 object_rot, 128.0, 0.0, 250
+    write_vec3 object_rot_speed, 0.0, 0.0, 0.01
 
     wait PatternLength_Frames*2-(16*Fade_Med)
     call_3 palette_init_fade_to_black, 0, Fade_Med, palette_red_cyan

@@ -10,7 +10,7 @@
 ;	8. Ending
 ; ============================================================================
 
-.equ _DEBUG, 1
+.equ _DEBUG, 0
 .equ _DEBUG_RASTERS, (_DEBUG && 1)
 .equ _DEBUG_SHOW, (_DEBUG && 1)
 .equ _CHECK_FRAME_DROP, (!_DEBUG && 1)
@@ -22,7 +22,7 @@
 .equ Sample_Speed_SlowCPU, 48		    ; ideally get this down for ARM2
 .equ Sample_Speed_FastCPU, 24		    ; ideally 16us for ARM250+
 
-.equ _DYNAMIC_SAMPLE_SPEED, 0
+.equ _DYNAMIC_SAMPLE_SPEED, 1
 .equ _MUSIC_LOAD_LOOSE, 1
 .equ _ENABLE_LOOP, 0
 
@@ -45,10 +45,6 @@
 .equ EyeDistance_Default_Setting,   4   ; eye separation=4.8 pixels at z=0
 
 .equ _WIDESCREEN, 0
-
-.ifndef _DO_SEQUENCE
-.equ _DO_SEQUENCE, 0
-.endif
 
 .equ Screen_Banks, 2
 

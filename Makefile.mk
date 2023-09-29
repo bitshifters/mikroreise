@@ -26,7 +26,7 @@ PNG2ARC=./bin/png2arc.py
 PNG2ARC_FONT=./bin/png2arc_font.py
 PNG2ARC_SPRITE=./bin/png2arc_sprite.py
 PNG2ARC_DEPS:=./bin/png2arc.py ./bin/arc.py ./bin/png2arc_font.py ./bin/png2arc_sprite.py
-FOLDER=!Verse
+FOLDER=!Reise
 HOSTFS=../arculator/hostfs
 # TODO: Need a copy command that copes with forward slash directory separator. (Maybe MSYS cp?)
 
@@ -88,7 +88,7 @@ build:
 	$(VLINK) -T link_script2.txt -b rawbin1 -o $@ build/seq.o -Mbuild/linker2.txt
 
 ./build/seq.o: build archie-verse.asm ./src/sequence-data.asm ./build/three-dee.mod ./build/assets.txt
-	$(VASM) -L build/compile.txt -D_DO_SEQUENCE=1 -m250 -Fvobj -opt-adr -o build/seq.o archie-verse.asm
+	$(VASM) -L build/compile.txt -m250 -Fvobj -opt-adr -o build/seq.o archie-verse.asm
 
 ./build/archie-verse.bin: build ./build/archie-verse.o ./build/seq.o link_script.txt
 	$(VLINK) -T link_script.txt -b rawbin1 -o $@ build/archie-verse.o -Mbuild/linker.txt
@@ -122,7 +122,7 @@ clean:
 	$(PYTHON2) $(PNG2ARC_FONT) -o $@ --glyph-dim 16 16 $< 9
 
 ./build/icon.bin: ./data/gfx/mikroreise_icon.png $(PNG2ARC_DEPS)
-	$(PYTHON2) $(PNG2ARC_SPRITE) --name !verse -o $@ $< 9
+	$(PYTHON2) $(PNG2ARC_SPRITE) --name !reise -o $@ $< 9
 
 ./build/bs-logo.bin: ./data/gfx/BITSHIFERS-logo-anaglyph.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
