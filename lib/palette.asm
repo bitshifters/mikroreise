@@ -1,7 +1,11 @@
 ; ============================================================================
 ; Palette Utils (OLD)
-; As of 9/5/23 consider these a bit crusty and slow.
-; Perhaps look at direct VIDC register poking in arc-django-2.
+; NOTE(09/05/23): Consider these a bit crusty and slow.
+;                 Perhaps look at direct VIDC register poking in arc-django-2?
+; NOTE(20/08/23): I'm amazed the fade functions work at all and they only do
+;                 if RGB values are specified at the top nibble of each byte
+;                 only! I'm not sure if the original implementation was clever
+;                 or just lucky!!
 ; ============================================================================
 
 ; R3 = index
@@ -42,8 +46,7 @@ palette_set_border:
     mov r0, #24
     strb r0, [r1, #0]       ; logical colour
     strb r0, [r1, #1]       ; mode
-    and r0, r4, #0xff
-    strb r0, [r1, #2]       ; red
+    strb r4, [r1, #2]       ; red
     mov r0, r4, lsr #8
     strb r0, [r1, #3]       ; green
     mov r0, r4, lsr #16
@@ -74,6 +77,8 @@ palette_make_fade_to_black:
 
 ; R2 = source palette block ptr
 palette_init_fade_to_black:
+    str r1, palette_speed
+    str r1, palette_delay
     str r2, palette_source
     mov r0, #16
     str r0, palette_interp
@@ -83,6 +88,15 @@ palette_init_fade_to_black:
 ; Returns interp value in R0.
 palette_update_fade_to_black:
    	str lr, [sp, #-4]!			; push lr on stack
+
+    ldr r1, palette_delay
+    subs r1, r1, #1
+    strne r1, palette_delay
+    ldrne pc, [sp], #4			; rts
+
+    ldr r1, palette_speed
+    str r1, palette_delay
+
     ldr r0, palette_interp
     cmp r0, #0
 	ldreq pc, [sp], #4			; rts
@@ -100,6 +114,8 @@ palette_update_fade_to_black:
 
 ; R2 = source palette block ptr
 palette_init_fade_from_black:
+    str r1, palette_speed
+    str r1, palette_delay
     str r2, palette_source
     mov r0, #0
     str r0, palette_interp
@@ -108,6 +124,15 @@ palette_init_fade_from_black:
 ; Returns interp value in R0.
 palette_update_fade_from_black:
    	str lr, [sp, #-4]!			; push lr on stack
+
+    ldr r1, palette_delay
+    subs r1, r1, #1
+    strne r1, palette_delay
+    ldrne pc, [sp], #4			; rts
+
+    ldr r1, palette_speed
+    str r1, palette_delay
+
     ldr r0, palette_interp
     cmp r0, #16
 	ldrge pc, [sp], #4			; rts
@@ -127,6 +152,12 @@ palette_source:
     .long 0
 
 palette_interp:
+    .long 0
+
+palette_speed:
+    .long 0
+
+palette_delay:
     .long 0
 
 .if 0

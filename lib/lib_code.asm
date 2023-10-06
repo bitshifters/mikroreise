@@ -8,6 +8,8 @@
 ; MACROS
 ; ============================================================================
 
+; NOTE: This macro only works if rDst==rBase!!!
+; TODO: Proper MLA_BY_CONST rDst, rBase, const
 .macro CALC_SCANLINE_ADDR rDst, rBase, rY
 .set val, Screen_Stride
 .if val&256
@@ -57,6 +59,9 @@ lib_init:
     .endif
     .if LibDivide_UseReciprocalTable
     bl MakeReciprocal
+    .endif
+    .if LibConfig_IncludeCircles
+    bl ClearCircleBuf
     .endif
     .if LibConfig_IncludeSpanGen
     bl gen_code
@@ -115,11 +120,14 @@ debug_string:
 .if LibConfig_IncludeSqrt
 .include "lib/sqrt.asm"
 .endif
+.if LibConfig_IncludeCircles
+.include "lib/circles.asm"
+.endif
 .if LibConfig_IncludeSpanGen
 .if Screen_Mode==0
 .include "lib/mode0.asm"
 .endif
-.if Screen_Mode==13
+.if Screen_Mode==13 || Screen_Mode==12
 .include "lib/mode13.asm"
 .endif
 .if Screen_Mode==9

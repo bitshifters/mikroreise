@@ -15,23 +15,62 @@
 .equ _DEBUG_SHOW, (_DEBUG && 1)
 .equ _CHECK_FRAME_DROP, (!_DEBUG && 1)
 
-.equ Sample_Speed_SlowCPU, 48		; ideally get this down for ARM2
-.equ Sample_Speed_FastCPU, 16		; ideally 16us for ARM250+
+.equ _DEBUG_DEFAULT_PLAY_PAUSE, 1		; play
+.equ _DEBUG_DEFAULT_SHOW_RASTERS, 0
+.equ _DEBUG_DEFAULT_SHOW_INFO, 0		; slow so off by default.
 
-.equ Screen_Banks, 3
-.equ Vdu_Mode, 97					; MODE 9 widescreen (320x180)
-									; or 96 for MODE 13 widescreen (320x180)
+.equ Sample_Speed_SlowCPU, 48		    ; ideally get this down for ARM2
+.equ Sample_Speed_FastCPU, 24		    ; ideally 16us for ARM250+
+
+.equ _DYNAMIC_SAMPLE_SPEED, 1
+.equ _MUSIC_LOAD_LOOSE, 1
+.equ _ENABLE_LOOP, 0
+
+.equ _MaxFrames, 8667   ; 222.222 frames per pattern.
+.equ _MaxPatterns, 39   ; TODO: Some standard prod defs.
+
+.equ ProTracker_Tempo, 108
+.equ ProTracker_TicksPerRow, 3
+
+.equ PatternLength_Rows, 64
+.equ PatternLength_Secs, 4.44444
+.equ PatternLength_Frames, 222.222
+
+.equ StereoPos_Ch1, -127                ; full left
+.equ StereoPos_Ch2, +127                ; full right
+.equ StereoPos_Ch3, +32                 ; off centre R
+.equ StereoPos_Ch4, -32                 ; off centre L
+
+.equ Anaglyph_Default_Skew_Setting, 1   ; on
+.equ EyeDistance_Default_Setting,   4   ; eye separation=4.8 pixels at z=0
+
+.equ _WIDESCREEN, 0
+
+.equ Screen_Banks, 2
+
 .equ Screen_Mode, 9
 .equ Screen_Width, 320
+.equ Screen_PixelsPerByte, 2
+
+.if _WIDESCREEN
+.equ Vdu_Mode, 97					; MODE 9 widescreen (320x180)
+									; or 96 for MODE 13 widescreen (320x180)
 .equ Screen_Height, 180
 .equ Mode_Height, 180
-.equ Screen_PixelsPerByte, 2
+.else
+.equ Vdu_Mode, Screen_Mode
+.equ Screen_Height, 256
+.equ Mode_Height, 256
+.endif
+
 .equ Screen_Stride, Screen_Width/Screen_PixelsPerByte
 .equ Screen_Bytes, Screen_Stride*Screen_Height
 .equ Mode_Bytes, Screen_Stride*Mode_Height
 
 .include "lib/swis.h.asm"
 .include "lib/lib_config.h.asm"
+.include "lib/maths.h.asm"
+.include "lib/debug.h.asm"
 
 ; ============================================================================
 ; Macros.
@@ -48,7 +87,9 @@
 .macro SET_BORDER rgb
 	.if _DEBUG_RASTERS
 	mov r4, #\rgb
-	bl palette_set_border
+	ldrb r0, debug_show_rasters
+	cmp r0, #0
+	blne palette_set_border
 	.endif
 .endm
 
@@ -61,23 +102,6 @@
 
 .equ AutoPlay_Default, 1
 .equ Stereo_Positions, 1		; Amiga (full) stereo positions.
-
-.equ KeyBit_Space, 0
-.equ KeyBit_Return, 1
-.equ KeyBit_ArrowUp, 2
-.equ KeyBit_ArrowDown, 3
-.equ KeyBit_A, 4
-.equ KeyBit_LeftClick, 5
-.equ KeyBit_1, 6
-.equ KeyBit_2, 7
-.equ KeyBit_3, 8
-.equ KeyBit_4, 9
-.equ KeyBit_5, 10
-.equ KeyBit_E, 11
-.equ KeyBit_F, 12
-.equ KeyBit_R, 13
-.equ KeyBit_S, 14
-.equ KeyBit_RightClick, 16
 
 ; TODO: Remove Timer1 split if not necessary.
 .equ RasterSplitLine, 56+90			; 56 lines from vsync to screen start
@@ -94,6 +118,15 @@ Start:
 
 stack_p:
 	.long stack_base_no_adr
+
+.if _MUSIC_LOAD_LOOSE
+music_filename:
+	.byte "<Demo$Dir>.Music",0
+	.p2align 2
+.else
+music_mod_p:
+	.long three_dee_mod_no_adr		; 14
+.endif
 
 ; ============================================================================
 ; Main
@@ -133,24 +166,55 @@ main:
 	ble .1
 
 	; Seed RND.
-	swi OS_ReadMonotonicTime
-	str r0, rnd_seed
+	;swi OS_ReadMonotonicTime
+	;str r0, rnd_seed
+
+    ; Register debug vars.
+    DEBUG_REGISTER_VAR frame_counter
+    DEBUG_REGISTER_VAR music_pos
+    DEBUG_REGISTER_VAR Anaglyph_Enable_Skew
+    DEBUG_REGISTER_KEY RMKey_Space,      debug_toggle_main_loop_pause,  0
+    DEBUG_REGISTER_KEY RMKey_A,          debug_restart_sequence,        0
+    DEBUG_REGISTER_KEY RMKey_S,          debug_set_byte_true,           debug_main_loop_step
+    DEBUG_REGISTER_KEY RMKey_D,          debug_toggle_byte,             debug_show_info
+    DEBUG_REGISTER_KEY RMKey_R,          debug_toggle_byte,             debug_show_rasters
+    DEBUG_REGISTER_KEY RMKey_K,          debug_toggle_byte,             Anaglyph_Enable_Skew
+    DEBUG_REGISTER_KEY RMKey_ArrowRight, debug_skip_to_next_pattern,    0
+    DEBUG_REGISTER_KEY RMKey_C,          debug_toggle_palette,          0
+    DEBUG_REGISTER_KEY RMKey_0,          debug_set_eye_distance,        0
+    DEBUG_REGISTER_KEY RMKey_1,          debug_set_eye_distance,        1
+    DEBUG_REGISTER_KEY RMKey_2,          debug_set_eye_distance,        2
+    DEBUG_REGISTER_KEY RMKey_3,          debug_set_eye_distance,        3
+    DEBUG_REGISTER_KEY RMKey_4,          debug_set_eye_distance,        4
+    DEBUG_REGISTER_KEY RMKey_5,          debug_set_eye_distance,        5
+    DEBUG_REGISTER_KEY RMKey_6,          debug_set_eye_distance,        6
+    DEBUG_REGISTER_KEY RMKey_7,          debug_set_eye_distance,        7
+    DEBUG_REGISTER_KEY RMKey_8,          debug_set_eye_distance,        8
+    DEBUG_REGISTER_KEY RMKey_9,          debug_set_eye_distance,        9
 
 	; Install our own IRQ handler - thanks Steve! :)
 	bl install_irq_handler
 
-	; EARLY INIT / LOAD STUFF HERE!
+	; EARLY INIT / LOAD STUFF HERE! 
 	bl lib_init
 	; R12=top of RAM used.
-	bl init_3d_scene
-	bl scroller_init
-	bl logo_init
+    str r12, [sp, #-4]!
 
+	; Bootstrap the main sequence.
+    bl sequence_init
+
+    ; Tick script once for module init.
+    bl script_tick_all
+
+.if _DYNAMIC_SAMPLE_SPEED
 	; Count how long the init takes as a very rough estimate of CPU speed.
 	ldr r1, vsync_count
 	cmp r1, #80		; ARM3~=20, ARM250~=70, ARM2~=108
 	movge r0, #Sample_Speed_SlowCPU
 	movlt r0, #Sample_Speed_FastCPU
+.else
+    mov r0, #Sample_Speed_SlowCPU
+.endif
 
 	; Setup QTM for our needs.
 	swi QTM_SetSampleSpeed
@@ -159,26 +223,41 @@ main:
 	mov r1, #VU_Bars_Gravity
 	swi QTM_VUBarControl
 
-	mov r0, #0
-	mov r1, #Stereo_Positions
-	swi QTM_Stereo
+    mov r0, #1
+    mov r1, #StereoPos_Ch1
+    swi QTM_Stereo
+
+    mov r0, #2
+    mov r1, #StereoPos_Ch2
+    swi QTM_Stereo
+
+    mov r0, #3
+    mov r1, #StereoPos_Ch3
+    swi QTM_Stereo
+
+    mov r0, #4
+    mov r1, #StereoPos_Ch4
+    swi QTM_Stereo
+
+    .if !_ENABLE_LOOP
+    mov r0, #0b0010
+    mov r1, #0b0010         ; stop song on end.
+    swi QTM_MusicOptions
+    .endif
 
 	; Load the music.
-	mov r0, #-1					; load from address and copy to RMA.
-	adr r1, music_table
-	ldr r1, [r1, #0]
+    .if _MUSIC_LOAD_LOOSE
+    adr r0, music_filename
+    ldr r1, [sp], #4        ; HIMEM
+    ;mov r1, #0
+    .else
+	mov r0, #0              ; load from address, don't copy to RMA.
+    ldr r1, music_mod_p
+    .endif
 	swi QTM_Load
 
 	; LATE INITALISATION HERE!
 	bl get_next_bank_for_writing
-
-	; Set palette (shows screen).
-	adrl r2, logo_pal_block
-	bl palette_set_block
-
-	; Bootstrap the main sequence.
-	adr r0, seq_main_program
-	bl script_add_program
 
 	; Claim the Event vector.
 	MOV r0, #EventV
@@ -203,11 +282,58 @@ main:
 main_loop:
 
 	; ========================================================================
+	; PREPARE
+	; ========================================================================
+
+    .if _DEBUG
+    bl debug_do_key_callbacks
+
+	ldrb r0, debug_main_loop_pause
+	cmp r0, #0
+	bne .3
+
+	ldrb r0, debug_main_loop_step
+	cmp r0, #0
+	beq main_loop_skip_tick
+	.3:
+	.endif
+
+	; ========================================================================
 	; TICK
 	; ========================================================================
 
 	bl script_tick_all
 	bl fx_tick_layers
+
+    ; Update frame counter.
+    ldr r0, frame_counter
+    ldr r1, MaxFrames
+    add r0, r0, #1
+    cmp r0, r1
+    .if _ENABLE_LOOP
+    movge r0, #0
+    str r0, frame_counter
+    blge sequence_init
+    .else
+    str r0, frame_counter
+    bge exit
+    .endif
+
+    .if _DEBUG
+    mov r0, #-1
+    mov r1, #-1
+    swi QTM_Pos         ; read position.
+
+    strb r1, music_pos+0
+    strb r0, music_pos+1
+    .endif
+
+main_loop_skip_tick:
+
+    .if _DEBUG
+    mov r0, #0
+    strb r0, debug_main_loop_step
+    .endif
 
 	; ========================================================================
 	; VSYNC
@@ -244,19 +370,17 @@ main_loop:
 	bl fx_draw_layers
 
 	; show debug
-	.if _DEBUG_SHOW
-	bl debug_write_vsync_count
+	.if _DEBUG
+    ldr r12, screen_addr
+    bl debug_plot_vars
 	.endif
 
 	; Swap screens!
 	bl mark_write_bank_as_pending_display
 
-	; exit if Escape is pressed
-	swi OS_ReadEscapeState
-	bcs exit
-
 	; repeat!
-	b main_loop
+	swi OS_ReadEscapeState
+	bcc main_loop                   ; exit if Escape is pressed
 
 exit:
 	; Disable music
@@ -304,75 +428,61 @@ exit:
 ; ============================================================================
 
 .if _DEBUG
-debug_print_r0:
-	stmfd sp!, {r0-r2}
-	adr r1, debug_string
-	mov r2, #10
-	swi OS_ConvertHex4	; or OS_ConvertHex8
-	adr r0, debug_string
-	swi OS_WriteO
-	ldmfd sp!, {r0-r2}
-	mov pc, lr
+debug_toggle_main_loop_pause:
+	ldrb r0, debug_main_loop_pause
+	eor r0, r0, #1
+	strb r0, debug_main_loop_pause
 
-debug_write_vsync_count:
-	str lr, [sp, #-4]!
-	mov r0, #30	; home cursor
-	swi OS_WriteC
-	mov r0, #17	; set text colour
-	swi OS_WriteC
-	mov r0, #15
-	swi OS_WriteC
+    ; Toggle music.
+    cmp r0, #0
+    swieq QTM_Pause			    ; pause
+    swine QTM_Start             ; play
 
-    ; display current tracker position
-	.if 0
+    mov pc, lr
+
+debug_restart_sequence:
+    ; Start music again.
+    mov r0, #0
+    mov r1, #0
+	swi QTM_Pos
+
+    ; Start script again.
+    bl sequence_init
+
+    ; TODO: Reset frame counter. [We don't have a frame counter.]
+    mov pc, lr
+
+debug_skip_to_next_pattern:
     mov r0, #-1
     mov r1, #-1
-    swi QTM_Pos
+    swi QTM_Pos         ; read position.
 
-	mov r3, r1
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex2
-	adr r0, debug_string
-	swi OS_WriteO
+    add r0, r0, #1
+    cmp r0, #_MaxPatterns
+    movge pc, lr
 
-	mov r0, r3
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex2
-	adr r0, debug_string
-	swi OS_WriteO
+    bl sequence_jump_to_pattern
 
-	swi OS_WriteI+32
-	ldr r0, keyboard_pressed_mask
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex4
-	adr r0, debug_string
-	swi OS_WriteO
-.endif
+    mov r1, #0
+    swi QTM_Pos         ; set position.
+    mov pc, lr
 
-.if 1
-	; display frame count / frame rate etc.
-	ldr r0, vsync_count
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex4
-	adr r0, debug_string
-	swi OS_WriteO
+debug_toggle_palette:
+    stmfd sp!, {r3-r5, lr}
+    ; Toggle palette.
+    ldr r2, palette_p
+    adr r3, palette_red_cyan
+    cmp r2, r3
+    adreq r2, palette_red_blue
+    movne r2, r3
+    str r2, palette_p
 
-	swi OS_WriteI+32
-	ldr r0, vsync_delta
-	adr r1, debug_string
-	mov r2, #8
-	swi OS_ConvertHex4
-	adr r0, debug_string
-	swi OS_WriteO
-.endif
-	ldr pc, [sp], #4
+    bl set_palette_for_3d_scene
+    ldmfd sp!, {r3-r5, pc}
 
-debug_string:
-	.skip 16
+debug_set_eye_distance:
+    mov r0, r1
+    b set_eye_distance
 .endif
 
 ; ============================================================================
@@ -423,8 +533,16 @@ last_last_dropped_frame:
 	.long 0
 .endif
 
-keyboard_pressed_mask:
-	.long 0
+frame_counter:
+    .long 0
+
+MaxFrames:
+    .long _MaxFrames
+
+.if _DEBUG
+music_pos:
+    .long 0
+.endif
 
 ; R0=event number
 event_handler:
@@ -434,86 +552,11 @@ event_handler:
 	; R1=0 key up or 1 key down
 	; R2=internal key number (RMKey_*)
 
-	str r0, [sp, #-4]!
-
-	ldr r0, keyboard_pressed_mask
-	cmp r1, #0
-	beq .2
-
-	; Key down
-	cmp r2, #RMKey_Space
-	orreq r0, r0, #1<<KeyBit_Space
-	cmp r2, #RMKey_Return
-	orreq r0, r0, #1<<KeyBit_Return
-	cmp r2, #RMKey_ArrowUp
-	orreq r0, r0, #1<<KeyBit_ArrowUp
-	cmp r2, #RMKey_ArrowDown
-	orreq r0, r0, #1<<KeyBit_ArrowDown
-	cmp r2, #RMKey_A
-	orreq r0, r0, #1<<KeyBit_A
-	cmp r2, #RMKey_LeftClick
-	orreq r0, r0, #1<<KeyBit_LeftClick
-	cmp r2, #RMKey_1
-	orreq r0, r0, #1<<KeyBit_1
-	cmp r2, #RMKey_2
-	orreq r0, r0, #1<<KeyBit_2
-	cmp r2, #RMKey_3
-	orreq r0, r0, #1<<KeyBit_3
-	cmp r2, #RMKey_4
-	orreq r0, r0, #1<<KeyBit_4
-	cmp r2, #RMKey_5
-	orreq r0, r0, #1<<KeyBit_5
-	cmp r2, #RMKey_E
-	orreq r0, r0, #1<<KeyBit_E
-	cmp r2, #RMKey_F
-	orreq r0, r0, #1<<KeyBit_F
-	cmp r2, #RMKey_R
-	orreq r0, r0, #1<<KeyBit_R
-	cmp r2, #RMKey_S
-	orreq r0, r0, #1<<KeyBit_S
-	cmp r2, #RMKey_RightClick
-	orreq r0, r0, #1<<KeyBit_RightClick
-	b .3
-
-.2:
-	; Key up
-	cmp r2, #RMKey_Space
-	biceq r0, r0, #1<<KeyBit_Space
-	cmp r2, #RMKey_Return
-	biceq r0, r0, #1<<KeyBit_Return
-	cmp r2, #RMKey_ArrowUp
-	biceq r0, r0, #1<<KeyBit_ArrowUp
-	cmp r2, #RMKey_ArrowDown
-	biceq r0, r0, #1<<KeyBit_ArrowDown
-	cmp r2, #RMKey_A
-	biceq r0, r0, #1<<KeyBit_A
-	cmp r2, #RMKey_LeftClick
-	biceq r0, r0, #1<<KeyBit_LeftClick
-	cmp r2, #RMKey_1
-	biceq r0, r0, #1<<KeyBit_1
-	cmp r2, #RMKey_2
-	biceq r0, r0, #1<<KeyBit_2
-	cmp r2, #RMKey_3
-	biceq r0, r0, #1<<KeyBit_3
-	cmp r2, #RMKey_4
-	biceq r0, r0, #1<<KeyBit_4
-	cmp r2, #RMKey_5
-	biceq r0, r0, #1<<KeyBit_5
-	cmp r2, #RMKey_E
-	biceq r0, r0, #1<<KeyBit_E
-	cmp r2, #RMKey_F
-	biceq r0, r0, #1<<KeyBit_F
-	cmp r2, #RMKey_R
-	biceq r0, r0, #1<<KeyBit_R
-	cmp r2, #RMKey_S
-	biceq r0, r0, #1<<KeyBit_S
-	cmp r2, #RMKey_RightClick
-	biceq r0, r0, #1<<KeyBit_RightClick
-
-.3:
-	str r0, keyboard_pressed_mask
-	ldr r0, [sp], #4
-	mov pc, lr
+    .if _DEBUG
+    b debug_handle_keypress
+    .else
+    mov pc, lr
+    .endif
 
 
 mark_write_bank_as_pending_display:
@@ -609,7 +652,7 @@ install_irq_handler:
 	ldr r0, [r1]					; old IRQ handler.
 	str r0, oldirqjumper
 
-	; Calculate old IRQ hanlder address from branch opcode.
+	; Calculate old IRQ handler address from branch opcode.
 	bic r0, r0, #0xff000000
 	mov r0, r0, lsl #2
 	add r0, r0, #32
@@ -731,39 +774,106 @@ vsync_bodge:
 ; Additional code modules
 ; ============================================================================
 
-rnd_seed:
-    .long 0x87654321
+palette_p:
+    .long palette_red_cyan
 
 screen_addr:
 	.long 0					; ptr to the current VIDC screen bank being written to.
 
+.if _DEBUG
+debug_main_loop_pause:
+	.byte _DEBUG_DEFAULT_PLAY_PAUSE
+
+debug_main_loop_step:
+	.byte 0
+
+debug_show_info:
+	.byte _DEBUG_DEFAULT_SHOW_INFO
+
+debug_show_rasters:
+	.byte _DEBUG_DEFAULT_SHOW_RASTERS
+
+.p2align 2
+.endif
+
+.include "lib/debug.asm"
+
 .include "src/fx.asm"
 .include "src/script.asm"
+.include "src/sequence.asm"
+
+.include "src/3d-scene.asm"
+.include "src/scene-2d.asm"
+
+LeftEye_X_Pos:
+    FLOAT_TO_FP 0.0
+
+RightEye_X_Pos:
+    FLOAT_TO_FP 0.0
+
+Anaglyph_Enable_Skew:
+    .byte Anaglyph_Default_Skew_Setting
+
+Anaglyph_Eye_setting:
+    .byte EyeDistance_Default_Setting
+.p2align 2
+
+rnd_seed:
+    .long 0x87654321
+
+.include "src/dot-tunnel.asm"
+.include "src/starfield.asm"
+.include "src/dots.asm"
 
 .include "lib/palette.asm"
-.include "src/scroller.asm"
-.include "src/columns.asm"
-.include "src/logo.asm"
-.include "lib/lz4-decode.asm"
+.include "lib/mode9-screen.asm"
+.include "lib/line.asm"
 .include "lib/lib_code.asm"
-.include "src/3d-scene.asm"
 
 ; ============================================================================
 ; Data Segment
 ; ============================================================================
 
-; TODO: Hot-reload this one day?
-.include "src/sequence.asm"
-
 vdu_screen_disable_cursor:
 .byte 22, Vdu_Mode, 23,1,0,0,0,0,0,0,0,0
 .p2align 2
 
-music_table:
-	.long changing_waves_mod_no_adr		; 14
+; For anaglpyh want CRcr
+palette_red_cyan:
+    .long 0x00000000                    ; 00 = 0000 = black
+    .long 0x00000030                    ; 01 = 0001 = red 1
+    .long 0x00303000                    ; 02 = 0010 = cyan 1
+    .long 0x00303030                    ; 03 = 0011 = white 1
+    .long 0x00000060                    ; 04 = 0100 = red 2
+    .long 0x00000090                    ; 05 = 0101 = red 3
+    .long 0x000000c0                    ; 06 = 0110 = red 4
+    .long 0x000000f0                    ; 07 = 0111 = red 5
+    .long 0x00606000                    ; 08 = 1000 = cyan 2
+    .long 0x00909000                    ; 09 = 1001 = cyan 3
+    .long 0x00c0c000                    ; 10 = 1010 = cyan 4
+    .long 0x00f0f000                    ; 11 = 1011 = cyan 5
+    .long 0x00606060                    ; 12 = 1100 = white 2
+    .long 0x00909090                    ; 13 = 1101 = white 3
+    .long 0x00c0c0c0                    ; 14 = 1110 = white 4
+    .long 0x00f0f0f0                    ; 15 = 1111 = white 5
 
-logo_pal_block:
-.incbin "data/logo-palette-hacked.bin"
+palette_red_blue:
+    .long 0x00000000                    ; 00 = 0000 = black
+    .long 0x00000030                    ; 01 = 0001 = red 1
+    .long 0x00300000                    ; 02 = 0010 = blue 1
+    .long 0x00300030                    ; 03 = 0011 = magenta 1
+    .long 0x00000060                    ; 04 = 0100 = red 2
+    .long 0x00000090                    ; 05 = 0101 = red 3
+    .long 0x000000c0                    ; 06 = 0110 = red 4
+    .long 0x000000f0                    ; 07 = 0111 = red 5
+    .long 0x00600000                    ; 08 = 1000 = blue 2
+    .long 0x00900000                    ; 09 = 1001 = blue 3
+    .long 0x00c00000                    ; 10 = 1010 = blue 4
+    .long 0x00f00000                    ; 11 = 1011 = blue 5
+    .long 0x00600060                    ; 12 = 1100 = magenta 2
+    .long 0x00900090                    ; 13 = 1101 = magenta 3
+    .long 0x00c000c0                    ; 14 = 1110 = magenta 4
+    .long 0x00f000f0                    ; 15 = 1111 = magenta 5
 
 ; ============================================================================
 ; DATA Segment

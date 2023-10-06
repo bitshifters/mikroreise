@@ -7,7 +7,7 @@
 .include "../lib/swis.h.asm"
 
 .ifndef _WIMPSLOT
-.equ _WIMPSLOT, 1200*1024           ; Assumed RAM - see !Run.txt
+.equ _WIMPSLOT, 3000*1024           ; Assumed RAM - see !Run.txt
 .endif
 
 .equ STACK_SIZE, 1024
@@ -56,7 +56,12 @@ main:
     mov r0, r9                      ; source
     mov r1, #0x8000                 ; destination
     .if _USE_SHRINKLER
-    mov r2, #0                      ; no callback
+    adr r2, callback
+    adr r3, reloc_start
+    sub r2, r2, r3
+    ldr r3, endofram
+    add r2, r2, r3                  ; callback fn
+    mov r3, #0                      ; callback arg
     sub r9, r8, #STACK_SIZE + NUM_CONTEXTS*4               ; context
     .endif
     mov sp, r8                      ; reset stack top
@@ -73,6 +78,14 @@ endofram:
 .if _USE_SHRINKLER
 reloc_start:
 	b ShrinklerDecompress
+
+; R0=bytes written
+; R1=callback arg
+callback:
+    movs r1, r0, lsl #19            ; every 8k
+    movne pc, lr
+    swi OS_WriteI+'.'
+    mov pc, lr
 
 .include "../lib/arc-shrinkler.asm"
 .else

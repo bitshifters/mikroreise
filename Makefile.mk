@@ -20,12 +20,13 @@ SHRINKLER?=shrinkler
 PYTHON3?=python
 DOS2UNIX?=dos2unix
 endif
+# TODO: Add Lua code and table gen to dependencies.
 
 PNG2ARC=./bin/png2arc.py
 PNG2ARC_FONT=./bin/png2arc_font.py
 PNG2ARC_SPRITE=./bin/png2arc_sprite.py
 PNG2ARC_DEPS:=./bin/png2arc.py ./bin/arc.py ./bin/png2arc_font.py ./bin/png2arc_sprite.py
-FOLDER=!Verse
+FOLDER=!Reise
 HOSTFS=../arculator/hostfs
 # TODO: Need a copy command that copes with forward slash directory separator. (Maybe MSYS cp?)
 
@@ -33,40 +34,74 @@ HOSTFS=../arculator/hostfs
 ##########################################################################
 
 .PHONY:deploy
-deploy:folder
+deploy: $(FOLDER)
 	$(RM_RF) "$(HOSTFS)\$(FOLDER)"
 	$(MKDIR_P) "$(HOSTFS)\$(FOLDER)"
 	$(COPY) "$(FOLDER)\*.*" "$(HOSTFS)\$(FOLDER)\*.*"
 
-.PHONY:folder
-folder: build code text
+$(FOLDER): build ./build/archie-verse.bin ./build/seq.bin ./build/!run.txt ./build/icon.bin ./build/three-dee.mod
 	$(RM_RF) $(FOLDER)
 	$(MKDIR_P) $(FOLDER)
 	$(COPY) .\folder\*.* "$(FOLDER)\*.*"
 	$(COPY) .\build\!run.txt "$(FOLDER)\!Run,feb"
 	$(COPY) .\build\icon.bin "$(FOLDER)\!Sprites,ff9"
 	$(COPY) .\build\archie-verse.bin "$(FOLDER)\!RunImage,ff8"
+	$(COPY) .\build\three-dee.mod "$(FOLDER)\Music,001"
+	$(COPY) .\build\seq.bin  "$(FOLDER)\Seq,ffd"
 
-.PHONY:code
-code: ./build/archie-verse.bin
+.PHONY:seq
+seq: ./build/seq.bin
+	$(COPY) .\build\seq.bin  "$(FOLDER)\Seq,ffd"
+	$(COPY) "$(FOLDER)\Seq,ffd" "$(HOSTFS)\$(FOLDER)"
 
-./build/archie-verse.bin: ./build/archie-verse.o link_script.txt
-	$(VLINK) -T link_script.txt -b rawbin1 -o $@ build/archie-verse.o -Mbuild/linker.txt
+.PHONY:compress
+compress: shrink
+	$(RM_RF) "$(HOSTFS)\$(FOLDER)"
+	$(MKDIR_P) "$(HOSTFS)\$(FOLDER)"
+	$(COPY) "$(FOLDER)\*.*" "$(HOSTFS)\$(FOLDER)\*.*"
 
-./build/archie-verse.o: build archie-verse.asm assets music
-	$(VASM) -L build/compile.txt -m250 -Fvobj -opt-adr -o build/archie-verse.o archie-verse.asm
-
-.PHONY:assets
-assets: build ./build/logo.lz4 ./build/big-font.bin ./build/icon.bin
-
-.PHONY:music
-music: build ./build/changing_waves.mod
-
-.PHONY:text build
-text: ./build/!run.txt
+.PHONY:shrink
+shrink: build ./build/archie-verse.shri ./build/seq.bin ./build/!run.txt ./build/icon.bin ./build/loader.bin ./build/three-dee.mod
+	$(RM_RF) $(FOLDER)
+	$(MKDIR_P) $(FOLDER)
+	$(COPY) .\folder\*.* "$(FOLDER)\*.*"
+	$(COPY) .\build\!run.txt "$(FOLDER)\!Run,feb"
+	$(COPY) .\build\icon.bin "$(FOLDER)\!Sprites,ff9"
+	$(COPY) .\build\loader.bin "$(FOLDER)\!RunImage,ff8"
+	$(COPY) .\build\three-dee.mod "$(FOLDER)\Music,001"
+	$(COPY) .\build\archie-verse.shri "$(FOLDER)\Demo,ffd"
+	$(COPY) .\build\seq.bin  "$(FOLDER)\Seq,ffd"
 
 build:
 	$(MKDIR_P) "./build"
+
+./build/assets.txt: build ./build/icon.bin ./build/bs-logo.bin ./build/tmt-logo.bin ./build/credits.bin
+	echo done > $@
+
+./build/archie-verse.shri: build ./build/archie-verse.bin
+	$(SHRINKLER) -b -d -p -z -1 ./build/archie-verse.bin $@
+
+./build/loader.bin: build ./src/loader.asm
+	$(VASM) -L build\loader.txt -m250 -Fbin -opt-adr -D_USE_SHRINKLER=1 -o $@ ./src/loader.asm
+
+./build/seq.bin: build ./build/seq.o link_script2.txt
+	$(VLINK) -T link_script2.txt -b rawbin1 -o $@ build/seq.o -Mbuild/linker2.txt
+
+./build/seq.o: build archie-verse.asm ./src/sequence-data.asm ./build/three-dee.mod ./build/assets.txt
+	$(VASM) -L build/compile.txt -m250 -Fvobj -opt-adr -o build/seq.o archie-verse.asm
+
+./build/archie-verse.bin: build ./build/archie-verse.o ./build/seq.o link_script.txt
+	$(VLINK) -T link_script.txt -b rawbin1 -o $@ build/archie-verse.o -Mbuild/linker.txt
+
+./build/dot_gen_code_a.bin: ./src/dot_plot_generated.asm
+	$(VASM) -L build/dot_a.txt -m250 -Fbin -opt-adr -o $@ $<
+
+./build/dot_gen_code_b.bin: ./src/dot_plot_generated_b.asm
+	$(VASM) -L build/dot_b.txt -m250 -Fbin -opt-adr -o $@ $<
+
+.PHONY:./build/archie-verse.o
+./build/archie-verse.o: build archie-verse.asm ./build/three-dee.mod ./build/assets.txt ./build/dot_gen_code_a.bin ./build/dot_gen_code_b.bin
+	$(VASM) -L build/compile.txt -m250 -Fvobj -opt-adr -o build/archie-verse.o archie-verse.asm
 
 ##########################################################################
 ##########################################################################
@@ -86,13 +121,22 @@ clean:
 ./build/big-font.bin: ./data/font/font-big-finalFINAL.png $(PNG2ARC_DEPS)
 	$(PYTHON2) $(PNG2ARC_FONT) -o $@ --glyph-dim 16 16 $< 9
 
-./build/icon.bin: ./data/gfx/icon001.png $(PNG2ARC_DEPS)
-	$(PYTHON2) $(PNG2ARC_SPRITE) --name !django02 -o $@ $< 9
+./build/icon.bin: ./data/gfx/mikroreise_icon.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC_SPRITE) --name !reise -o $@ $< 9
+
+./build/bs-logo.bin: ./data/gfx/BITSHIFERS-logo-anaglyph.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
+
+./build/tmt-logo.bin: ./data/gfx/TORMENT-logo-anaglyph.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
+
+./build/credits.bin: ./data/gfx/crew-credits2.png $(PNG2ARC_DEPS)
+	$(PYTHON2) $(PNG2ARC) -o $@ -p $@.pal $< 9
 
 ##########################################################################
 ##########################################################################
 
-./build/changing_waves.mod: ./data/music2/changing-waves.mod
+./build/three-dee.mod: ./data/music2/mikroreise.mod
 	$(COPY) $(subst /,\\,$+) $(subst /,\\,$@)
 
 ##########################################################################

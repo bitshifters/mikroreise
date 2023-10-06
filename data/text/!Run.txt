@@ -1,4 +1,4 @@
-| Setup for Chipo Django 1 Musicdisk.
+| Setup for Mikro Reise Three Dee demo.
 |
 Set RISCOS$version 3.5
 RMEnsure UtilityModule 3.5 Set RISCOS$version 3.1
@@ -14,12 +14,8 @@ SCREENSIZE 80K
 RMKILL MemAlloc 
 |
 RMLOAD <Demo$Dir>.QTM149c { > null: }
-RMLOAD <Demo$Dir>.MMode96
-RMLOAD <Demo$Dir>.MMode97
 |
-wimpslot -min 1200K
+wimpslot -min 3000K
 <Demo$Dir>.!RunImage
 |
 RMKILL QTMTracker
-RMKILL Mode96
-RMKILL Mode97
